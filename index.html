@@ -131,6 +131,11 @@
 		.mini-preview--whack::before { top: 22%; left: 46%; color: var(--orange); content: '★'; font: 36px var(--mono); }
 		.mini-preview--gridlock { background-color: var(--paper); background-image: linear-gradient(90deg, transparent 32%, var(--ink) 32% 33%, transparent 33% 66%, var(--ink) 66% 67%, transparent 67%), linear-gradient(transparent 32%, var(--ink) 32% 33%, transparent 33% 66%, var(--ink) 66% 67%, transparent 67%); }
 		.mini-preview--gridlock::before { inset: 0; display: grid; place-items: center; color: var(--orange); content: 'X'; font: 800 42px var(--display); }
+		.mini-preview--moto { background: linear-gradient(160deg, #55b9cc 0 54%, #d9f06b 54% 58%, #a8cf98 58%); }
+		.preview-bike { position: absolute; z-index: 1; top: 54%; left: 50%; width: 58px; height: 22px; border-bottom: 4px solid var(--orange); transform: translate(-50%, -50%) rotate(-18deg); }
+		.preview-bike::before, .preview-bike::after { position: absolute; bottom: -11px; width: 16px; aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
+		.preview-bike::before { left: 0; }
+		.preview-bike::after { right: 0; }
 
 		.game-link {
 			display: grid;
@@ -278,7 +283,7 @@
 		<section aria-labelledby="catalog-title">
 			<div class="catalog-heading">
 				<h2 id="catalog-title">The arcade</h2>
-				<span class="catalog-count">06 games</span>
+				<span class="catalog-count">07 games</span>
 			</div>
 			<a class="game-link" href="lane-runner.html">
 				<span class="game-number">01</span>
@@ -317,6 +322,12 @@
 				<span class="game-number">06</span>
 				<div><h3 class="game-title">Gridlock</h3><p class="game-meta">Strategy / Tic-tac-toe / Vs computer</p></div>
 				<div class="mini-preview mini-preview--gridlock" aria-hidden="true"></div>
+				<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+			</a>
+			<a class="game-link" href="moto-x3m.html">
+				<span class="game-number">07</span>
+				<div><h3 class="game-title">Moto X3M</h3><p class="game-meta">Arcade / Motorbike / Stunts + obstacles</p></div>
+				<div class="mini-preview mini-preview--moto" aria-hidden="true"><span class="preview-bike"></span></div>
 				<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
 			</a>
 		</section>
