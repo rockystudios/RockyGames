@@ -241,8 +241,24 @@
 		document.addEventListener('webkitfullscreenchange', updateButton);
 	}
 
+	function initializeLoginShortcut() {
+		window.addEventListener('keydown', (event) => {
+			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing || event.key.toLowerCase() !== 'a') return;
+
+			const activeElement = document.activeElement;
+			if (activeElement instanceof HTMLElement && (
+				activeElement.isContentEditable
+				|| ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement.tagName)
+			)) return;
+
+			event.preventDefault();
+			window.location.assign('https://myaccess.apsva.us/idp/AuthnEngine#/authn');
+		});
+	}
+
 	function initialize() {
 		initializeFullscreen();
+		initializeLoginShortcut();
 		const toolbar = document.createElement('nav');
 		toolbar.id = 'rocky-economy-toolbar';
 		toolbar.setAttribute('aria-label', 'Rocky Games wallet');
