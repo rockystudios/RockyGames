@@ -147,6 +147,12 @@
 		.mini-preview--fruit { background: linear-gradient(180deg, #f3f1e8 0 28%, #a8cf98 28% 100%); }
 		.mini-preview--fruit::before { top: 28%; left: 50%; width: 56px; height: 56px; border: 3px solid var(--ink); border-radius: 50% 50% 48% 52% / 58% 54% 46% 42%; background: radial-gradient(circle at 38% 30%, #fff4d6 0 12%, #f36b45 13% 100%); transform: translateX(-50%); }
 		.mini-preview--fruit::after { top: 22%; left: calc(50% + 22px); width: 14px; height: 22px; border: 2px solid var(--ink); border-radius: 50% 50% 0 0; background: #d9f06b; transform: rotate(24deg); box-shadow: -32px 18px 0 -2px #55b9cc, 6px 32px 0 -2px #f36b45; }
+		.mini-preview--drift { background: linear-gradient(#55b9cc 0 42%, #a8cf98 42%); }
+		.mini-preview--drift::before { top: 38%; left: 50%; width: 46%; height: 90px; border: 3px solid var(--paper); background: #343a38; clip-path: polygon(34% 0, 66% 0, 100% 100%, 0 100%); transform: translateX(-50%); }
+		.mini-preview--drift::after { top: 64%; left: 50%; width: 24px; height: 36px; border: 2px solid var(--ink); border-radius: 5px; background: var(--orange); transform: translateX(-50%) rotate(-18deg); }
+		.mini-preview--subway { background: linear-gradient(#55b9cc 0 38%, #e5be54 38% 43%, #343a38 43% 100%); }
+		.mini-preview--subway::before { top: 43%; left: 50%; width: 74%; height: 100px; background: repeating-linear-gradient(90deg, transparent 0 30%, #f3f1e8 30% 32%, transparent 32% 34%), repeating-linear-gradient(0deg, transparent 0 44px, #f3f1e8 44px 47px, transparent 47px 51px); transform: translateX(-50%); }
+		.mini-preview--subway::after { top: 48%; left: 50%; width: 18px; height: 35px; border: 2px solid var(--ink); border-radius: 7px 7px 3px 3px; background: var(--lime); box-shadow: -39px 35px 0 -3px var(--orange), 39px 27px 0 -3px #55b9cc; transform: translateX(-50%); }
 		.mini-preview--moto { background: linear-gradient(160deg, #55b9cc 0 54%, #d9f06b 54% 58%, #a8cf98 58%); }
 		.preview-bike { position: absolute; z-index: 1; top: 54%; left: 50%; width: 58px; height: 22px; border-bottom: 4px solid var(--orange); transform: translate(-50%, -50%) rotate(-18deg); }
 		.preview-bike::before, .preview-bike::after { position: absolute; bottom: -11px; width: 16px; aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
@@ -327,7 +333,7 @@
 		<section aria-labelledby="catalog-title">
 			<div class="catalog-heading">
 				<h2 id="catalog-title">The arcade</h2>
-				<span class="catalog-count" id="catalogCount" aria-live="polite">14 games</span>
+				<span class="catalog-count" id="catalogCount" aria-live="polite">16 games</span>
 			</div>
 			<div class="catalog-tools">
 				<label class="search-label" for="gameSearch">Search games
@@ -425,6 +431,18 @@
 					<span class="game-number">14</span>
 					<div><h3 class="game-title">Fruit Ninja</h3><p class="game-meta">Arcade / Reflex / Slice</p></div>
 					<div class="mini-preview mini-preview--fruit" aria-hidden="true"></div>
+					<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+				</a>
+				<a class="game-link" href="drift-boss.html" target="_self" data-categories="arcade driving reflex">
+					<span class="game-number">15</span>
+					<div><h3 class="game-title">Drift Boss</h3><p class="game-meta">Arcade / Driving / Reflex</p></div>
+					<div class="mini-preview mini-preview--drift" aria-hidden="true"></div>
+					<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+				</a>
+				<a class="game-link" href="subway-surfers.html" target="_self" data-categories="arcade runner reflex">
+					<span class="game-number">16</span>
+					<div><h3 class="game-title">Subway Surfers</h3><p class="game-meta">Arcade / Endless runner / Reflex</p></div>
+					<div class="mini-preview mini-preview--subway" aria-hidden="true"></div>
 					<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
 				</a>
 			</div>

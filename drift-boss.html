@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#f3f1e8">
+	<link rel="stylesheet" href="economy.css">
+	<title>Drift Boss | Rocky Games</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: #202522; background: #f3f1e8 radial-gradient(#20252218 0.7px, transparent 0.7px) 0 0 / 8px 8px; font-family: 'DM Mono', monospace; }
+		a { color: inherit; }
+		.site-header { display: flex; align-items: center; justify-content: space-between; min-height: 68px; padding: 0 max(20px, calc((100vw - 1120px) / 2)); border-bottom: 2px solid #202522; background: #f3f1e8; }
+		.brand { display: flex; align-items: center; gap: 9px; font: 900 22px/1 'Barlow Condensed', Impact, sans-serif; text-decoration: none; text-transform: uppercase; }
+		.brand-mark { display: grid; width: 30px; aspect-ratio: 1; place-items: center; border: 2px solid #202522; background: #d9f06b; font: 500 15px 'DM Mono', monospace; }
+		.home-link { font-size: 10px; text-transform: uppercase; text-underline-offset: 4px; }
+		main { width: min(100% - 40px, 1120px); margin: 0 auto; }
+		.page-heading { padding: 38px 0 20px; }
+		.kicker { margin: 0 0 6px; color: #52645b; font-size: 10px; text-transform: uppercase; }
+		h1 { margin: 0; font: 900 clamp(48px, 8vw, 84px)/0.9 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
+		.game-wrap { width: 100%; height: min(76vh, 760px); min-height: 420px; border: 2px solid #202522; background: #202522; box-shadow: 7px 7px 0 #202522; }
+		.game-frame { display: block; width: 100%; height: 100%; border: 0; background: #202522; }
+		footer { display: flex; justify-content: space-between; gap: 16px; width: min(100% - 40px, 1120px); margin: 32px auto 0; padding: 14px 0 22px; border-top: 1px solid #20252266; color: #52645b; font-size: 9px; text-transform: uppercase; }
+		@media (max-width: 600px) {
+			.site-header { min-height: 60px; padding: 0 14px; }
+			main, footer { width: calc(100% - 28px); }
+			.page-heading { padding-top: 28px; }
+			.game-wrap { height: 76vh; min-height: 380px; box-shadow: 4px 4px 0 #202522; }
+		}
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a class="brand" href="index.html" aria-label="Rocky Games home"><span class="brand-mark" aria-hidden="true">R</span> Rocky Games</a>
+		<a class="home-link" href="index.html">← Arcade home</a>
+	</header>
+	<main>
+		<section class="page-heading" aria-labelledby="page-title">
+			<p class="kicker">Arcade / Driving</p>
+			<h1 id="page-title">Drift Boss</h1>
+		</section>
+		<div class="game-wrap">
+			<iframe class="game-frame" title="Drift Boss game" src="https://tunnle-rush-2025.github.io/projects/drift-boss/index.html" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-presentation" allow="autoplay; fullscreen; gamepad; accelerometer; gyroscope; pointer-lock" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+		</div>
+	</main>
+	<footer><span>Rocky Games</span><span>Drift Boss</span></footer>
+	<script src="economy.js" defer></script>
+</body>
+</html>
