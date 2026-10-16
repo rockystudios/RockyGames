@@ -1,0 +1,44 @@
+#rocky-economy-toolbar {
+	position: fixed;
+	z-index: 30;
+	bottom: 12px;
+	left: 12px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	border: 2px solid #202522;
+	background: #f3f1e8;
+	box-shadow: 3px 3px 0 #202522;
+	color: #202522;
+	font: 10px/1.2 'DM Mono', monospace;
+}
+
+#rocky-economy-toolbar a {
+	padding: 6px 8px;
+	border: 1px solid #20252266;
+	color: inherit;
+	text-decoration: none;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+#rocky-economy-toolbar a:hover,
+#rocky-economy-toolbar a:focus-visible {
+	border-color: #202522;
+	background: #d9f06b;
+}
+
+#rocky-economy-toolbar a:focus-visible {
+	outline: 2px solid #f36b45;
+	outline-offset: 2px;
+}
+
+#rocky-economy-balance { white-space: nowrap; }
+#rocky-economy-status { position: absolute; bottom: calc(100% + 8px); left: 0; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 8px 10px; border: 1px solid #202522; background: #f3f1e8; box-shadow: 2px 2px 0 #202522; }
+#rocky-economy-status:empty { display: none; }
+
+@media (max-width: 520px) {
+	#rocky-economy-toolbar { right: 8px; bottom: 8px; left: 8px; justify-content: space-between; gap: 4px; padding: 6px; font-size: 9px; }
+	#rocky-economy-toolbar a { padding: 6px 5px; }
+}
