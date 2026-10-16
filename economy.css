@@ -53,9 +53,13 @@
 .login-reminder h2 { margin: 0; font: 900 clamp(34px, 8vw, 48px)/0.95 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
 .login-reminder kbd { padding: 3px 6px; border: 1px solid #20252266; background: #fffdf6; font: inherit; white-space: nowrap; }
 .login-reminder > p:not(.login-reminder-kicker) { margin: 14px 0 18px; }
+.login-reminder-choice { display: flex; align-items: center; gap: 9px; margin: 0 0 16px; font-size: 10px; cursor: pointer; }
+.login-reminder-choice input { width: 18px; height: 18px; accent-color: #202522; }
+.login-reminder-error { margin: 0 0 10px; color: #a83220; font-size: 10px; }
+.login-reminder-error:empty { display: none; }
 .login-reminder-button { min-height: 42px; padding: 8px 18px; border: 2px solid #202522; background: #d9f06b; color: #202522; font: 800 20px/1 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; cursor: pointer; }
 .login-reminder-button:hover { background: white; }
-.login-reminder-button:focus-visible { outline: 3px solid #f36b45; outline-offset: 3px; }
+.login-reminder-button:focus-visible, .login-reminder-choice input:focus-visible { outline: 3px solid #f36b45; outline-offset: 3px; }
 
 [data-game-fullscreen] { position: relative; }
 
