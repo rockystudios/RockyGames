@@ -131,11 +131,19 @@
 		.mini-preview--whack::before { top: 22%; left: 46%; color: var(--orange); content: '★'; font: 36px var(--mono); }
 		.mini-preview--gridlock { background-color: var(--paper); background-image: linear-gradient(90deg, transparent 32%, var(--ink) 32% 33%, transparent 33% 66%, var(--ink) 66% 67%, transparent 67%), linear-gradient(transparent 32%, var(--ink) 32% 33%, transparent 33% 66%, var(--ink) 66% 67%, transparent 67%); }
 		.mini-preview--gridlock::before { inset: 0; display: grid; place-items: center; color: var(--orange); content: 'X'; font: 800 42px var(--display); }
+		.mini-preview--study { background: #dce8f3; }
+		.mini-preview--study::before { top: 16px; left: 50%; width: 58px; height: 80px; border: 2px solid var(--ink); background: var(--lime); clip-path: polygon(26% 0, 72% 4%, 84% 18%, 76% 33%, 83% 48%, 68% 61%, 72% 77%, 52% 100%, 35% 79%, 28% 58%, 20% 35%); transform: translateX(-50%); }
 		.mini-preview--moto { background: linear-gradient(160deg, #55b9cc 0 54%, #d9f06b 54% 58%, #a8cf98 58%); }
 		.preview-bike { position: absolute; z-index: 1; top: 54%; left: 50%; width: 58px; height: 22px; border-bottom: 4px solid var(--orange); transform: translate(-50%, -50%) rotate(-18deg); }
 		.preview-bike::before, .preview-bike::after { position: absolute; bottom: -11px; width: 16px; aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
 		.preview-bike::before { left: 0; }
 		.preview-bike::after { right: 0; }
+		.mini-preview--sprint { background: linear-gradient(#55b9cc 0 42%, #202522 43%); }
+		.mini-preview--sprint::before { inset: 25px 30% -12px; background: repeating-linear-gradient(transparent 0 15px, #d9f06b 15px 18px, transparent 18px 32px); clip-path: polygon(34% 0, 66% 0, 100% 100%, 0 100%); }
+		.mini-preview--sprint::after { top: 62%; left: 50%; width: 18px; height: 24px; border: 2px solid var(--ink); background: var(--orange); transform: translateX(-50%); }
+		.mini-preview--maze { background: #a8cf98; perspective: 200px; }
+		.mini-preview--maze::before { inset: 15px 48px; border: 2px solid var(--ink); background-color: #55b9cc; background-image: linear-gradient(90deg, transparent 46%, var(--ink) 47% 54%, transparent 55%), linear-gradient(transparent 46%, var(--ink) 47% 54%, transparent 55%); background-size: 24px 24px; transform: rotateX(35deg) rotateZ(-5deg); }
+		.mini-preview--maze::after { top: 49%; left: 49%; width: 15px; aspect-ratio: 1; border: 2px solid var(--ink); border-radius: 50%; background: var(--orange); }
 
 		.game-link {
 			display: grid;
@@ -283,7 +291,7 @@
 		<section aria-labelledby="catalog-title">
 			<div class="catalog-heading">
 				<h2 id="catalog-title">The arcade</h2>
-				<span class="catalog-count">07 games</span>
+				<span class="catalog-count">10 games</span>
 			</div>
 			<a class="game-link" href="lane-runner.html">
 				<span class="game-number">01</span>
@@ -324,10 +332,28 @@
 				<div class="mini-preview mini-preview--gridlock" aria-hidden="true"></div>
 				<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
 			</a>
-			<a class="game-link" href="moto-x3m.html">
+			<a class="game-link" href="mini-games.html?game=study">
 				<span class="game-number">07</span>
+				<div><h3 class="game-title">Study</h3><p class="game-meta">Geography / State shapes / Mouse + keyboard</p></div>
+				<div class="mini-preview mini-preview--study" aria-hidden="true"></div>
+				<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+			</a>
+			<a class="game-link" href="moto-x3m.html">
+				<span class="game-number">08</span>
 				<div><h3 class="game-title">Moto X3M</h3><p class="game-meta">Arcade / Motorbike / Stunts + obstacles</p></div>
 				<div class="mini-preview mini-preview--moto" aria-hidden="true"><span class="preview-bike"></span></div>
+				<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+			</a>
+			<a class="game-link" href="arcade-3d.html?game=sprint">
+				<span class="game-number">09</span>
+				<div><h3 class="game-title">Neon Sprint</h3><p class="game-meta">3D / Arcade / Reflex</p></div>
+				<div class="mini-preview mini-preview--sprint" aria-hidden="true"></div>
+				<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+			</a>
+			<a class="game-link" href="arcade-3d.html?game=maze">
+				<span class="game-number">10</span>
+				<div><h3 class="game-title">Marble Maze</h3><p class="game-meta">3D / Physics / Puzzle</p></div>
+				<div class="mini-preview mini-preview--maze" aria-hidden="true"></div>
 				<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
 			</a>
 		</section>

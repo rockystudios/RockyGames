@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#15212b">
+	<title>3D Arcade | Rocky Games</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+
+		:root {
+			color-scheme: dark;
+			--ink: #f3f1e8;
+			--panel: #17242ddd;
+			--lime: #d9f06b;
+			--orange: #f36b45;
+			--blue: #55b9cc;
+			--mono: 'DM Mono', monospace;
+			--display: 'Barlow Condensed', Impact, sans-serif;
+		}
+
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; overflow: hidden; color: var(--ink); background: #15212b; font-family: var(--mono); }
+		a { color: inherit; }
+		canvas { position: fixed; inset: 0; z-index: 0; display: block; width: 100%; height: 100%; touch-action: none; }
+
+		.hud {
+			position: fixed;
+			z-index: 2;
+			top: 0;
+			left: 0;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 20px;
+			width: 100%;
+			min-height: 76px;
+			padding: 12px clamp(16px, 4vw, 48px);
+			background: linear-gradient(#101a22e8, #101a2288 72%, transparent);
+		}
+
+		.brand { display: flex; align-items: center; gap: 9px; font: 900 22px/1 var(--display); text-decoration: none; text-transform: uppercase; white-space: nowrap; }
+		.brand-mark { display: grid; width: 30px; aspect-ratio: 1; place-items: center; border: 2px solid var(--ink); background: var(--lime); color: #202522; font: 500 15px var(--mono); }
+		.mode-nav { display: flex; align-items: center; gap: 6px; }
+		.mode-nav a { padding: 9px 12px; border: 1px solid #f3f1e866; font-size: 9px; text-decoration: none; text-transform: uppercase; }
+		.mode-nav a:hover, .mode-nav a[aria-current="page"] { border-color: var(--lime); background: #d9f06b22; color: var(--lime); }
+		.scoreboard { display: flex; gap: clamp(12px, 3vw, 30px); }
+		.stat { display: grid; gap: 3px; text-align: right; }
+		.stat-label { color: #c5d0ce; font-size: 8px; text-transform: uppercase; }
+		.stat-value { min-width: 44px; font-size: 16px; font-variant-numeric: tabular-nums; }
+
+		.overlay {
+			position: fixed;
+			z-index: 3;
+			inset: 0;
+			display: grid;
+			align-content: center;
+			justify-items: center;
+			padding: 24px;
+			background: #101a2270;
+			text-align: center;
+		}
+		.overlay[hidden] { display: none; }
+		.overlay-content { width: min(100%, 520px); padding: 24px; background: var(--panel); border: 1px solid #f3f1e855; box-shadow: 8px 8px 0 #101a22aa; }
+		.overlay-kicker { margin: 0 0 8px; color: var(--lime); font-size: 10px; text-transform: uppercase; }
+		.overlay h1 { margin: 0; font: 900 clamp(52px, 10vw, 92px)/0.86 var(--display); text-transform: uppercase; }
+		.overlay-copy { max-width: 360px; margin: 16px auto 20px; color: #d3dcd8; font-size: 11px; line-height: 1.7; }
+		.action-button { min-height: 44px; padding: 10px 20px; border: 2px solid var(--ink); background: var(--lime); color: #202522; font: 800 20px/1 var(--display); text-transform: uppercase; cursor: pointer; }
+		.action-button:hover { background: white; }
+		.action-button:focus-visible, .dpad button:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+
+		.instructions { position: fixed; z-index: 2; bottom: 20px; left: 50%; width: max-content; max-width: calc(100% - 32px); padding: 10px 14px; border: 1px solid #f3f1e855; background: var(--panel); color: #d3dcd8; font-size: 9px; text-align: center; text-transform: uppercase; transform: translateX(-50%); }
+		.dpad { position: fixed; z-index: 2; right: 18px; bottom: 18px; display: none; grid-template: repeat(2, 42px) / repeat(3, 46px); gap: 5px; }
+		.dpad button { border: 1px solid var(--ink); background: #17242de8; color: var(--lime); font: 20px var(--mono); touch-action: none; }
+		.dpad [data-dir="up"] { grid-area: 1 / 2; }
+		.dpad [data-dir="left"] { grid-area: 2 / 1; }
+		.dpad [data-dir="down"] { grid-area: 2 / 2; }
+		.dpad [data-dir="right"] { grid-area: 2 / 3; }
+		body[data-game="sprint"] .dpad [data-dir="up"], body[data-game="sprint"] .dpad [data-dir="down"] { visibility: hidden; pointer-events: none; }
+
+		@media (max-width: 760px) {
+			.hud { min-height: 64px; flex-wrap: wrap; gap: 8px 12px; padding: 10px 14px; }
+			.brand { font-size: 19px; }
+			.brand-mark { width: 26px; }
+			.mode-nav { order: 3; width: 100%; justify-content: center; }
+			.mode-nav a { flex: 1; padding: 8px 5px; text-align: center; }
+			.scoreboard { margin-left: auto; }
+			.stat-value { font-size: 14px; }
+			.instructions { bottom: 12px; left: 12px; width: auto; max-width: calc(100% - 168px); transform: none; }
+			.dpad { right: 12px; bottom: 12px; display: grid; }
+			.overlay-content { padding: 20px 14px; }
+		}
+
+		@media (max-width: 380px) {
+			.brand { font-size: 17px; }
+			.mode-nav a { font-size: 8px; }
+			.instructions { max-width: calc(100% - 156px); font-size: 8px; }
+			.dpad { right: 8px; bottom: 10px; grid-template: repeat(2, 36px) / repeat(3, 38px); gap: 4px; }
+		}
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+	</style>
+</head>
+<body data-game="sprint">
+	<header class="hud">
+		<a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">R</span> Rocky Games</a>
+		<nav class="mode-nav" aria-label="3D games">
+			<a href="?game=sprint" data-mode="sprint">Neon Sprint</a>
+			<a href="?game=maze" data-mode="maze">Marble Maze</a>
+		</nav>
+		<div class="scoreboard" aria-live="polite">
+			<div class="stat"><span class="stat-label" id="scoreLabel">Score</span><span class="stat-value" id="score">00000</span></div>
+			<div class="stat"><span class="stat-label">Best</span><span class="stat-value" id="best">00000</span></div>
+		</div>
+	</header>
+
+	<div class="overlay" id="overlay">
+		<div class="overlay-content">
+			<p class="overlay-kicker">Rocky Games / 3D arcade</p>
+			<h1 id="overlayTitle">Neon Sprint</h1>
+			<p class="overlay-copy" id="overlayCopy">Switch lanes, dodge the blocks, and see how long you can keep your speed.</p>
+			<button class="action-button" id="startButton" type="button">Start game</button>
+		</div>
+	</div>
+
+	<div class="instructions" id="instructions">← → or A / D to switch lanes</div>
+	<div class="dpad" aria-label="Touch controls">
+		<button type="button" data-dir="up" aria-label="Tilt up">↑</button>
+		<button type="button" data-dir="left" aria-label="Move left">←</button>
+		<button type="button" data-dir="down" aria-label="Tilt down">↓</button>
+		<button type="button" data-dir="right" aria-label="Move right">→</button>
+	</div>
+
+	<script type="module">
+		import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+		import * as CANNON from 'https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js';
+
+		(() => {
+			const parameters = new URLSearchParams(location.search);
+			const mode = parameters.get('game') === 'maze' ? 'maze' : 'sprint';
+			const isMaze = mode === 'maze';
+			const settings = isMaze
+				? { title: 'Marble Maze', copy: 'Guide the marble through a new maze. Reach the glowing exit as fast as you can.', instruction: 'Arrow keys or WASD to tilt the maze' }
+				: { title: 'Neon Sprint', copy: 'Switch lanes, dodge the blocks, and see how long you can keep your speed.', instruction: '← → or A / D to switch lanes' };
+			const scoreLabel = document.querySelector('#scoreLabel');
+			const scoreOutput = document.querySelector('#score');
+			const bestOutput = document.querySelector('#best');
+			const overlay = document.querySelector('#overlay');
+			const overlayTitle = document.querySelector('#overlayTitle');
+			const overlayCopy = document.querySelector('#overlayCopy');
+			const startButton = document.querySelector('#startButton');
+			const instructions = document.querySelector('#instructions');
+			const held = new Set();
+			let running = false;
+			let elapsed = 0;
+			let score = 0;
+			let best = Number(localStorage.getItem(`rocky3d-${mode}-best`) || 0);
+			let renderer;
+
+			document.body.dataset.game = mode;
+			document.title = `${settings.title} | Rocky Games`;
+			scoreLabel.textContent = isMaze ? 'Time' : 'Score';
+			bestOutput.textContent = isMaze && best ? `${best.toFixed(1)}s` : String(best).padStart(5, '0');
+			instructions.textContent = settings.instruction;
+			document.querySelectorAll('[data-mode]').forEach((link) => {
+				if (link.dataset.mode === mode) link.setAttribute('aria-current', 'page');
+			});
+			overlayTitle.textContent = settings.title;
+			overlayCopy.textContent = settings.copy;
+
+			const scene = new THREE.Scene();
+			const clearColor = isMaze ? 0x98c9c3 : 0x15212b;
+			scene.background = new THREE.Color(clearColor);
+			scene.fog = new THREE.Fog(clearColor, isMaze ? 30 : 38, isMaze ? 58 : 150);
+			const camera = new THREE.PerspectiveCamera(52, innerWidth / innerHeight, 0.1, 220);
+			const clock = new THREE.Clock();
+			const ambient = new THREE.HemisphereLight(0xe7f5ee, isMaze ? 0x526255 : 0x24323a, 2.2);
+			scene.add(ambient);
+			const keyLight = new THREE.DirectionalLight(0xfff3d4, 3.1);
+			keyLight.position.set(-8, 18, 9);
+			scene.add(keyLight);
+
+			try {
+				renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+			} catch (error) {
+				overlayTitle.textContent = '3D unavailable';
+				overlayCopy.textContent = 'This browser could not start WebGL. Try a browser with hardware acceleration enabled.';
+				startButton.hidden = true;
+				return;
+			}
+
+			renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+			renderer.setSize(innerWidth, innerHeight);
+			renderer.outputColorSpace = THREE.SRGBColorSpace;
+			document.body.prepend(renderer.domElement);
+
+			let updateGame;
+			let resetGame;
+			let sprintState;
+			let mazeState;
+
+			function material(color, extra = {}) {
+				return new THREE.MeshStandardMaterial({ color, roughness: 0.72, metalness: 0.08, ...extra });
+			}
+
+			function box(parent, dimensions, position, mat) {
+				const mesh = new THREE.Mesh(new THREE.BoxGeometry(...dimensions), mat);
+				mesh.position.set(...position);
+				mesh.castShadow = true;
+				mesh.receiveShadow = true;
+				parent.add(mesh);
+				return mesh;
+			}
+
+			function setupSprint() {
+				camera.position.set(0, 8.5, 13);
+				camera.lookAt(0, 1.2, -16);
+				const grass = material(0x577657);
+				const roadMat = material(0x28333a, { roughness: 0.9 });
+				const lineMat = material(0xd9f06b, { emissive: 0x394811, emissiveIntensity: 0.25 });
+				const road = new THREE.Mesh(new THREE.PlaneGeometry(12, 160), roadMat);
+				road.rotation.x = -Math.PI / 2;
+				road.position.set(0, 0, -30);
+				scene.add(road);
+				const field = new THREE.Mesh(new THREE.PlaneGeometry(260, 220), grass);
+				field.rotation.x = -Math.PI / 2;
+				field.position.set(0, -0.12, -30);
+				scene.add(field);
+
+				for (const x of [-5.8, 5.8]) box(scene, [0.18, 0.13, 160], [x, 0.08, -30], material(0xf36b45, { emissive: 0x421408 }));
+				const dashes = [];
+				for (const x of [-2, 2]) {
+					for (let z = -110; z <= 30; z += 10) dashes.push(box(scene, [0.08, 0.035, 3.2], [x, 0.025, z], lineMat));
+				}
+				const scenery = [];
+				for (let z = -105; z <= 20; z += 9) {
+					for (const side of [-1, 1]) {
+						const post = box(scene, [0.35, 0.7 + Math.random() * 0.9, 0.35], [side * (8 + Math.random() * 5), 0.35, z], material(side === -1 ? 0x55b9cc : 0xe5be54));
+						scenery.push(post);
+					}
+				}
+
+				const player = new THREE.Group();
+				box(player, [1.35, 0.48, 2.1], [0, 0.52, 0], material(0xd9f06b, { metalness: 0.28 }));
+				box(player, [0.9, 0.48, 0.95], [0, 0.96, -0.14], material(0x75b7c4, { metalness: 0.35, roughness: 0.3 }));
+				box(player, [1.05, 0.12, 0.16], [0, 0.7, -1.04], material(0xf36b45, { emissive: 0x5c1408 }));
+				const tireMat = material(0x151b1d, { roughness: 0.98 });
+				for (const x of [-0.72, 0.72]) {
+					for (const z of [-0.64, 0.66]) {
+						const tire = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.16, 16), tireMat);
+						tire.rotation.z = Math.PI / 2;
+						tire.position.set(x, 0.3, z);
+						player.add(tire);
+					}
+				}
+				player.position.set(0, 0, 4.5);
+				scene.add(player);
+
+				const lanes = [-3.6, 0, 3.6];
+				const obstacles = [];
+				let targetLane = 1;
+				let spawnTimer = 1;
+				let gameSpeed = 19;
+
+				function spawnObstacle() {
+					const available = [0, 1, 2].filter((lane) => !obstacles.some((obstacle) => obstacle.userData.lane === lane && obstacle.position.z < -42));
+					if (!available.length) return;
+					const lane = available[Math.floor(Math.random() * available.length)];
+					const obstacle = new THREE.Group();
+					box(obstacle, [1.55, 1.3, 1.5], [0, 0.72, 0], material(0xf36b45, { emissive: 0x461408, metalness: 0.12 }));
+					box(obstacle, [1.63, 0.12, 1.56], [0, 1.39, 0], material(0xe5be54));
+					obstacle.position.set(lanes[lane], 0, -88);
+					obstacle.userData.lane = lane;
+					scene.add(obstacle);
+					obstacles.push(obstacle);
+				}
+
+				sprintState = { player, lanes, obstacles, dashes, scenery, targetLane, spawnTimer, gameSpeed };
+				resetGame = () => {
+					sprintState.obstacles.forEach((obstacle) => scene.remove(obstacle));
+					sprintState.obstacles.length = 0;
+					sprintState.targetLane = 1;
+					sprintState.player.position.x = 0;
+					sprintState.player.rotation.z = 0;
+					sprintState.spawnTimer = 0.7;
+					sprintState.gameSpeed = 19;
+				};
+				updateGame = (delta) => {
+					const state = sprintState;
+					state.gameSpeed = 19 + Math.min(elapsed * 0.28, 10);
+					const desiredX = state.lanes[state.targetLane];
+					state.player.position.x = THREE.MathUtils.damp(state.player.position.x, desiredX, 10, delta);
+					state.player.rotation.z = (desiredX - state.player.position.x) * -0.035;
+					for (const dash of state.dashes) {
+						dash.position.z += state.gameSpeed * delta;
+						if (dash.position.z > 16) dash.position.z -= 140;
+					}
+					for (const post of state.scenery) {
+						post.position.z += state.gameSpeed * delta;
+						if (post.position.z > 18) post.position.z -= 135;
+					}
+					state.spawnTimer -= delta;
+					if (state.spawnTimer <= 0) {
+						spawnObstacle();
+						state.spawnTimer = Math.max(0.68, 1.12 - elapsed * 0.005) + Math.random() * 0.22;
+					}
+					for (let index = state.obstacles.length - 1; index >= 0; index--) {
+						const obstacle = state.obstacles[index];
+						obstacle.position.z += state.gameSpeed * delta;
+						if (Math.abs(obstacle.position.z - state.player.position.z) < 1.55 && Math.abs(obstacle.position.x - state.player.position.x) < 1.35) {
+							endGame();
+							return;
+						}
+						if (obstacle.position.z > 16) {
+							scene.remove(obstacle);
+							state.obstacles.splice(index, 1);
+						}
+					}
+					score = Math.floor(elapsed * 10);
+					scoreOutput.textContent = String(score).padStart(5, '0');
+				};
+			}
+
+			function generateMaze(size) {
+				const cells = Array.from({ length: size }, () => Array.from({ length: size }, () => ({ visited: false, north: true, east: true, south: true, west: true })));
+				const directions = [
+					{ dx: 0, dz: -1, wall: 'north', opposite: 'south' },
+					{ dx: 1, dz: 0, wall: 'east', opposite: 'west' },
+					{ dx: 0, dz: 1, wall: 'south', opposite: 'north' },
+					{ dx: -1, dz: 0, wall: 'west', opposite: 'east' }
+				];
+				const stack = [[0, 0]];
+				cells[0][0].visited = true;
+				while (stack.length) {
+					const [x, z] = stack[stack.length - 1];
+					const options = directions.filter((direction) => {
+						const nextX = x + direction.dx;
+						const nextZ = z + direction.dz;
+						return nextX >= 0 && nextX < size && nextZ >= 0 && nextZ < size && !cells[nextZ][nextX].visited;
+					});
+					if (!options.length) { stack.pop(); continue; }
+					const direction = options[Math.floor(Math.random() * options.length)];
+					const nextX = x + direction.dx;
+					const nextZ = z + direction.dz;
+					cells[z][x][direction.wall] = false;
+					cells[nextZ][nextX][direction.opposite] = false;
+					cells[nextZ][nextX].visited = true;
+					stack.push([nextX, nextZ]);
+				}
+				return cells;
+			}
+
+			function setupMaze() {
+				camera.position.set(17, 20, 19);
+				camera.lookAt(0, 0, 0);
+				const world = new CANNON.World({ gravity: new CANNON.Vec3(0, -9.82, 0) });
+				world.allowSleep = true;
+				world.defaultContactMaterial.friction = 0.18;
+				world.defaultContactMaterial.restitution = 0.05;
+				const marbleMaterial = new CANNON.Material('marble');
+				const boardMaterial = new CANNON.Material('board');
+				const contact = new CANNON.ContactMaterial(marbleMaterial, boardMaterial, { friction: 0.12, restitution: 0.08 });
+				world.addContactMaterial(contact);
+				const mazeGroup = new THREE.Group();
+				scene.add(mazeGroup);
+				const size = 7;
+				const cellSize = 2;
+				const boardSize = 16;
+				const half = boardSize / 2;
+				const wallHeight = 1.15;
+				const wallThickness = 0.22;
+				const maze = generateMaze(size);
+
+				const slab = box(mazeGroup, [boardSize, 0.8, boardSize], [0, -0.42, 0], material(0x304844, { roughness: 0.88 }));
+				const floorBody = new CANNON.Body({ mass: 0, material: boardMaterial, position: new CANNON.Vec3(0, -0.4, 0), shape: new CANNON.Box(new CANNON.Vec3(half, 0.4, half)) });
+				world.addBody(floorBody);
+				for (let row = 0; row < size; row++) {
+					for (let column = 0; column < size; column++) {
+						const x = (column - (size - 1) / 2) * cellSize;
+						const z = (row - (size - 1) / 2) * cellSize;
+						box(mazeGroup, [1.86, 0.025, 1.86], [x, 0.005, z], material((row + column) % 2 ? 0x54716a : 0x5f8178, { roughness: 0.84 }));
+					}
+				}
+
+				function addWall(x, z, width, depth) {
+					box(mazeGroup, [width, wallHeight, depth], [x, wallHeight / 2, z], material(0xe6a15c, { roughness: 0.53, metalness: 0.08 }));
+					const body = new CANNON.Body({ mass: 0, material: boardMaterial, position: new CANNON.Vec3(x, wallHeight / 2, z), shape: new CANNON.Box(new CANNON.Vec3(width / 2, wallHeight / 2, depth / 2)) });
+					world.addBody(body);
+				}
+
+				addWall(0, -half, boardSize, wallThickness);
+				addWall(0, half, boardSize, wallThickness);
+				addWall(-half, 0, wallThickness, boardSize);
+				addWall(half, 0, wallThickness, boardSize);
+				for (let row = 0; row < size; row++) {
+					for (let column = 0; column < size; column++) {
+						const x = (column - (size - 1) / 2) * cellSize;
+						const z = (row - (size - 1) / 2) * cellSize;
+						if (column < size - 1 && maze[row][column].east) addWall(x + cellSize / 2, z, wallThickness, cellSize + wallThickness);
+						if (row < size - 1 && maze[row][column].south) addWall(x, z + cellSize / 2, cellSize + wallThickness, wallThickness);
+					}
+				}
+
+				const startX = -((size - 1) * cellSize) / 2;
+				const startZ = startX;
+				const goalX = -startX;
+				const goalZ = -startZ;
+				const goal = new THREE.Mesh(new THREE.TorusGeometry(0.74, 0.13, 14, 48), material(0x55d3bd, { emissive: 0x15584e, emissiveIntensity: 0.65, metalness: 0.3 }));
+				goal.rotation.x = -Math.PI / 2;
+				goal.position.set(goalX, 0.05, goalZ);
+				mazeGroup.add(goal);
+				const goalLight = new THREE.PointLight(0x55d3bd, 18, 5);
+				goalLight.position.set(goalX, 1.1, goalZ);
+				mazeGroup.add(goalLight);
+
+				const marbleBody = new CANNON.Body({ mass: 1, material: marbleMaterial, shape: new CANNON.Sphere(0.38), position: new CANNON.Vec3(startX, 0.4, startZ), linearDamping: 0.42, angularDamping: 0.3 });
+				marbleBody.allowSleep = true;
+				world.addBody(marbleBody);
+				const marbleMesh = new THREE.Mesh(new THREE.SphereGeometry(0.38, 32, 24), material(0xf36b45, { metalness: 0.36, roughness: 0.24 }));
+				marbleMesh.castShadow = true;
+				scene.add(marbleMesh);
+				const marbleStripe = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.045, 8, 28), material(0xf3f1e8, { emissive: 0x34342a, emissiveIntensity: 0.25 }));
+				marbleStripe.position.z = 0.22;
+				marbleMesh.add(marbleStripe);
+
+				mazeState = { world, mazeGroup, marbleBody, marbleMesh, startX, startZ, goalX, goalZ };
+				resetGame = () => {
+					const state = mazeState;
+					state.marbleBody.position.set(state.startX, 0.4, state.startZ);
+					state.marbleBody.velocity.set(0, 0, 0);
+					state.marbleBody.angularVelocity.set(0, 0, 0);
+					state.marbleBody.quaternion.set(0, 0, 0, 1);
+					state.marbleBody.wakeUp();
+					state.mazeGroup.rotation.set(0, 0, 0);
+					state.world.gravity.set(0, -9.82, 0);
+					state.world.step(1 / 60);
+				};
+				updateGame = (delta) => {
+					const state = mazeState;
+					const right = held.has('ArrowRight') || held.has('d');
+					const left = held.has('ArrowLeft') || held.has('a');
+					const down = held.has('ArrowDown') || held.has('s');
+					const up = held.has('ArrowUp') || held.has('w');
+					const tiltX = Number(right) - Number(left);
+					const tiltZ = Number(down) - Number(up);
+					state.world.gravity.set(tiltX * 8, -9.82, tiltZ * 8);
+					state.mazeGroup.rotation.z = THREE.MathUtils.damp(state.mazeGroup.rotation.z, -tiltX * 0.055, 8, delta);
+					state.mazeGroup.rotation.x = THREE.MathUtils.damp(state.mazeGroup.rotation.x, tiltZ * 0.055, 8, delta);
+					state.world.step(1 / 60, delta, 3);
+					state.marbleMesh.position.copy(state.marbleBody.position);
+					state.marbleMesh.quaternion.copy(state.marbleBody.quaternion);
+					if (Math.hypot(state.marbleBody.position.x - state.goalX, state.marbleBody.position.z - state.goalZ) < 0.72) {
+						endGame();
+						return;
+					}
+					score = elapsed;
+					scoreOutput.textContent = `${elapsed.toFixed(1)}s`;
+				};
+			}
+
+			function formatBest(value) { return isMaze && value ? `${value.toFixed(1)}s` : String(value).padStart(5, '0'); }
+
+			function endGame() {
+				running = false;
+				const storedBest = Number(localStorage.getItem(`rocky3d-${mode}-best`) || 0);
+				const isNewBest = isMaze ? !storedBest || elapsed < storedBest : score > storedBest;
+				if (isNewBest) {
+					best = isMaze ? elapsed : score;
+					localStorage.setItem(`rocky3d-${mode}-best`, String(best));
+					bestOutput.textContent = formatBest(best);
+				}
+				overlayTitle.textContent = isMaze ? 'Maze clear!' : 'Wipeout!';
+				overlayCopy.textContent = isMaze ? `Finished in ${elapsed.toFixed(1)} seconds. Find another route?` : `You scored ${String(score).padStart(5, '0')}. Ready for another run?`;
+				startButton.textContent = 'Play again';
+				overlay.hidden = false;
+			}
+
+			function startGame() {
+				if (resetGame) resetGame();
+				held.clear();
+				elapsed = 0;
+				score = 0;
+				best = Number(localStorage.getItem(`rocky3d-${mode}-best`) || 0);
+				bestOutput.textContent = formatBest(best);
+				scoreOutput.textContent = isMaze ? '0.0s' : '00000';
+				startButton.textContent = 'Restart';
+				overlay.hidden = true;
+				running = true;
+			}
+
+			const changeSprintLane = (direction) => {
+				if (running && !isMaze && sprintState) sprintState.targetLane = Math.max(0, Math.min(2, sprintState.targetLane + direction));
+			};
+
+			if (isMaze) setupMaze();
+			else setupSprint();
+
+			startButton.addEventListener('click', startGame);
+			document.addEventListener('keydown', (event) => {
+				const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+				if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(key)) event.preventDefault();
+				if ((key === 'Enter' || key === ' ') && !running) { startGame(); return; }
+				if (isMaze) held.add(key);
+				else if (key === 'ArrowLeft' || key === 'a') changeSprintLane(-1);
+				else if (key === 'ArrowRight' || key === 'd') changeSprintLane(1);
+			});
+			document.addEventListener('keyup', (event) => held.delete(event.key.length === 1 ? event.key.toLowerCase() : event.key));
+			window.addEventListener('blur', () => held.clear());
+
+			document.querySelectorAll('[data-dir]').forEach((button) => {
+				button.addEventListener('pointerdown', (event) => {
+					event.preventDefault();
+					button.setPointerCapture(event.pointerId);
+					const direction = button.dataset.dir;
+					if (isMaze) held.add(({ up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' })[direction]);
+					else if (direction === 'left') changeSprintLane(-1);
+					else if (direction === 'right') changeSprintLane(1);
+				});
+				const release = () => {
+					const direction = button.dataset.dir;
+					if (isMaze) held.delete(({ up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' })[direction]);
+				};
+				button.addEventListener('pointerup', release);
+				button.addEventListener('pointercancel', release);
+				button.addEventListener('lostpointercapture', release);
+			});
+
+			window.addEventListener('resize', () => {
+				camera.aspect = innerWidth / innerHeight;
+				camera.updateProjectionMatrix();
+				renderer.setSize(innerWidth, innerHeight);
+				renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.75));
+			});
+
+			function animate() {
+				requestAnimationFrame(animate);
+				const delta = Math.min(clock.getDelta(), 0.05);
+				if (running) {
+					elapsed += delta;
+					updateGame(delta);
+				}
+				renderer.render(scene, camera);
+			}
+
+			animate();
+		})();
+	</script>
+</body>
+</html>
