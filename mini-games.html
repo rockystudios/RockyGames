@@ -1,0 +1,547 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#f3f1e8">
+	<title>Mini Games | Rocky Games</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+
+		:root {
+			color-scheme: light;
+			--ink: #202522;
+			--paper: #f3f1e8;
+			--lime: #d9f06b;
+			--orange: #f36b45;
+			--blue: #55b9cc;
+			--mono: 'DM Mono', monospace;
+			--display: 'Barlow Condensed', Impact, sans-serif;
+		}
+
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper) radial-gradient(#20252218 0.7px, transparent 0.7px) 0 0 / 8px 8px; font-family: var(--mono); }
+		a { color: inherit; }
+		.site-header { display: flex; align-items: center; justify-content: space-between; min-height: 68px; padding: 0 max(20px, calc((100vw - 980px) / 2)); border-bottom: 2px solid var(--ink); background: var(--paper); }
+		.brand { display: flex; align-items: center; gap: 9px; font: 900 22px/1 var(--display); text-decoration: none; text-transform: uppercase; }
+		.brand-mark { display: grid; width: 30px; aspect-ratio: 1; place-items: center; border: 2px solid var(--ink); background: var(--lime); font: 500 15px var(--mono); }
+		.home-link { font-size: 10px; text-transform: uppercase; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+		main { width: min(100% - 40px, 920px); margin: 0 auto; }
+		.page-heading { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding: 38px 0 20px; }
+		.kicker { margin: 0 0 6px; color: #52645b; font-size: 10px; text-transform: uppercase; }
+		h1 { margin: 0; font: 900 clamp(42px, 8vw, 72px)/0.9 var(--display); text-transform: uppercase; }
+		.game-nav { display: flex; flex-wrap: wrap; gap: 7px; padding: 14px 0; border-top: 2px solid var(--ink); border-bottom: 1px solid #20252266; }
+		.game-nav a { padding: 8px 10px; border: 1px solid #20252266; font-size: 9px; text-decoration: none; text-transform: uppercase; }
+		.game-nav a:hover, .game-nav a[aria-current="page"] { background: var(--lime); border-color: var(--ink); }
+		.game-shell { margin-top: 18px; border: 2px solid var(--ink); background: var(--paper); box-shadow: 6px 6px 0 var(--ink); }
+		.game-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 58px; padding: 10px 16px; border-bottom: 2px solid var(--ink); }
+		#gameTitle { margin: 0; font: 800 24px/1 var(--display); text-transform: uppercase; }
+		.stats { display: flex; gap: 20px; }
+		.stat { display: grid; gap: 2px; text-align: right; }
+		.stat-label { color: #52645b; font-size: 8px; text-transform: uppercase; }
+		.stat-value { font-size: 15px; font-variant-numeric: tabular-nums; }
+		.stage { position: relative; background: #dce8d0; }
+		canvas { display: block; width: 100%; aspect-ratio: 3 / 2; touch-action: none; }
+		.overlay { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; padding: 20px; color: white; background: #202522bd; text-align: center; }
+		.overlay[hidden] { display: none; }
+		.overlay h2 { margin: 0; font: 900 clamp(42px, 9vw, 76px)/0.9 var(--display); text-transform: uppercase; }
+		.overlay p { max-width: 330px; margin: 12px 0 0; font-size: 11px; line-height: 1.7; }
+		.game-controls { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 58px; padding: 10px 16px; border-top: 2px solid var(--ink); }
+		#status { margin: 0; color: #52645b; font-size: 10px; line-height: 1.6; }
+		.action-button { min-height: 38px; padding: 7px 13px; border: 2px solid var(--ink); background: var(--lime); font: 800 17px/1 var(--display); text-transform: uppercase; cursor: pointer; }
+		.action-button:hover { background: white; }
+		.action-button:focus-visible, .dpad button:focus-visible, .game-nav a:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+		.dpad { display: none; grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(2, 38px); gap: 4px; margin: 12px auto 4px; }
+		.dpad button { border: 1px solid var(--ink); background: var(--lime); font: 18px var(--mono); touch-action: manipulation; }
+		.dpad [data-dir="up"] { grid-column: 2; }
+		.dpad [data-dir="left"] { grid-column: 1; grid-row: 2; }
+		.dpad [data-dir="down"] { grid-column: 2; grid-row: 2; }
+		.dpad [data-dir="right"] { grid-column: 3; grid-row: 2; }
+		body[data-game="snake"] .dpad { display: grid; }
+		footer { display: flex; justify-content: space-between; gap: 16px; width: min(100% - 40px, 920px); margin: 26px auto 0; padding: 14px 0 22px; border-top: 1px solid #20252266; color: #52645b; font-size: 9px; text-transform: uppercase; }
+		@media (max-width: 600px) {
+			.site-header { min-height: 60px; }
+			main, footer { width: calc(100% - 28px); }
+			.page-heading { display: block; padding-top: 30px; }
+			.game-nav { gap: 5px; }
+			.game-nav a { padding: 7px; font-size: 8px; }
+			.game-bar, .game-controls { padding-right: 10px; padding-left: 10px; }
+			#gameTitle { font-size: 20px; }
+			.stats { gap: 10px; }
+			.stat-value { font-size: 13px; }
+			#status { max-width: 58%; font-size: 9px; }
+		}
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">R</span> Rocky Games</a>
+		<a class="home-link" href="index.html">← Arcade home</a>
+	</header>
+
+	<main>
+		<section class="page-heading" aria-labelledby="page-title">
+			<div><p class="kicker">Five quick challenges</p><h1 id="page-title">Pick a mini game.</h1></div>
+		</section>
+
+		<nav class="game-nav" aria-label="Mini games">
+			<a href="?game=snake" data-mode="snake">Snake Shift</a>
+			<a href="?game=memory" data-mode="memory">Memory Match</a>
+			<a href="?game=simon" data-mode="simon">Simon Says</a>
+			<a href="?game=whack" data-mode="whack">Star Smacker</a>
+			<a href="?game=gridlock" data-mode="gridlock">Gridlock</a>
+		</nav>
+
+		<section class="game-shell" aria-label="Mini game">
+			<header class="game-bar">
+				<h2 id="gameTitle">Snake Shift</h2>
+				<div class="stats" aria-live="polite"><div class="stat"><span class="stat-label" id="scoreLabel">Score</span><span class="stat-value" id="score">000</span></div><div class="stat"><span class="stat-label">Best</span><span class="stat-value" id="best">000</span></div></div>
+			</header>
+			<div class="stage">
+				<canvas id="board" width="720" height="480" aria-label="Game board"></canvas>
+				<div class="overlay" id="overlay"><h2 id="overlayTitle">Ready?</h2><p id="overlayCopy"></p></div>
+			</div>
+			<div class="dpad" aria-label="Snake controls">
+				<button type="button" data-dir="up" aria-label="Up">↑</button><button type="button" data-dir="left" aria-label="Left">←</button><button type="button" data-dir="down" aria-label="Down">↓</button><button type="button" data-dir="right" aria-label="Right">→</button>
+			</div>
+			<footer class="game-controls">
+				<p id="status" aria-live="polite">Choose a game and press start.</p>
+				<button class="action-button" id="startButton" type="button">Start game</button>
+			</footer>
+		</section>
+	</main>
+
+	<footer><span>Rocky Games</span><span>One more round?</span></footer>
+
+	<script>
+		(() => {
+			const W = 720;
+			const H = 480;
+			const params = new URLSearchParams(location.search);
+			const modes = {
+				snake: { title: 'Snake Shift', score: 'Score', instruction: 'Use arrows or WASD. Eat the dots, avoid the walls and your tail.', ready: 'Ready to slither?' },
+				memory: { title: 'Memory Match', score: 'Moves', instruction: 'Flip two tiles at a time. Find all eight matching pairs.', ready: 'Flip your first pair.' },
+				simon: { title: 'Simon Says', score: 'Level', instruction: 'Watch the color sequence, then repeat it. Keys 1 to 4 also work.', ready: 'Watch the colors.' },
+				whack: { title: 'Star Smacker', score: 'Hits', instruction: 'Click the glowing star tiles before the 30-second timer runs out.', ready: 'Ready, aim, tap!' },
+				gridlock: { title: 'Gridlock', score: 'Moves', instruction: 'Get three in a row. You are X; the computer is O.', ready: 'Can you beat the computer?' }
+			};
+			const key = modes[params.get('game')] ? params.get('game') : 'snake';
+			const config = modes[key];
+			const canvas = document.querySelector('#board');
+			const ctx = canvas.getContext('2d');
+			const title = document.querySelector('#gameTitle');
+			const scoreLabel = document.querySelector('#scoreLabel');
+			const scoreOutput = document.querySelector('#score');
+			const bestOutput = document.querySelector('#best');
+			const statusOutput = document.querySelector('#status');
+			const overlay = document.querySelector('#overlay');
+			const overlayTitle = document.querySelector('#overlayTitle');
+			const overlayCopy = document.querySelector('#overlayCopy');
+			const startButton = document.querySelector('#startButton');
+			let scaleX = 1;
+			let scaleY = 1;
+			let running = false;
+			let ended = false;
+			let score = 0;
+			let best = Number(localStorage.getItem(`mini-${key}-best`) || 0);
+			let state = {};
+			let timers = new Set();
+			let lastSnakeStep = 0;
+			let frameId = 0;
+
+			document.body.dataset.game = key;
+			title.textContent = config.title;
+			scoreLabel.textContent = config.score;
+			bestOutput.textContent = String(best).padStart(3, '0');
+			document.querySelectorAll('[data-mode]').forEach((link) => {
+				if (link.dataset.mode === key) link.setAttribute('aria-current', 'page');
+			});
+			document.title = `${config.title} | Rocky Games`;
+			overlayCopy.textContent = config.instruction;
+			statusOutput.textContent = config.instruction;
+
+			function resize() {
+				const bounds = canvas.getBoundingClientRect();
+				const ratio = Math.min(window.devicePixelRatio || 1, 2);
+				canvas.width = Math.round(bounds.width * ratio);
+				canvas.height = Math.round(bounds.height * ratio);
+				scaleX = bounds.width / W;
+				scaleY = bounds.height / H;
+				ctx.setTransform(scaleX * ratio, 0, 0, scaleY * ratio, 0, 0);
+				draw();
+			}
+
+			function later(callback, delay) {
+				const id = setTimeout(() => { timers.delete(id); callback(); }, delay);
+				timers.add(id);
+			}
+
+			function clearTimers() {
+				timers.forEach(clearTimeout);
+				timers.clear();
+			}
+
+			function setScore(value) {
+				score = value;
+				scoreOutput.textContent = String(value).padStart(3, '0');
+			}
+
+			function finish(message) {
+				running = false;
+				ended = true;
+				statusOutput.textContent = message;
+				if (score > best) {
+					best = score;
+					localStorage.setItem(`mini-${key}-best`, String(best));
+					bestOutput.textContent = String(best).padStart(3, '0');
+				}
+				startButton.textContent = 'Play again';
+				showOverlay('Nice round!', message);
+			}
+
+			function showOverlay(heading, copy) {
+				overlayTitle.textContent = heading;
+				overlayCopy.textContent = copy;
+				overlay.hidden = false;
+			}
+
+			function hideOverlay() { overlay.hidden = true; }
+
+			function randomFood() {
+				let point;
+				do {
+					point = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
+				} while (state.snake.some((part) => part.x === point.x && part.y === point.y));
+				return point;
+			}
+
+			function startGame() {
+				clearTimers();
+				running = true;
+				ended = false;
+				setScore(0);
+				startButton.textContent = 'Restart';
+				hideOverlay();
+
+				if (key === 'snake') {
+					state = { snake: [{ x: 8, y: 10 }, { x: 7, y: 10 }, { x: 6, y: 10 }], dir: { x: 1, y: 0 }, next: { x: 1, y: 0 }, food: null };
+					state.food = randomFood();
+					lastSnakeStep = performance.now();
+					statusOutput.textContent = config.instruction;
+				} else if (key === 'memory') {
+					const symbols = ['★', '◆', '●', '▲', '✦', '■', '♥', '☀'];
+					const deck = [...symbols, ...symbols].sort(() => Math.random() - 0.5);
+					state = { cards: deck.map((symbol) => ({ symbol, open: false, matched: false })), first: -1, moves: 0, locked: false };
+					statusOutput.textContent = 'Pick two tiles.';
+				} else if (key === 'simon') {
+					state = { sequence: [], index: 0, active: -1, accepting: false, level: 0 };
+					state.sequence.push(Math.floor(Math.random() * 4));
+					statusOutput.textContent = 'Watch closely.';
+					playSimonSequence();
+				} else if (key === 'whack') {
+					state = { hits: 0, target: Math.floor(Math.random() * 9), endsAt: Date.now() + 30000 };
+					setScore(0);
+					statusOutput.textContent = 'Go! You have 30 seconds.';
+				} else {
+					state = { board: Array(9).fill(''), thinking: false };
+					statusOutput.textContent = 'Your move. Place an X.';
+				}
+				draw();
+			}
+
+			function playSimonSequence() {
+				state.accepting = false;
+				statusOutput.textContent = 'Watch the pattern.';
+				state.sequence.forEach((color, index) => {
+					later(() => { state.active = color; }, index * 560 + 250);
+					later(() => { state.active = -1; }, index * 560 + 570);
+				});
+				later(() => { state.accepting = true; statusOutput.textContent = 'Your turn. Repeat it.'; }, state.sequence.length * 560 + 300);
+			}
+
+			function setSnakeDirection(direction) {
+				if (!running || key !== 'snake') return;
+				if (direction.x !== -state.dir.x || direction.y !== -state.dir.y) state.next = direction;
+			}
+
+			function snakeStep() {
+				state.dir = state.next;
+				const head = { x: state.snake[0].x + state.dir.x, y: state.snake[0].y + state.dir.y };
+				const hitWall = head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20;
+				const eating = head.x === state.food.x && head.y === state.food.y;
+				const body = eating ? state.snake : state.snake.slice(0, -1);
+				if (hitWall || body.some((part) => part.x === head.x && part.y === head.y)) {
+					finish(`Score ${score}. Press play again to retry.`);
+					return;
+				}
+				state.snake.unshift(head);
+				if (eating) { setScore(score + 10); state.food = randomFood(); }
+				else state.snake.pop();
+			}
+
+			function memoryClick(x, y) {
+				if (!running || state.locked) return;
+				const left = 36;
+				const top = 32;
+				const cardW = 153;
+				const cardH = 96;
+				const gapX = 16;
+				const gapY = 12;
+				const col = Math.floor((x - left) / (cardW + gapX));
+				const row = Math.floor((y - top) / (cardH + gapY));
+				if (col < 0 || col > 3 || row < 0 || row > 3) return;
+				const localX = (x - left) % (cardW + gapX);
+				const localY = (y - top) % (cardH + gapY);
+				if (localX > cardW || localY > cardH) return;
+				const index = row * 4 + col;
+				const card = state.cards[index];
+				if (card.open || card.matched) return;
+				card.open = true;
+				if (state.first < 0) state.first = index;
+				else {
+					state.moves += 1;
+					setScore(state.moves);
+					state.locked = true;
+					const firstIndex = state.first;
+					const firstCard = state.cards[firstIndex];
+					if (firstCard.symbol === card.symbol) {
+						firstCard.matched = true;
+						card.matched = true;
+						state.first = -1;
+						state.locked = false;
+						if (state.cards.every((item) => item.matched)) finish(`All pairs found in ${state.moves} moves.`);
+						else statusOutput.textContent = 'Match! Find another pair.';
+					} else {
+					statusOutput.textContent = 'No match. Try another pair.';
+					later(() => {
+						firstCard.open = false;
+						card.open = false;
+						state.first = -1;
+						state.locked = false;
+					}, 800);
+				}
+				}
+				draw();
+			}
+
+			function simonInput(index) {
+				if (!running || key !== 'simon' || !state.accepting) return;
+				state.active = index;
+				later(() => { state.active = -1; }, 180);
+				if (state.sequence[state.index] !== index) {
+					finish('Wrong color. Press play again to try a new pattern.');
+					return;
+				}
+				state.index += 1;
+				if (state.index === state.sequence.length) {
+					state.level += 1;
+					setScore(state.level);
+					state.index = 0;
+					state.sequence.push(Math.floor(Math.random() * 4));
+					state.accepting = false;
+					later(playSimonSequence, 550);
+				}
+				draw();
+			}
+
+			function winner(board) {
+				const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+				for (const [a, b, c] of lines) if (board[a] && board[a] === board[b] && board[b] === board[c]) return board[a];
+				return '';
+			}
+
+			function minimax(board, maximizing, depth) {
+				const result = winner(board);
+				if (result === 'O') return 10 - depth;
+				if (result === 'X') return depth - 10;
+				if (board.every(Boolean)) return 0;
+				let bestValue = maximizing ? -Infinity : Infinity;
+				for (let i = 0; i < 9; i++) {
+					if (board[i]) continue;
+					board[i] = maximizing ? 'O' : 'X';
+					const value = minimax(board, !maximizing, depth + 1);
+					board[i] = '';
+					bestValue = maximizing ? Math.max(bestValue, value) : Math.min(bestValue, value);
+				}
+				return bestValue;
+			}
+
+			function computerMove() {
+				let bestValue = -Infinity;
+				let move = -1;
+				for (let i = 0; i < 9; i++) {
+					if (state.board[i]) continue;
+					state.board[i] = 'O';
+					const value = minimax(state.board, false, 0);
+					state.board[i] = '';
+					if (value > bestValue) { bestValue = value; move = i; }
+				}
+				if (move >= 0) state.board[move] = 'O';
+				const result = winner(state.board);
+				if (result) finish('The computer got three in a row. Rematch?');
+				else if (state.board.every(Boolean)) finish('A draw. Go again?');
+				else { state.thinking = false; statusOutput.textContent = 'Your move. Place an X.'; }
+			}
+
+			function playGridlock(index) {
+				if (!running || state.thinking || state.board[index]) return;
+				state.board[index] = 'X';
+				const result = winner(state.board);
+				if (result) { finish('You won! Nice one.'); return; }
+				if (state.board.every(Boolean)) { finish('A draw. Go again?'); return; }
+				state.thinking = true;
+				statusOutput.textContent = 'Computer is thinking.';
+				later(computerMove, 260);
+			}
+
+			function roundedRect(x, y, width, height, radius, color) {
+				ctx.fillStyle = color;
+				ctx.beginPath();
+				ctx.roundRect(x, y, width, height, radius);
+				ctx.fill();
+			}
+
+			function drawSnake() {
+				ctx.fillStyle = '#c5dfb5'; ctx.fillRect(0, 0, W, H);
+				ctx.strokeStyle = '#a8cf98'; ctx.lineWidth = 1;
+				for (let x = 0; x <= W; x += 24) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+				for (let y = 0; y <= H; y += 24) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+				if (!state.snake) return;
+				state.snake.forEach((part, index) => roundedRect(part.x * 24 + 2, part.y * 24 + 2, 20, 20, 5, index === 0 ? '#f36b45' : '#202522'));
+				ctx.fillStyle = '#55b9cc'; ctx.beginPath(); ctx.arc(state.food.x * 24 + 12, state.food.y * 24 + 12, 8, 0, Math.PI * 2); ctx.fill();
+			}
+
+			function drawMemory() {
+				ctx.fillStyle = '#b7d6d2'; ctx.fillRect(0, 0, W, H);
+				if (!state.cards) return;
+				const palette = ['#f36b45','#55b9cc','#91b878','#e5be54','#c08eac','#5d8075','#8c9dc4','#df8e65'];
+				state.cards.forEach((card, index) => {
+					const x = 36 + (index % 4) * 169;
+					const y = 32 + Math.floor(index / 4) * 108;
+					roundedRect(x, y, 153, 96, 6, card.matched ? '#d9f06b' : card.open ? '#f3f1e8' : '#202522');
+					ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+					ctx.fillStyle = card.open || card.matched ? palette[Math.floor(index / 2)] : '#f3f1e8';
+					ctx.font = card.open || card.matched ? '42px sans-serif' : '700 32px "DM Mono", monospace';
+					ctx.fillText(card.open || card.matched ? card.symbol : '?', x + 76, y + 48);
+				});
+			}
+
+			function drawSimon() {
+				ctx.fillStyle = '#202522'; ctx.fillRect(0, 0, W, H);
+				const colors = ['#f36b45','#55b9cc','#d9f06b','#e5be54'];
+				const positions = [[48,36],[366,36],[48,250],[366,250]];
+				positions.forEach(([x,y], index) => {
+					roundedRect(x, y, 306, 194, 18, state.active === index ? '#ffffff' : colors[index]);
+					ctx.fillStyle = '#202522'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 25px "DM Mono", monospace'; ctx.fillText(String(index + 1), x + 153, y + 97);
+				});
+			}
+
+			function drawWhack() {
+				ctx.fillStyle = '#a8cf98'; ctx.fillRect(0, 0, W, H);
+				for (let i = 0; i < 9; i++) {
+					const x = 45 + (i % 3) * 210;
+					const y = 26 + Math.floor(i / 3) * 145;
+					roundedRect(x, y, 180, 118, 12, state.target === i && running ? '#d9f06b' : '#202522');
+					if (state.target === i && running) {
+						ctx.fillStyle = '#f36b45'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '66px sans-serif'; ctx.fillText('★', x + 90, y + 59);
+					}
+				}
+				if (state.endsAt && running) {
+					ctx.fillStyle = '#202522'; ctx.textAlign = 'center'; ctx.font = '500 18px "DM Mono", monospace';
+					ctx.fillText(`${Math.max(0, Math.ceil((state.endsAt - Date.now()) / 1000))} SEC`, W / 2, H - 10);
+				}
+			}
+
+			function drawGridlock() {
+				ctx.fillStyle = '#f3f1e8'; ctx.fillRect(0, 0, W, H);
+				ctx.strokeStyle = '#202522'; ctx.lineWidth = 6; ctx.lineCap = 'square';
+				for (let i = 1; i <= 2; i++) {
+					ctx.beginPath(); ctx.moveTo(120 + i * 160, 40); ctx.lineTo(120 + i * 160, 440); ctx.stroke();
+					ctx.beginPath(); ctx.moveTo(120, 40 + i * 133.333); ctx.lineTo(600, 40 + i * 133.333); ctx.stroke();
+				}
+				if (!state.board) return;
+				state.board.forEach((mark, index) => {
+					if (!mark) return;
+					const cx = 200 + (index % 3) * 160;
+					const cy = 106 + Math.floor(index / 3) * 133.333;
+					ctx.lineWidth = 12;
+					if (mark === 'X') {
+						ctx.strokeStyle = '#f36b45'; ctx.beginPath(); ctx.moveTo(cx - 36, cy - 36); ctx.lineTo(cx + 36, cy + 36); ctx.moveTo(cx + 36, cy - 36); ctx.lineTo(cx - 36, cy + 36); ctx.stroke();
+					} else {
+						ctx.strokeStyle = '#55b9cc'; ctx.beginPath(); ctx.arc(cx, cy, 39, 0, Math.PI * 2); ctx.stroke();
+					}
+				});
+			}
+
+			function draw() {
+				ctx.clearRect(0, 0, W, H);
+				if (key === 'snake') drawSnake();
+				else if (key === 'memory') drawMemory();
+				else if (key === 'simon') drawSimon();
+				else if (key === 'whack') drawWhack();
+				else drawGridlock();
+				overlay.hidden = running && !ended;
+			}
+
+			function pointFromEvent(event) {
+				const rect = canvas.getBoundingClientRect();
+				return { x: (event.clientX - rect.left) / scaleX, y: (event.clientY - rect.top) / scaleY };
+			}
+
+			canvas.addEventListener('pointerdown', (event) => {
+				event.preventDefault();
+				const { x, y } = pointFromEvent(event);
+				if (key === 'memory') memoryClick(x, y);
+				else if (key === 'simon') {
+					const col = x < W / 2 ? 0 : 1;
+					const row = y < H / 2 ? 0 : 1;
+					simonInput(row * 2 + col);
+				} else if (key === 'whack' && running) {
+					const col = Math.floor((x - 45) / 210);
+					const row = Math.floor((y - 26) / 145);
+					const cellX = (x - 45) % 210;
+					const cellY = (y - 26) % 145;
+					const index = row * 3 + col;
+					if (col >= 0 && col < 3 && row >= 0 && row < 3 && cellX <= 180 && cellY <= 118 && index === state.target) {
+						setScore(score + 1);
+						state.target = (state.target + 1 + Math.floor(Math.random() * 8)) % 9;
+						statusOutput.textContent = 'Nice hit! Keep going.';
+					}
+				} else if (key === 'gridlock' && running && x >= 120 && x <= 600 && y >= 40 && y <= 440) {
+					const col = Math.min(2, Math.floor((x - 120) / 160));
+					const row = Math.min(2, Math.floor((y - 40) / (400 / 3)));
+					playGridlock(row * 3 + col);
+				}
+				draw();
+			});
+
+			document.addEventListener('keydown', (event) => {
+				if (key === 'snake') {
+					const directions = { ArrowUp: {x:0,y:-1}, w: {x:0,y:-1}, ArrowDown: {x:0,y:1}, s: {x:0,y:1}, ArrowLeft: {x:-1,y:0}, a: {x:-1,y:0}, ArrowRight: {x:1,y:0}, d: {x:1,y:0} };
+					if (directions[event.key]) { event.preventDefault(); setSnakeDirection(directions[event.key]); }
+				} else if (key === 'simon' && /^[1-4]$/.test(event.key)) {
+					simonInput(Number(event.key) - 1);
+				}
+			});
+
+			document.querySelectorAll('[data-dir]').forEach((button) => {
+				const vectors = { up: {x:0,y:-1}, down: {x:0,y:1}, left: {x:-1,y:0}, right: {x:1,y:0} };
+				button.addEventListener('pointerdown', (event) => { event.preventDefault(); setSnakeDirection(vectors[button.dataset.dir]); });
+			});
+
+			startButton.addEventListener('click', startGame);
+			function frame(now) {
+				if (running && key === 'snake' && now - lastSnakeStep > 125) { lastSnakeStep = now; snakeStep(); }
+				if (running && key === 'whack' && Date.now() >= state.endsAt) finish(`Time! You hit ${score} stars.`);
+				draw();
+				frameId = requestAnimationFrame(frame);
+			}
+
+			window.addEventListener('resize', resize);
+			resize();
+			frameId = requestAnimationFrame(frame);
+		})();
+	</script>
+</body>
+</html>

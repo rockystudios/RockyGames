@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#d9f06b">
+	<title>Lane Runner</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+
+		:root {
+			color-scheme: light;
+			--ink: #202522;
+			--paper: #f3f1e8;
+			--lime: #d9f06b;
+			--orange: #f36b45;
+			--mono: 'DM Mono', monospace;
+			--display: 'Barlow Condensed', Impact, sans-serif;
+		}
+
+		* { box-sizing: border-box; }
+
+		body {
+			min-height: 100vh;
+			margin: 0;
+			display: grid;
+			place-items: center;
+			padding: 24px;
+			color: var(--ink);
+			background-color: var(--paper);
+			background-image: radial-gradient(#20252218 0.7px, transparent 0.7px);
+			background-size: 8px 8px;
+			font-family: var(--mono);
+		}
+
+		button { color: inherit; font: inherit; }
+
+		.game-shell {
+			width: min(100%, 920px);
+			overflow: hidden;
+			border: 2px solid var(--ink);
+			background: var(--paper);
+			box-shadow: 8px 8px 0 var(--ink);
+		}
+
+		.topbar {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+			padding: 16px 20px;
+			border-bottom: 2px solid var(--ink);
+		}
+
+		.brand {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			font-family: var(--display);
+			font-size: 25px;
+			font-weight: 900;
+			line-height: 1;
+			text-transform: uppercase;
+		}
+
+		.brand-mark {
+			display: grid;
+			width: 30px;
+			height: 30px;
+			place-items: center;
+			border: 2px solid var(--ink);
+			background: var(--lime);
+			font-family: var(--mono);
+			font-size: 16px;
+		}
+
+		.stats { display: flex; gap: 22px; }
+		.stat { display: grid; gap: 2px; text-align: right; }
+		.stat-label { font-size: 9px; letter-spacing: 0; text-transform: uppercase; }
+		.stat-value { font-size: 16px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+		.game-area {
+			position: relative;
+			width: 100%;
+			height: min(68vh, 560px);
+			min-height: 340px;
+			overflow: hidden;
+			background: #a8cf98;
+		}
+
+		canvas { display: block; width: 100%; height: 100%; }
+
+		.overlay {
+			position: absolute;
+			inset: 0;
+			display: grid;
+			align-content: center;
+			justify-items: center;
+			padding: 24px;
+			background: #202522a8;
+			color: white;
+			text-align: center;
+			transition: opacity 180ms ease;
+		}
+
+		.overlay[hidden] { display: none; }
+		.overlay-kicker { margin: 0 0 8px; color: var(--lime); font-size: 11px; text-transform: uppercase; }
+
+		.overlay h1 {
+			max-width: 100%;
+			margin: 0;
+			font-family: var(--display);
+			font-size: clamp(54px, 11vw, 98px);
+			font-weight: 900;
+			line-height: 0.84;
+			text-transform: uppercase;
+		}
+
+		.overlay-copy { max-width: 310px; margin: 18px 0 22px; font-size: 12px; line-height: 1.7; }
+
+		.action-button {
+			min-width: 150px;
+			padding: 13px 20px;
+			border: 2px solid var(--ink);
+			background: var(--lime);
+			box-shadow: 4px 4px 0 white;
+			font-family: var(--display);
+			font-size: 20px;
+			font-weight: 800;
+			text-transform: uppercase;
+			cursor: pointer;
+		}
+
+		.action-button:hover { background: white; }
+		.action-button:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 white; }
+		.action-button:focus-visible, .control:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+
+		.bottom-bar {
+			min-height: 56px;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 14px;
+			padding: 10px 20px;
+			border-top: 2px solid var(--ink);
+			font-size: 10px;
+			text-transform: uppercase;
+		}
+
+		.keycap { display: inline-grid; min-width: 23px; height: 23px; place-items: center; margin: 0 2px; border: 1px solid var(--ink); background: white; }
+		.touch-controls { display: none; gap: 8px; }
+
+		.control {
+			width: 54px;
+			height: 42px;
+			border: 1px solid var(--ink);
+			background: var(--lime);
+			font-size: 20px;
+			touch-action: manipulation;
+		}
+
+		@media (max-width: 600px) {
+			body { padding: 12px; }
+			.game-shell { box-shadow: 5px 5px 0 var(--ink); }
+			.topbar { padding: 13px 14px; }
+			.brand { font-size: 21px; }
+			.stats { gap: 12px; }
+			.stat-label { font-size: 8px; }
+			.stat-value { font-size: 14px; }
+			.game-area { height: min(65vh, 560px); min-height: 320px; }
+			.bottom-bar { padding: 10px 14px; }
+			.keyboard-hint { display: none; }
+			.touch-controls { display: flex; }
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+		}
+	</style>
+</head>
+<body>
+	<main class="game-shell" aria-label="Lane Runner car game">
+		<header class="topbar">
+			<div class="brand"><span class="brand-mark" aria-hidden="true">R</span> Lane Runner</div>
+			<div class="stats" aria-live="polite">
+				<div class="stat"><span class="stat-label">Score</span><span class="stat-value" id="score">00000</span></div>
+				<div class="stat"><span class="stat-label">Best</span><span class="stat-value" id="best">00000</span></div>
+			</div>
+		</header>
+		<section class="game-area" id="gameArea" aria-label="Road game area">
+			<canvas id="game" aria-label="Dodge traffic and stay on the road"></canvas>
+			<div class="overlay" id="overlay">
+				<p class="overlay-kicker" id="overlayKicker">A tiny arcade drive</p>
+				<h1 id="overlayTitle">Lane<br>Runner</h1>
+				<p class="overlay-copy" id="overlayCopy">Dodge the traffic. Keep your cool. See how far you can get.</p>
+				<button class="action-button" id="startButton" type="button">Start engine</button>
+			</div>
+		</section>
+		<footer class="bottom-bar">
+			<span class="keyboard-hint"><span class="keycap">←</span><span class="keycap">→</span> or <span class="keycap">A</span><span class="keycap">D</span> to steer</span>
+			<div class="touch-controls" aria-label="Touch steering controls">
+				<button class="control" type="button" data-steer="-1" aria-label="Steer left">←</button>
+				<button class="control" type="button" data-steer="1" aria-label="Steer right">→</button>
+			</div>
+			<span>Stay on the road</span>
+		</footer>
+	</main>
+
+	<script>
+		(() => {
+			const canvas = document.querySelector('#game');
+			const context = canvas.getContext('2d');
+			const gameArea = document.querySelector('#gameArea');
+			const overlay = document.querySelector('#overlay');
+			const overlayKicker = document.querySelector('#overlayKicker');
+			const overlayTitle = document.querySelector('#overlayTitle');
+			const overlayCopy = document.querySelector('#overlayCopy');
+			const startButton = document.querySelector('#startButton');
+			const scoreDisplay = document.querySelector('#score');
+			const bestDisplay = document.querySelector('#best');
+			const laneCount = 3;
+			const carColors = ['#f36b45', '#55b9cc', '#e9d66b', '#c6a1dc'];
+			let width = 0;
+			let height = 0;
+			let pixelRatio = 1;
+			let running = false;
+			let lastTime = 0;
+			let elapsed = 0;
+			let score = 0;
+			let best = Number(localStorage.getItem('laneRunnerBest') || 0);
+			let roadOffset = 0;
+			let spawnTimer = 0;
+			let traffic = [];
+			let steering = 0;
+			const player = { lane: 1, x: 1, tilt: 0 };
+
+			bestDisplay.textContent = String(best).padStart(5, '0');
+
+			function resize() {
+				const bounds = gameArea.getBoundingClientRect();
+				pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+				width = bounds.width;
+				height = bounds.height;
+				canvas.width = Math.round(width * pixelRatio);
+				canvas.height = Math.round(height * pixelRatio);
+				context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+				draw();
+			}
+
+			function roadGeometry() {
+				const roadWidth = Math.min(width * 0.72, 440);
+				return { left: (width - roadWidth) / 2, width: roadWidth, laneWidth: roadWidth / laneCount };
+			}
+
+			function drawCar(x, y, carWidth, carHeight, color, isPlayer = false) {
+				context.save();
+				context.translate(x, y);
+				if (isPlayer) context.rotate(player.tilt * 0.08);
+				context.fillStyle = '#202522';
+				context.fillRect(-carWidth * 0.58, -carHeight * 0.33, carWidth * 0.18, carHeight * 0.29);
+				context.fillRect(carWidth * 0.4, -carHeight * 0.33, carWidth * 0.18, carHeight * 0.29);
+				context.fillRect(-carWidth * 0.58, carHeight * 0.1, carWidth * 0.18, carHeight * 0.29);
+				context.fillRect(carWidth * 0.4, carHeight * 0.1, carWidth * 0.18, carHeight * 0.29);
+				context.fillStyle = color;
+				context.beginPath();
+				context.roundRect(-carWidth / 2, -carHeight / 2, carWidth, carHeight, 6);
+				context.fill();
+				context.fillStyle = isPlayer ? '#eff6df' : '#d5e8e5';
+				context.beginPath();
+				context.roundRect(-carWidth * 0.31, -carHeight * 0.23, carWidth * 0.62, carHeight * 0.3, 4);
+				context.fill();
+				context.fillStyle = isPlayer ? '#f9f2c7' : '#252b2b';
+				context.fillRect(-carWidth * 0.32, carHeight * 0.34, carWidth * 0.16, carHeight * 0.06);
+				context.fillRect(carWidth * 0.16, carHeight * 0.34, carWidth * 0.16, carHeight * 0.06);
+				context.restore();
+			}
+
+			function draw() {
+				if (!width || !height) return;
+				const road = roadGeometry();
+				context.clearRect(0, 0, width, height);
+
+				context.fillStyle = '#a8cf98';
+				context.fillRect(0, 0, width, height);
+				context.fillStyle = '#8dbb7f';
+				const stripeOffset = roadOffset % 72;
+				for (let y = -72 + stripeOffset; y < height + 72; y += 72) {
+					context.fillRect(0, y, road.left, 2);
+					context.fillRect(road.left + road.width, y, width - road.left - road.width, 2);
+				}
+
+				context.fillStyle = '#343a38';
+				context.fillRect(road.left, 0, road.width, height);
+				context.fillStyle = '#e8e5d7';
+				context.fillRect(road.left + 6, 0, 3, height);
+				context.fillRect(road.left + road.width - 9, 0, 3, height);
+				context.fillStyle = '#bbbdb2';
+				for (let lane = 1; lane < laneCount; lane++) {
+					const dividerX = road.left + lane * road.laneWidth;
+					for (let y = -48 + (roadOffset % 60); y < height; y += 60) {
+						context.fillRect(dividerX - 1, y, 2, 29);
+					}
+				}
+
+				const carWidth = Math.min(road.laneWidth * 0.48, 48);
+				const carHeight = carWidth * 1.65;
+				traffic.forEach((car) => {
+					const carX = road.left + road.laneWidth * (car.lane + 0.5);
+					drawCar(carX, car.y, carWidth, carHeight, car.color);
+				});
+				const playerX = road.left + road.laneWidth * (player.x + 0.5);
+				drawCar(playerX, height * 0.79, carWidth, carHeight, '#d9f06b', true);
+			}
+
+			function finishGame() {
+				running = false;
+				const finalScore = Math.floor(score);
+				if (finalScore > best) {
+					best = finalScore;
+					localStorage.setItem('laneRunnerBest', String(best));
+					bestDisplay.textContent = String(best).padStart(5, '0');
+				}
+				overlayKicker.textContent = 'Nice drive. Try again?';
+				overlayTitle.innerHTML = `Crash<br><span style="color:#d9f06b">${String(finalScore).padStart(5, '0')}</span>`;
+				overlayCopy.textContent = 'Your run is over. The road is still out there.';
+				startButton.textContent = 'Drive again';
+				overlay.hidden = false;
+			}
+
+			function startGame() {
+				running = true;
+				lastTime = performance.now();
+				elapsed = 0;
+				score = 0;
+				roadOffset = 0;
+				spawnTimer = 0.6;
+				traffic = [];
+				player.lane = 1;
+				player.x = 1;
+				player.tilt = 0;
+				steering = 0;
+				scoreDisplay.textContent = '00000';
+				overlay.hidden = true;
+				requestAnimationFrame(update);
+			}
+
+			function update(now) {
+				if (!running) return;
+				const delta = Math.min((now - lastTime) / 1000, 0.04);
+				lastTime = now;
+				elapsed += delta;
+				const speed = 290 + Math.min(elapsed * 5, 220);
+				roadOffset = (roadOffset + speed * delta) % 60;
+				score += delta * 12;
+				scoreDisplay.textContent = String(Math.floor(score)).padStart(5, '0');
+
+				player.x += (player.lane - player.x) * Math.min(delta * 12, 1);
+				player.tilt += (steering - player.tilt) * Math.min(delta * 10, 1);
+
+				spawnTimer -= delta;
+				if (spawnTimer <= 0) {
+					const lane = Math.floor(Math.random() * laneCount);
+					const blockedLanes = traffic.filter((car) => car.y < 130).map((car) => car.lane);
+					if (!blockedLanes.includes(lane)) {
+						traffic.push({ lane, y: -60, color: carColors[Math.floor(Math.random() * carColors.length)] });
+					}
+					spawnTimer = Math.max(0.48, 1.05 - elapsed * 0.008) + Math.random() * 0.4;
+				}
+
+				const road = roadGeometry();
+				const carHeight = Math.min(road.laneWidth * 0.48, 48) * 1.65;
+				const playerY = height * 0.79;
+				traffic.forEach((car) => { car.y += speed * delta; });
+				traffic = traffic.filter((car) => car.y < height + carHeight);
+
+				for (const car of traffic) {
+					if (car.lane === Math.round(player.x) && Math.abs(car.y - playerY) < carHeight * 0.78) {
+						draw();
+						finishGame();
+						return;
+					}
+				}
+
+				draw();
+				requestAnimationFrame(update);
+			}
+
+			function steer(direction) {
+				if (!running) return;
+				player.lane = Math.max(0, Math.min(laneCount - 1, player.lane + direction));
+				steering = direction;
+			}
+
+			document.addEventListener('keydown', (event) => {
+				if (['ArrowLeft', 'ArrowRight', ' ', 'a', 'd', 'A', 'D'].includes(event.key)) event.preventDefault();
+				if (event.key === 'ArrowLeft' || event.key.toLowerCase() === 'a') steer(-1);
+				if (event.key === 'ArrowRight' || event.key.toLowerCase() === 'd') steer(1);
+				if ((event.key === 'Enter' || event.key === ' ') && !running) startGame();
+			});
+
+			document.querySelectorAll('[data-steer]').forEach((button) => {
+				const direction = Number(button.dataset.steer);
+				button.addEventListener('pointerdown', (event) => { event.preventDefault(); steer(direction); });
+			});
+			startButton.addEventListener('click', startGame);
+			window.addEventListener('resize', resize);
+			resize();
+		})();
+	</script>
+</body>
+</html>
