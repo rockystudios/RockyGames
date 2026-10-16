@@ -258,8 +258,9 @@
 	}
 
 	function initializeLoginReminder() {
+		let dismissedOnDevice = false;
 		try {
-			if (localStorage.getItem(LOGIN_REMINDER_KEY) === 'true') return;
+			dismissedOnDevice = localStorage.getItem(LOGIN_REMINDER_KEY) === 'true';
 		} catch (error) {
 			console.error('Rocky Games could not read the login reminder preference:', error);
 		}
@@ -292,18 +293,27 @@
 			dialog.close();
 		});
 
-		dialog.showModal();
+		function showReminder() {
+			if (!dialog.open) dialog.showModal();
+		}
+
+		if (!dismissedOnDevice) showReminder();
+		return showReminder;
 	}
 
 	function initialize() {
 		initializeFullscreen();
 		initializeLoginShortcut();
-		initializeLoginReminder();
+		const showLoginReminder = initializeLoginReminder();
 		const toolbar = document.createElement('nav');
 		toolbar.id = 'rocky-economy-toolbar';
 		toolbar.setAttribute('aria-label', 'Rocky Games wallet');
-		toolbar.innerHTML = '<span id="rocky-economy-balance" aria-live="polite"></span><a href="shop.html#daily-spin">Daily spin</a><a href="shop.html#background-shop">Background shop</a><span id="rocky-economy-status" role="status" aria-live="polite"></span>';
+		toolbar.innerHTML = '<span id="rocky-economy-balance" aria-live="polite"></span><a href="shop.html#daily-spin">Daily spin</a><a href="shop.html#background-shop">Background shop</a><a href="#login-shortcut-help" id="login-shortcut-help">Shortcut help</a><span id="rocky-economy-status" role="status" aria-live="polite"></span>';
 		document.body.append(toolbar);
+		document.querySelector('#login-shortcut-help').addEventListener('click', (event) => {
+			event.preventDefault();
+			showLoginReminder();
+		});
 		document.querySelector('#spin-button')?.addEventListener('click', spinWheel);
 
 		try {
