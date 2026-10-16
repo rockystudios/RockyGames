@@ -252,7 +252,7 @@
 			)) return;
 
 			event.preventDefault();
-			window.location.assign('https://myaccess.apsva.us/idp/AuthnEngine#/authn');
+			window.location.assign('https://myaccess.apsva.us/');
 		});
 	}
 
