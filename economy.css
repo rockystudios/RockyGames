@@ -38,7 +38,67 @@
 #rocky-economy-status { position: absolute; bottom: calc(100% + 8px); left: 0; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 8px 10px; border: 1px solid #202522; background: #f3f1e8; box-shadow: 2px 2px 0 #202522; }
 #rocky-economy-status:empty { display: none; }
 
+.game-fullscreen-button {
+	position: absolute;
+	z-index: 2147483647;
+	top: 12px;
+	right: 12px;
+	display: grid;
+	width: 42px;
+	aspect-ratio: 1;
+	place-items: center;
+	border: 2px solid #f3f1e899;
+	background: #202522dd;
+	color: white;
+	font: 22px 'DM Mono', monospace;
+	cursor: pointer;
+}
+
+.game-fullscreen-button:hover { background: #f36b45; }
+.game-fullscreen-button:focus-visible { outline: 3px solid #d9f06b; outline-offset: 3px; }
+
+.game-shell { position: relative; }
+.game-shell > .game-fullscreen-button { position: absolute; top: 7px; right: 7px; }
+.game-shell .game-bar { padding-right: 64px; }
+
+[data-game-fullscreen]:fullscreen,
+[data-game-fullscreen]:-webkit-full-screen {
+	width: 100vw !important;
+	height: 100vh !important;
+	height: 100dvh !important;
+	max-width: none !important;
+	max-height: none !important;
+	min-height: 0 !important;
+	margin: 0 !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+
+.game-area:fullscreen canvas,
+.game-area:-webkit-full-screen canvas,
+.stage:fullscreen canvas,
+.stage:-webkit-full-screen canvas {
+	height: 100%;
+	aspect-ratio: auto;
+}
+
+.game-shell:fullscreen,
+.game-shell:-webkit-full-screen {
+	display: grid;
+	grid-template-rows: auto minmax(0, 1fr) auto auto;
+	overflow: auto;
+}
+
+.game-shell:fullscreen .stage,
+.game-shell:-webkit-full-screen .stage { min-height: 0; }
+
+.game-shell:fullscreen .stage canvas,
+.game-shell:-webkit-full-screen .stage canvas { height: 100%; aspect-ratio: auto; }
+
+body[data-game-fullscreen] { position: relative; }
+
 @media (max-width: 520px) {
 	#rocky-economy-toolbar { right: 8px; bottom: 8px; left: 8px; justify-content: space-between; gap: 4px; padding: 6px; font-size: 9px; }
 	#rocky-economy-toolbar a { padding: 6px 5px; }
+	.game-fullscreen-button { top: 8px; right: 8px; width: 38px; }
 }

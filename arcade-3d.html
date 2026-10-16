@@ -36,7 +36,7 @@
 			gap: 20px;
 			width: 100%;
 			min-height: 76px;
-			padding: 12px clamp(16px, 4vw, 48px);
+			padding: 12px 76px 12px clamp(16px, 4vw, 48px);
 			background: linear-gradient(#101a22e8, #101a2288 72%, transparent);
 		}
 
@@ -80,7 +80,7 @@
 		body[data-game="sprint"] .dpad [data-dir="up"], body[data-game="sprint"] .dpad [data-dir="down"] { visibility: hidden; pointer-events: none; }
 
 		@media (max-width: 760px) {
-			.hud { min-height: 64px; flex-wrap: wrap; gap: 8px 12px; padding: 10px 14px; }
+			.hud { min-height: 64px; flex-wrap: wrap; gap: 8px 12px; padding: 10px 62px 10px 14px; }
 			.brand { font-size: 19px; }
 			.brand-mark { width: 26px; }
 			.mode-nav { order: 3; width: 100%; justify-content: center; }
@@ -101,7 +101,7 @@
 		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
 	</style>
 </head>
-<body data-game="sprint">
+<body data-game="sprint" data-game-fullscreen>
 	<header class="hud">
 		<a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">R</span> Rocky Games</a>
 		<nav class="mode-nav" aria-label="3D games">

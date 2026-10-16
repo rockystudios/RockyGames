@@ -31,11 +31,7 @@
 		.kicker { margin: 0 0 6px; color: #52645b; font-size: 10px; text-transform: uppercase; }
 		h1 { margin: 0; font: 900 clamp(48px, 8vw, 84px)/0.9 var(--display); text-transform: uppercase; }
 		.game-wrap { position: relative; width: 100%; height: min(72vh, 720px); min-height: 420px; border: 2px solid var(--ink); background: #202522; box-shadow: 7px 7px 0 var(--ink); }
-		.game-wrap:fullscreen { width: 100vw; height: 100vh; height: 100dvh; min-height: 0; border: 0; box-shadow: none; }
 		.game-frame { display: block; width: 100%; height: 100%; border: 0; background: #202522; }
-		.fullscreen-button { position: absolute; z-index: 1; top: 12px; right: 12px; display: grid; width: 42px; aspect-ratio: 1; place-items: center; border: 1px solid #f3f1e899; background: #202522dd; color: white; font: 22px var(--mono); cursor: pointer; }
-		.fullscreen-button:hover { background: #f36b45; }
-		.fullscreen-button:focus-visible { outline: 3px solid var(--lime); outline-offset: 3px; }
 		footer { display: flex; justify-content: space-between; gap: 16px; width: min(100% - 40px, 1120px); margin: 32px auto 0; padding: 14px 0 22px; border-top: 1px solid #20252266; color: #52645b; font-size: 9px; text-transform: uppercase; }
 		@media (max-width: 600px) {
 			.site-header { min-height: 60px; padding: 0 14px; }
@@ -60,8 +56,7 @@
 			</div>
 		</section>
 
-		<div class="game-wrap" id="gameWrap">
-			<button class="fullscreen-button" id="fullscreenButton" type="button" aria-label="Enter fullscreen" title="Enter fullscreen" aria-pressed="false"><span aria-hidden="true">⛶</span></button>
+		<div class="game-wrap" id="gameWrap" data-game-fullscreen>
 	<iframe
 		id="gameFrame"
 		class="game-frame"
@@ -74,37 +69,6 @@
 	</main>
 
 	<footer><span>Rocky Games</span><span>Polly Track</span></footer>
-	<script>
-		const gameWrap = document.querySelector('#gameWrap');
-		const fullscreenButton = document.querySelector('#fullscreenButton');
-
-		function updateFullscreenButton() {
-			const isFullscreen = document.fullscreenElement === gameWrap || document.webkitFullscreenElement === gameWrap;
-			const label = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
-			fullscreenButton.setAttribute('aria-label', label);
-			fullscreenButton.setAttribute('title', label);
-			fullscreenButton.setAttribute('aria-pressed', String(isFullscreen));
-		}
-
-		fullscreenButton.addEventListener('click', async () => {
-			const isFullscreen = document.fullscreenElement === gameWrap || document.webkitFullscreenElement === gameWrap;
-			const toggleFullscreen = isFullscreen
-				? document.exitFullscreen || document.webkitExitFullscreen
-				: gameWrap.requestFullscreen || gameWrap.webkitRequestFullscreen;
-			if (!toggleFullscreen) {
-				fullscreenButton.setAttribute('title', 'Fullscreen is unavailable in this browser');
-				return;
-			}
-			try {
-				await toggleFullscreen.call(isFullscreen ? document : gameWrap);
-			} catch {
-				fullscreenButton.setAttribute('title', 'Fullscreen is unavailable in this browser');
-			}
-		});
-
-		document.addEventListener('fullscreenchange', updateFullscreenButton);
-		document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
-	</script>
 	<script src="economy.js" defer></script>
 </body>
 </html>

@@ -197,7 +197,52 @@
 		return rewarded;
 	}
 
+	function initializeFullscreen() {
+		const target = document.querySelector('[data-game-fullscreen]');
+		if (!target) return;
+
+		const button = document.createElement('button');
+		button.className = 'game-fullscreen-button';
+		button.type = 'button';
+		button.setAttribute('aria-label', 'Enter fullscreen');
+		button.setAttribute('title', 'Enter fullscreen');
+		button.setAttribute('aria-pressed', 'false');
+		button.innerHTML = '<span aria-hidden="true">⛶</span>';
+		target.append(button);
+
+		function updateButton() {
+			const isFullscreen = document.fullscreenElement === target || document.webkitFullscreenElement === target;
+			const label = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
+			button.setAttribute('aria-label', label);
+			button.setAttribute('title', label);
+			button.setAttribute('aria-pressed', String(isFullscreen));
+		}
+
+		button.addEventListener('click', async () => {
+			const isFullscreen = document.fullscreenElement === target || document.webkitFullscreenElement === target;
+			const toggleFullscreen = isFullscreen
+				? document.exitFullscreen || document.webkitExitFullscreen
+				: target.requestFullscreen || target.webkitRequestFullscreen;
+			if (!toggleFullscreen) {
+				button.setAttribute('aria-label', 'Fullscreen is unavailable in this browser');
+				button.setAttribute('title', 'Fullscreen is unavailable in this browser');
+				return;
+			}
+			try {
+				await toggleFullscreen.call(isFullscreen ? document : target);
+			} catch (error) {
+				console.error('Rocky Games could not change fullscreen mode:', error);
+				button.setAttribute('aria-label', 'Fullscreen is unavailable in this browser');
+				button.setAttribute('title', 'Fullscreen is unavailable in this browser');
+			}
+		});
+
+		document.addEventListener('fullscreenchange', updateButton);
+		document.addEventListener('webkitfullscreenchange', updateButton);
+	}
+
 	function initialize() {
+		initializeFullscreen();
 		const toolbar = document.createElement('nav');
 		toolbar.id = 'rocky-economy-toolbar';
 		toolbar.setAttribute('aria-label', 'Rocky Games wallet');
