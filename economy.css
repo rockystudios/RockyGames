@@ -38,6 +38,8 @@
 #rocky-economy-status { position: absolute; bottom: calc(100% + 8px); left: 0; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 8px 10px; border: 1px solid #202522; background: #f3f1e8; box-shadow: 2px 2px 0 #202522; }
 #rocky-economy-status:empty { display: none; }
 
+[data-game-fullscreen] { position: relative; }
+
 .game-fullscreen-button {
 	position: absolute;
 	z-index: 2147483647;
@@ -57,7 +59,6 @@
 .game-fullscreen-button:hover { background: #f36b45; }
 .game-fullscreen-button:focus-visible { outline: 3px solid #d9f06b; outline-offset: 3px; }
 
-.game-shell { position: relative; }
 .game-shell > .game-fullscreen-button { position: absolute; top: 7px; right: 7px; }
 .game-shell .game-bar { padding-right: 64px; }
 
@@ -94,8 +95,6 @@
 
 .game-shell:fullscreen .stage canvas,
 .game-shell:-webkit-full-screen .stage canvas { height: 100%; aspect-ratio: auto; }
-
-body[data-game-fullscreen] { position: relative; }
 
 @media (max-width: 520px) {
 	#rocky-economy-toolbar { right: 8px; bottom: 8px; left: 8px; justify-content: space-between; gap: 4px; padding: 6px; font-size: 9px; }
