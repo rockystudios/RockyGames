@@ -258,11 +258,10 @@
 	}
 
 	function initializeLoginReminder() {
-		let dismissedOnDevice = false;
 		try {
-			dismissedOnDevice = localStorage.getItem(LOGIN_REMINDER_KEY) === 'true';
+			localStorage.removeItem(LOGIN_REMINDER_KEY);
 		} catch (error) {
-			console.error('Rocky Games could not read the login reminder preference:', error);
+			console.error('Rocky Games could not clear the old login reminder preference:', error);
 		}
 
 		const dialog = document.createElement('dialog');
@@ -272,32 +271,28 @@
 			<p class="login-reminder-kicker">Quick access</p>
 			<h2 id="login-reminder-title">Need APSVA MyAccess?</h2>
 			<p>Press <kbd>⌥ Option</kbd> + <kbd>⇧ Shift</kbd> + <kbd>A</kbd> to go there instantly.</p>
-			<label class="login-reminder-choice"><input type="checkbox"> Don't show this again on this device</label>
-			<p class="login-reminder-error" role="status" aria-live="polite"></p>
 			<button class="login-reminder-button" type="button" autofocus>Great!</button>
 		`;
 		document.body.append(dialog);
 
-		const checkbox = dialog.querySelector('input[type="checkbox"]');
-		const errorMessage = dialog.querySelector('.login-reminder-error');
 		dialog.querySelector('button').addEventListener('click', () => {
-			if (checkbox.checked) {
-				try {
-					localStorage.setItem(LOGIN_REMINDER_KEY, 'true');
-				} catch (error) {
-					console.error('Rocky Games could not save the login reminder preference:', error);
-					errorMessage.textContent = 'This preference could not be saved. The reminder will show again next time.';
-					return;
-				}
-			}
 			dialog.close();
 		});
 
 		function showReminder() {
-			if (!dialog.open) dialog.showModal();
+			if (dialog.open) return;
+			if (typeof dialog.showModal === 'function') {
+				try {
+					dialog.showModal();
+					return;
+				} catch (error) {
+					console.error('Rocky Games could not open the login reminder as a modal:', error);
+				}
+			}
+			dialog.setAttribute('open', '');
 		}
 
-		if (!dismissedOnDevice) showReminder();
+		showReminder();
 		return showReminder;
 	}
 
