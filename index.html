@@ -153,6 +153,9 @@
 		.mini-preview--subway { background: linear-gradient(#55b9cc 0 38%, #e5be54 38% 43%, #343a38 43% 100%); }
 		.mini-preview--subway::before { top: 43%; left: 50%; width: 74%; height: 100px; background: repeating-linear-gradient(90deg, transparent 0 30%, #f3f1e8 30% 32%, transparent 32% 34%), repeating-linear-gradient(0deg, transparent 0 44px, #f3f1e8 44px 47px, transparent 47px 51px); transform: translateX(-50%); }
 		.mini-preview--subway::after { top: 48%; left: 50%; width: 18px; height: 35px; border: 2px solid var(--ink); border-radius: 7px 7px 3px 3px; background: var(--lime); box-shadow: -39px 35px 0 -3px var(--orange), 39px 27px 0 -3px #55b9cc; transform: translateX(-50%); }
+		.mini-preview--retro { background: repeating-linear-gradient(0deg, #a8cf98 0 18px, #98bf8a 18px 20px); }
+		.mini-preview--retro::before { top: 18%; left: 50%; width: 96px; height: 96px; border: 3px solid var(--ink); background: linear-gradient(90deg, #f3f1e8 0 48%, #e5be54 48% 52%, #f3f1e8 52%); transform: translateX(-50%); }
+		.mini-preview--retro::after { top: 42%; left: 50%; width: 72px; height: 30px; border: 3px solid var(--ink); background: #55b9cc; box-shadow: inset 0 -8px 0 #f36b45; transform: translateX(-50%); }
 		.mini-preview--moto { background: linear-gradient(160deg, #55b9cc 0 54%, #d9f06b 54% 58%, #a8cf98 58%); }
 		.preview-bike { position: absolute; z-index: 1; top: 54%; left: 50%; width: 58px; height: 22px; border-bottom: 4px solid var(--orange); transform: translate(-50%, -50%) rotate(-18deg); }
 		.preview-bike::before, .preview-bike::after { position: absolute; bottom: -11px; width: 16px; aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
@@ -333,7 +336,7 @@
 		<section aria-labelledby="catalog-title">
 			<div class="catalog-heading">
 				<h2 id="catalog-title">The arcade</h2>
-				<span class="catalog-count" id="catalogCount" aria-live="polite">16 games</span>
+				<span class="catalog-count" id="catalogCount" aria-live="polite">17 games</span>
 			</div>
 			<div class="catalog-tools">
 				<label class="search-label" for="gameSearch">Search games
@@ -443,6 +446,12 @@
 					<span class="game-number">16</span>
 					<div><h3 class="game-title">Subway Surfers</h3><p class="game-meta">Arcade / Endless runner / Reflex</p></div>
 					<div class="mini-preview mini-preview--subway" aria-hidden="true"></div>
+					<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+				</a>
+				<a class="game-link" href="retro-bowl.html" target="_self" data-categories="arcade sports football">
+					<span class="game-number">17</span>
+					<div><h3 class="game-title">Retro Bowl</h3><p class="game-meta">Arcade / Football / Sports</p></div>
+					<div class="mini-preview mini-preview--retro" aria-hidden="true"></div>
 					<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
 				</a>
 			</div>
