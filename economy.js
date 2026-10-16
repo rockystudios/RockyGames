@@ -2,6 +2,7 @@
 	'use strict';
 
 	const STORAGE_KEY = 'rockyGamesEconomy';
+	const LOGIN_REMINDER_KEY = 'rockyGamesLoginReminderDismissed';
 	const GAME_REWARD = 5;
 	const prizes = [10, 15, 20, 25, 50, 100];
 	const backgrounds = [
@@ -256,9 +257,48 @@
 		});
 	}
 
+	function initializeLoginReminder() {
+		try {
+			if (localStorage.getItem(LOGIN_REMINDER_KEY) === 'true') return;
+		} catch (error) {
+			console.error('Rocky Games could not read the login reminder preference:', error);
+		}
+
+		const dialog = document.createElement('dialog');
+		dialog.className = 'login-reminder';
+		dialog.setAttribute('aria-labelledby', 'login-reminder-title');
+		dialog.innerHTML = `
+			<p class="login-reminder-kicker">Quick access</p>
+			<h2 id="login-reminder-title">Need APSVA MyAccess?</h2>
+			<p>Press <kbd>⌥ Option</kbd> + <kbd>⇧ Shift</kbd> + <kbd>A</kbd> to go there instantly.</p>
+			<label class="login-reminder-choice"><input type="checkbox"> Don't show this again on this device</label>
+			<p class="login-reminder-error" role="status" aria-live="polite"></p>
+			<button class="login-reminder-button" type="button" autofocus>Great!</button>
+		`;
+		document.body.append(dialog);
+
+		const checkbox = dialog.querySelector('input[type="checkbox"]');
+		const errorMessage = dialog.querySelector('.login-reminder-error');
+		dialog.querySelector('button').addEventListener('click', () => {
+			if (checkbox.checked) {
+				try {
+					localStorage.setItem(LOGIN_REMINDER_KEY, 'true');
+				} catch (error) {
+					console.error('Rocky Games could not save the login reminder preference:', error);
+					errorMessage.textContent = 'This preference could not be saved. The reminder will show again next time.';
+					return;
+				}
+			}
+			dialog.close();
+		});
+
+		dialog.showModal();
+	}
+
 	function initialize() {
 		initializeFullscreen();
 		initializeLoginShortcut();
+		initializeLoginReminder();
 		const toolbar = document.createElement('nav');
 		toolbar.id = 'rocky-economy-toolbar';
 		toolbar.setAttribute('aria-label', 'Rocky Games wallet');
