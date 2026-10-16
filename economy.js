@@ -243,7 +243,7 @@
 
 	function initializeLoginShortcut() {
 		window.addEventListener('keydown', (event) => {
-			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing || event.key.toLowerCase() !== 'a') return;
+			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing || event.code !== 'KeyA') return;
 
 			const activeElement = document.activeElement;
 			if (activeElement instanceof HTMLElement && (
