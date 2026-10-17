@@ -6,7 +6,7 @@
 	const GAME_REWARD = 5;
 	const prizes = [10, 15, 20, 25, 50, 100];
 	const backgrounds = [
-		{ id: 'default', name: 'Arcade Paper', price: 0, color: '#f3f1e8', image: 'radial-gradient(#20252218 0.7px, transparent 0.7px)', size: '8px 8px' },
+		{ id: 'default', name: 'Neon Grid', price: 0, color: '#050b07', image: 'radial-gradient(circle at 50% -10%, #0e4b27 0, transparent 48%), linear-gradient(#3cff7a1a 1px, transparent 1px), linear-gradient(90deg, #3cff7a1a 1px, transparent 1px)', size: 'auto, 32px 32px, 32px 32px' },
 		{ id: 'sunset', name: 'Sunset Pop', price: 50, color: '#ffe0c2', image: 'linear-gradient(145deg, #ffe0c2, #f6b5b5 55%, #d7c1ed)' },
 		{ id: 'ocean', name: 'Cool Water', price: 75, color: '#d7f0ee', image: 'linear-gradient(135deg, #d7f0ee, #a9d6e5 55%, #c5d8f0)' },
 		{ id: 'meadow', name: 'Meadow', price: 100, color: '#e2f0d1', image: 'linear-gradient(145deg, #e2f0d1, #b8d8a5 55%, #f0e8bd)' },
@@ -81,11 +81,11 @@
 
 	function applyBackground() {
 		const background = backgroundById.get(state.activeBackground);
-		document.body.style.backgroundColor = background.color;
-		document.body.style.backgroundImage = background.image;
-		document.body.style.backgroundSize = background.size || 'cover';
-		document.body.style.backgroundPosition = 'center';
-		document.body.style.backgroundAttachment = background.size ? 'initial' : 'fixed';
+		document.body.style.setProperty('background-color', background.color, 'important');
+		document.body.style.setProperty('background-image', background.image, 'important');
+		document.body.style.setProperty('background-size', background.size || 'cover', 'important');
+		document.body.style.setProperty('background-position', 'center', 'important');
+		document.body.style.setProperty('background-attachment', background.size ? 'initial' : 'fixed', 'important');
 	}
 
 	function render() {
