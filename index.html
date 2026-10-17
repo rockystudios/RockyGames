@@ -209,6 +209,16 @@
 		.game-link:hover { background: #e8edc5; box-shadow: 6px 6px 0 var(--ink); transform: translateY(-2px); }
 		.game-link:focus-visible { outline: 3px solid var(--orange); outline-offset: 4px; }
 		.game-link[hidden] { display: none; }
+		.game-card { position: relative; min-width: 0; }
+		.favorite-button { position: absolute; z-index: 1; top: 6px; left: 58px; display: grid; width: 34px; height: 34px; place-items: center; padding: 0; border: 1px solid #20252266; background: var(--paper); color: #52645b; font: 22px/1 var(--mono); cursor: pointer; }
+		.favorite-button:hover, .favorite-button[aria-pressed="true"] { border-color: var(--ink); background: var(--lime); color: #b12d2d; }
+		.favorite-button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+		.favorites-status { min-height: 0; margin: 0; color: #a83220; font-size: 10px; }
+		.favorites-status:empty { display: none; }
+		.favorites-section { margin-top: 18px; }
+		.favorites-section[hidden], .favorites-divider[hidden] { display: none; }
+		.favorites-section .catalog-heading { border-top: 0; padding-top: 0; }
+		.favorites-divider { margin: 4px 0 0; border: 0; border-top: 2px solid var(--ink); }
 		.game-number { grid-column: 1; grid-row: 1; align-self: center; padding: 0 14px; color: #52645b; font-size: 10px; }
 		.game-link > div:nth-child(2) { grid-column: 1 / -1; grid-row: 3; align-self: end; padding: 12px 14px 16px; }
 		.game-link .road-preview, .game-link .mini-preview { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 154px; }
@@ -375,6 +385,15 @@
 					<button class="filter-button" type="button" data-filter="3d" aria-pressed="false">3D</button>
 				</div>
 			</div>
+			<p class="favorites-status" id="favoritesStatus" role="status" aria-live="polite"></p>
+			<section class="favorites-section" id="favoritesSection" aria-labelledby="favoritesTitle" hidden>
+				<div class="catalog-heading">
+					<h2 id="favoritesTitle">Hearted games</h2>
+					<span class="catalog-count" id="favoritesCount" aria-live="polite"></span>
+				</div>
+				<div class="game-grid" id="favoritesGrid"></div>
+			</section>
+			<hr class="favorites-divider" id="favoritesDivider" hidden>
 			<div class="game-grid" id="gameGrid">
 				<a class="game-link" href="lane-runner.html" data-categories="arcade driving">
 					<span class="game-number">01</span>
@@ -522,24 +541,90 @@
 			const searchInput = document.querySelector('#gameSearch');
 			const catalogCount = document.querySelector('#catalogCount');
 			const emptyState = document.querySelector('#emptyState');
-			const games = [...document.querySelectorAll('.game-link')];
+			const favoritesSection = document.querySelector('#favoritesSection');
+			const favoritesGrid = document.querySelector('#favoritesGrid');
+			const favoritesCount = document.querySelector('#favoritesCount');
+			const favoritesDivider = document.querySelector('#favoritesDivider');
+			const favoritesStatus = document.querySelector('#favoritesStatus');
+			const gameGrid = document.querySelector('#gameGrid');
+			const favoriteStorageKey = 'rockyGamesFavoriteGames';
+			const games = [...gameGrid.querySelectorAll('.game-link')];
 			const filters = [...document.querySelectorAll('[data-filter]')];
+			const favorites = new Set();
 			let activeFilter = 'all';
+
+			try {
+				const storedFavorites = JSON.parse(localStorage.getItem(favoriteStorageKey) || '[]');
+				if (!Array.isArray(storedFavorites) || storedFavorites.some((id) => typeof id !== 'string')) {
+					throw new Error('Saved favorite games data is invalid.');
+				}
+				storedFavorites.forEach((id) => favorites.add(id));
+			} catch (error) {
+				console.error('Rocky Games could not load favorite games:', error);
+				favoritesStatus.textContent = 'Saved favorites could not be loaded in this browser.';
+			}
+
+			const cards = games.map((game) => {
+				const id = game.getAttribute('href');
+				const card = document.createElement('div');
+				card.className = 'game-card';
+				const favoriteButton = document.createElement('button');
+				favoriteButton.className = 'favorite-button';
+				favoriteButton.type = 'button';
+				favoriteButton.innerHTML = '<span aria-hidden="true">♥</span>';
+				favoriteButton.addEventListener('click', () => {
+					const nextFavorites = new Set(favorites);
+					if (nextFavorites.has(id)) nextFavorites.delete(id);
+					else nextFavorites.add(id);
+					try {
+						localStorage.setItem(favoriteStorageKey, JSON.stringify([...nextFavorites]));
+					} catch (error) {
+						console.error('Rocky Games could not save favorite games:', error);
+						favoritesStatus.textContent = 'Your favorites could not be saved in this browser.';
+						return;
+					}
+					favorites.clear();
+					nextFavorites.forEach((favoriteId) => favorites.add(favoriteId));
+					favoritesStatus.textContent = '';
+					updateCatalog();
+				});
+				game.replaceWith(card);
+				card.append(game, favoriteButton);
+				return { id, game, card, favoriteButton };
+			});
 
 			function updateCatalog() {
 				const query = searchInput.value.trim().toLowerCase();
-				let visibleCount = 0;
-				games.forEach((game) => {
+				let visibleTotal = 0;
+				let visibleFavorites = 0;
+				cards.forEach(({ id, game, card, favoriteButton }) => {
 					const categories = game.dataset.categories.split(/\s+/);
 					const matchesQuery = `${game.textContent} ${game.dataset.categories}`.toLowerCase().includes(query);
 					const matchesFilter = activeFilter === 'all' || categories.includes(activeFilter);
-					game.hidden = !(matchesQuery && matchesFilter);
-					if (!game.hidden) visibleCount += 1;
+					const matches = matchesQuery && matchesFilter;
+					const isFavorite = favorites.has(id);
+					favoriteButton.setAttribute('aria-label', `${isFavorite ? 'Remove' : 'Add'} ${game.querySelector('.game-title').textContent} ${isFavorite ? 'from' : 'to'} favorites`);
+					favoriteButton.setAttribute('aria-pressed', String(isFavorite));
+					card.hidden = !matches;
+					if (isFavorite) {
+						favoritesGrid.append(card);
+						if (matches) {
+							visibleFavorites += 1;
+							visibleTotal += 1;
+						}
+					} else {
+						gameGrid.append(card);
+						if (matches) visibleTotal += 1;
+					}
 				});
-				catalogCount.textContent = `${visibleCount} ${visibleCount === 1 ? 'game' : 'games'}`;
-				emptyState.hidden = visibleCount !== 0;
+				favoritesSection.hidden = visibleFavorites === 0;
+				favoritesDivider.hidden = visibleFavorites === 0;
+				favoritesCount.textContent = `${visibleFavorites} ${visibleFavorites === 1 ? 'game' : 'games'}`;
+				catalogCount.textContent = `${visibleTotal} ${visibleTotal === 1 ? 'game' : 'games'}`;
+				emptyState.hidden = visibleTotal !== 0;
 			}
 
+			updateCatalog();
 			searchInput.addEventListener('input', updateCatalog);
 			filters.forEach((button) => {
 				button.addEventListener('click', () => {
