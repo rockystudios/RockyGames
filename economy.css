@@ -85,7 +85,31 @@
 .game-fullscreen-button:hover { background: #f36b45; }
 .game-fullscreen-button:focus-visible { outline: 3px solid #d9f06b; outline-offset: 3px; }
 
+.game-login-link {
+	position: absolute;
+	z-index: 2147483647;
+	top: 12px;
+	right: 62px;
+	display: none;
+	min-height: 42px;
+	align-items: center;
+	padding: 0 12px;
+	border: 2px solid #f3f1e899;
+	background: #202522dd;
+	color: #fff;
+	font: 700 12px 'DM Mono', monospace;
+	text-decoration: none;
+	text-transform: uppercase;
+}
+
+.game-login-link:hover { background: #f36b45; }
+.game-login-link:focus-visible { outline: 3px solid #d9f06b; outline-offset: 3px; }
+
+[data-game-fullscreen]:fullscreen .game-login-link,
+[data-game-fullscreen]:-webkit-full-screen .game-login-link { display: inline-flex; }
+
 .game-shell > .game-fullscreen-button { position: absolute; top: 7px; right: 7px; }
+.game-shell > .game-login-link { top: 7px; right: 57px; }
 .game-shell .game-bar { padding-right: 64px; }
 
 [data-game-fullscreen]:fullscreen,
@@ -126,4 +150,5 @@
 	#rocky-economy-toolbar { right: 8px; bottom: 8px; left: 8px; justify-content: space-between; gap: 4px; padding: 6px; font-size: 9px; }
 	#rocky-economy-toolbar a { padding: 6px 5px; }
 	.game-fullscreen-button { top: 8px; right: 8px; width: 38px; }
+	.game-login-link { top: 8px; right: 54px; min-height: 38px; padding: 0 8px; font-size: 10px; }
 }

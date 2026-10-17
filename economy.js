@@ -211,6 +211,13 @@
 		button.innerHTML = '<span aria-hidden="true">⛶</span>';
 		target.append(button);
 
+		const loginLink = document.createElement('a');
+		loginLink.className = 'game-login-link';
+		loginLink.href = 'https://myaccess.apsva.us/';
+		loginLink.textContent = 'MyAccess';
+		loginLink.setAttribute('aria-label', 'Open APSVA MyAccess');
+		target.append(loginLink);
+
 		function updateButton() {
 			const isFullscreen = document.fullscreenElement === target || document.webkitFullscreenElement === target;
 			const label = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
@@ -243,7 +250,7 @@
 	}
 
 	function initializeLoginShortcut() {
-		window.addEventListener('keydown', (event) => {
+		document.addEventListener('keydown', (event) => {
 			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing || event.code !== 'KeyA') return;
 
 			const activeElement = document.activeElement;
