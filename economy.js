@@ -7,7 +7,7 @@
 	const CUSTOM_SHORTCUTS_KEY = 'rockyGamesCustomShortcuts';
 	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
-	const NEWS_VERSION = 'shortcuts-1';
+	const NEWS_VERSION = 'shortcuts-and-wager-2';
 	const GAME_REWARD = 5;
 	const SHORTCUTS = [
 		{ id: 'myaccess', code: 'KeyA', label: 'APSVA MyAccess', href: 'https://myaccess.apsva.us/' },
@@ -107,6 +107,7 @@
 		if (balance) balance.textContent = storageAvailable ? `${state.coins} coins` : 'Coins unavailable';
 		renderShop();
 		renderSpin();
+		renderWager();
 	}
 
 	function renderShop() {
@@ -201,6 +202,41 @@
 				spinStatus.textContent = `You won ${prize} coins! Your new balance is ${state.coins} coins.`;
 			}
 		}, 4200);
+	}
+
+	function renderWager() {
+		const amountInput = document.querySelector('#wager-amount');
+		const button = document.querySelector('#wager-button');
+		if (!amountInput || !button || !state) return;
+		amountInput.max = String(state.coins);
+		const amount = amountInput.valueAsNumber;
+		button.disabled = !storageAvailable || !Number.isSafeInteger(amount) || amount <= 0 || amount > state.coins;
+	}
+
+	function wagerCoins(amount) {
+		if (!storageAvailable || !Number.isSafeInteger(amount) || amount <= 0) {
+			announce('Enter a whole-number coin wager greater than zero.');
+			return;
+		}
+		let won = false;
+		const changed = update((next) => {
+			if (amount > next.coins) {
+				announce('You do not have enough coins for that wager.');
+				return false;
+			}
+			if (amount > Number.MAX_SAFE_INTEGER - next.coins) {
+				announce('That wager would exceed your wallet limit if you won. Try a smaller amount.');
+				return false;
+			}
+			won = Math.random() < 0.5;
+			next.coins += won ? amount : -amount;
+			return true;
+		});
+		if (!changed) return;
+		const status = document.querySelector('#wager-status');
+		if (status) status.textContent = won
+			? `You won! Your ${amount}-coin wager doubled. New balance: ${state.coins} coins.`
+			: `Not this time—you lost ${amount} coins. New balance: ${state.coins} coins.`;
 	}
 
 	function rewardGameCompletion(game) {
@@ -531,9 +567,13 @@
 		dialog.setAttribute('aria-labelledby', 'news-reminder-title');
 		dialog.innerHTML = `
 			<p class="login-reminder-kicker">Rocky Games update</p>
-			<h2 id="news-reminder-title">We just added more shortcuts!</h2>
+			<h2 id="news-reminder-title">What's new</h2>
 			<section class="news-intro">
-				<p>Get where you want to go faster with these new keyboard shortcuts. Press Option + Shift and a letter any time while you are on Rocky Games.</p>
+				<ul class="news-update-list">
+					<li><strong>More shortcuts!</strong> Jump to MyAccess, Sora, Home, Mini-games, or add your own destination with a custom URL and key.</li>
+					<li><strong>Double or nothing!</strong> Wager your Rocky Games coins for a 50/50 chance to double them. You can also lose your wager. No real money is used. <a href="shop.html#coin-double">Try it in the shop</a>.</li>
+				</ul>
+				<p>Use Option + Shift + a letter for a shortcut. Select “Show me” to edit shortcuts or add your own.</p>
 				<div class="news-actions">
 					<button class="login-reminder-button" type="button" data-news-action="show-shortcuts">Show me</button>
 					<button class="login-reminder-button news-secondary-button" type="button" data-news-action="close" autofocus>Great!</button>
@@ -648,6 +688,13 @@
 		const renderShortcutList = initializeShortcuts(shortcutList);
 		initializeWhatsNew(shortcutList, renderShortcutList);
 		document.querySelector('#spin-button')?.addEventListener('click', spinWheel);
+		document.querySelector('#wager-amount')?.addEventListener('input', renderWager);
+		document.querySelector('#wager-form')?.addEventListener('submit', (event) => {
+			event.preventDefault();
+			const amountInput = document.querySelector('#wager-amount');
+			wagerCoins(amountInput.valueAsNumber);
+			renderWager();
+		});
 
 		try {
 			state = readState();

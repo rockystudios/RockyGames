@@ -25,10 +25,12 @@ in this repository.
 
 The site-wide wallet links to a daily prize wheel and the background shop.
 Spinning awards 10, 15, 20, 25, 50, or 100 coins; finishing a built-in game
-awards 5 coins. Purchased backgrounds and the active selection are saved in
-your browser's local storage and shared by pages on this site in that browser.
-They do not sync between browsers or devices. The embedded third-party games
-cannot report when a game is finished, so they do not award play coins.
+awards 5 coins. The shop also offers a virtual-coin 50/50 wager: win to double
+the wager or lose the coins you put in. No real money is used. Purchased
+backgrounds and the active selection are saved in your browser's local storage
+and shared by pages on this site in that browser. They do not sync between
+browsers or devices. The embedded third-party games cannot report when a game
+is finished, so they do not award play coins.
 
 ## Keyboard shortcuts
 

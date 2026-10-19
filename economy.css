@@ -73,6 +73,10 @@
 .news-reminder .login-reminder-kicker { color: #52645b !important; }
 .news-reminder h3 { margin: 22px 0 12px; font: 800 24px/1.1 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
 .news-reminder .news-intro p { margin: 18px 0 22px; }
+.news-update-list { display: grid; gap: 12px; margin: 18px 0; padding-left: 22px; }
+.news-update-list li { padding-left: 4px; }
+.news-update-list strong { font-weight: 700; }
+.news-update-list a { color: #202522 !important; font-weight: 700; text-decoration-thickness: 2px; }
 .news-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .news-secondary-button { background: #fffdf6; }
 .news-shortcut-list { display: grid; gap: 8px; margin: 0 0 22px; padding: 0; list-style: none; }

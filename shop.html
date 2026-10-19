@@ -5,8 +5,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="theme-color" content="#050b07">
 	<title>Daily Spin & Background Shop | Rocky Games</title>
-	<link rel="stylesheet" href="economy.css?v=sci-fi-theme-9">
-	<script src="economy.js?v=shortcuts-2" defer></script>
+	<link rel="stylesheet" href="economy.css?v=sci-fi-theme-10">
+	<script src="economy.js?v=news-updates-2" defer></script>
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
 
@@ -45,6 +45,11 @@
 		.shop-button:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
 		.shop-button:disabled { cursor: not-allowed; opacity: .65; }
 		#spin-status { min-height: 36px; margin: 14px 0 0; font-size: 11px; line-height: 1.6; }
+		.wager-copy { max-width: 560px; font-size: 11px; line-height: 1.8; }
+		.wager-form { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; }
+		.wager-form label { display: grid; gap: 5px; font-size: 10px; }
+		.wager-form input { width: min(100%, 220px); min-height: 42px; padding: 8px 10px; border: 2px solid var(--ink); background: #fffdf6; color: var(--ink); font: 16px var(--mono); }
+		#wager-status { min-height: 36px; margin: 14px 0 0; font-size: 11px; line-height: 1.6; }
 		.shop-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; }
 		.background-card { padding: 10px; border: 1px solid #20252288; background: #f3f1e8; }
 		.background-preview { height: 92px; border: 1px solid #20252266; }
@@ -88,6 +93,17 @@
 					<p id="spin-status" role="status" aria-live="polite">Loading your saved spin data…</p>
 				</div>
 			</div>
+		</section>
+		<section id="coin-double" aria-labelledby="wager-title">
+			<div class="section-heading"><h2 id="wager-title">Double or nothing</h2><span class="section-note">50/50 chance</span></div>
+			<p class="wager-copy">Wager your virtual coins. You have an equal chance to lose your wager or win twice the amount you put in. This uses Rocky Games coins only—no real money.</p>
+			<form class="wager-form" id="wager-form">
+				<label for="wager-amount">Wager amount (coins)
+					<input id="wager-amount" name="wager" type="number" min="1" step="1" inputmode="numeric" required>
+				</label>
+				<button class="shop-button" id="wager-button" type="submit" disabled>Flip for double</button>
+			</form>
+			<p id="wager-status" role="status" aria-live="polite">Enter a wager up to your current coin balance.</p>
 		</section>
 		<section aria-labelledby="background-title">
 			<div class="section-heading"><h2 id="background-title">Background shop</h2><span class="section-note">Change the site backdrop</span></div>
