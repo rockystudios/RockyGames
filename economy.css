@@ -123,6 +123,45 @@
 .game-fullscreen-button:hover { background: #f36b45; }
 .game-fullscreen-button:focus-visible { outline: 3px solid #d9f06b; outline-offset: 3px; }
 
+.game-shortcut-menu {
+	position: absolute;
+	z-index: 2147483647;
+	top: 12px;
+	right: 112px;
+}
+
+.game-shortcut-menu-button {
+	min-height: 42px;
+	padding: 0 10px;
+	border: 2px solid #f3f1e899;
+	background: #202522dd;
+	color: white;
+	font: 700 11px 'DM Mono', monospace;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+
+.game-shortcut-menu-button:hover { background: #f36b45; }
+.game-shortcut-menu-button:focus-visible { outline: 3px solid #d9f06b; outline-offset: 3px; }
+
+.game-shortcut-menu-list {
+	position: absolute;
+	top: calc(100% + 6px);
+	right: 0;
+	display: grid;
+	min-width: 220px;
+	gap: 4px;
+	padding: 6px;
+	border: 2px solid #f3f1e899;
+	background: #202522f2;
+	box-shadow: 3px 3px 0 #202522;
+}
+
+.game-shortcut-menu-list[hidden] { display: none; }
+.game-shortcut-menu-list a { padding: 8px; color: white; font: 11px/1.4 'DM Mono', monospace; text-decoration: none; }
+.game-shortcut-menu-list a:hover,
+.game-shortcut-menu-list a:focus-visible { background: #f36b45; color: white; outline: none; }
+
 .game-login-link {
 	position: absolute;
 	z-index: 2147483647;
@@ -189,6 +228,8 @@
 	#rocky-economy-toolbar a { padding: 6px 5px; }
 	.game-fullscreen-button { top: 8px; right: 8px; width: 38px; }
 	.game-login-link { top: 8px; right: 54px; min-height: 38px; padding: 0 8px; font-size: 10px; }
+	.game-shortcut-menu { top: 8px; right: 100px; }
+	.game-shortcut-menu-button { min-height: 38px; padding: 0 7px; font-size: 9px; }
 }
 
 :root {

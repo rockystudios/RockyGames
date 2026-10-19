@@ -40,6 +40,10 @@ bottom toolbar to review and change the URLs and letter bindings, or add your
 own shortcuts. Shortcut settings and the news display preference are saved in
 this browser and shared across the site on this device.
 
+On embedded games, use the **Shortcuts** menu beside the fullscreen button if
+the game has keyboard focus. Browsers keep keys inside third-party game frames,
+so those frames cannot pass shortcut keystrokes back to Rocky Games.
+
 ## Run locally
 
 Serve the repository root with any static web server, for example:

@@ -268,6 +268,25 @@
 		loginLink.setAttribute('aria-label', 'Open APSVA MyAccess');
 		target.append(loginLink);
 
+		const shortcutMenu = document.createElement('div');
+		shortcutMenu.className = 'game-shortcut-menu';
+		const shortcutMenuButton = document.createElement('button');
+		shortcutMenuButton.className = 'game-shortcut-menu-button';
+		shortcutMenuButton.type = 'button';
+		shortcutMenuButton.textContent = 'Shortcuts';
+		shortcutMenuButton.setAttribute('aria-expanded', 'false');
+		const shortcutMenuList = document.createElement('nav');
+		shortcutMenuList.className = 'game-shortcut-menu-list';
+		shortcutMenuList.setAttribute('aria-label', 'Keyboard shortcuts');
+		shortcutMenuList.hidden = true;
+		shortcutMenu.append(shortcutMenuButton, shortcutMenuList);
+		target.append(shortcutMenu);
+
+		shortcutMenuButton.addEventListener('click', () => {
+			shortcutMenuList.hidden = !shortcutMenuList.hidden;
+			shortcutMenuButton.setAttribute('aria-expanded', String(!shortcutMenuList.hidden));
+		});
+
 		function updateButton() {
 			const isFullscreen = document.fullscreenElement === target || document.webkitFullscreenElement === target;
 			const label = isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen';
@@ -371,7 +390,17 @@
 
 		function renderShortcutList() {
 			shortcutList.replaceChildren();
-			getShortcuts().forEach((shortcut) => {
+			const shortcuts = getShortcuts();
+			document.querySelectorAll('.game-shortcut-menu-list').forEach((menu) => {
+				menu.replaceChildren();
+				shortcuts.forEach((shortcut) => {
+					const link = document.createElement('a');
+					link.href = new URL(shortcut.href, window.location.href).href;
+					link.textContent = `${shortcut.label} (⌥⇧${shortcut.code.slice(3)})`;
+					menu.append(link);
+				});
+			});
+			shortcuts.forEach((shortcut) => {
 				const item = document.createElement('li');
 				item.classList.add('news-shortcut-item');
 				item.dataset.shortcutId = shortcut.id;
@@ -497,7 +526,7 @@
 			});
 		}
 
-		document.addEventListener('keydown', (event) => {
+		window.addEventListener('keydown', (event) => {
 			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing) return;
 
 			const activeElement = document.activeElement;
@@ -510,7 +539,7 @@
 			if (!shortcut) return;
 			event.preventDefault();
 			window.location.assign(new URL(shortcut.href, window.location.href).href);
-		});
+		}, true);
 		window.addEventListener('storage', (event) => {
 			if (![SHORTCUT_BINDINGS_KEY, SHORTCUT_URLS_KEY, CUSTOM_SHORTCUTS_KEY].includes(event.key)) return;
 			try {
