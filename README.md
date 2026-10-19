@@ -16,10 +16,9 @@ The deployment workflow publishes the HTML files at the repository root. The
 games use relative links, so they work from the `/RockyGames/` project-site
 path as well as when served locally.
 
-Eaglercraft and Moto X3M are embedded from third-party sites and need an
-internet connection. If Eaglercraft asks you to visit the original site, use
-the **Open Eaglercraft directly** link on its page. The other games are included
-in this repository.
+Several games are embedded from third-party sites and need an internet
+connection. If an embedded game fails to load, use its original site or return
+later. The built-in mini-games are included in this repository.
 
 ## Coins and backgrounds
 

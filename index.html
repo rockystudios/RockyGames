@@ -173,6 +173,8 @@
 		.mini-preview--roper { background: linear-gradient(#55b9cc 0 58%, #a8cf98 58%); }
 		.mini-preview--roper::before { top: 20%; left: 50%; width: 100px; height: 100px; border: 3px solid var(--ink); border-radius: 50%; background: repeating-conic-gradient(var(--paper) 0 12deg, #202522 12deg 15deg, var(--paper) 15deg 27deg); transform: translateX(-50%); }
 		.mini-preview--roper::after { top: 52%; left: 50%; width: 14px; height: 14px; border: 2px solid var(--ink); border-radius: 50%; background: var(--orange); box-shadow: 0 -40px 0 -4px var(--orange), 34px -20px 0 -4px var(--orange), 34px 20px 0 -4px var(--orange), 0 40px 0 -4px var(--orange), -34px 20px 0 -4px var(--orange), -34px -20px 0 -4px var(--orange); transform: translate(-50%, -50%); }
+		.mini-preview--sans-fight { background: linear-gradient(135deg, #202522 0 50%, #f36b45 50%); }
+		.mini-preview--sans-fight::before { top: 50%; left: 50%; display: grid; width: 92px; height: 92px; place-items: center; border: 3px solid var(--ink); border-radius: 50%; background: #f3f1e8; color: #202522; content: 'VS'; font: 900 32px var(--display); transform: translate(-50%, -50%); }
 		.mini-preview--image-generator { background: linear-gradient(135deg, #252842, #8a5cf6 52%, #f6a7d7); }
 		.mini-preview--image-generator::before { top: 50%; left: 50%; color: #fff; content: '✦'; font: 72px/1 var(--display); text-shadow: 0 0 24px #fff; transform: translate(-50%, -50%); }
 		.mini-preview--moto { background: linear-gradient(160deg, #55b9cc 0 54%, #d9f06b 54% 58%, #a8cf98 58%); }
@@ -372,7 +374,7 @@
 		<section aria-labelledby="catalog-title">
 			<div class="catalog-heading">
 				<h2 id="catalog-title">The arcade</h2>
-				<span class="catalog-count" id="catalogCount" aria-live="polite">23 games</span>
+				<span class="catalog-count" id="catalogCount" aria-live="polite">24 games</span>
 			</div>
 			<div class="catalog-tools">
 				<label class="search-label" for="gameSearch">Search games
@@ -529,8 +531,14 @@
 					<div class="mini-preview mini-preview--roper" aria-hidden="true"></div>
 					<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
 				</a>
-				<a class="game-link" href="https://www.google.com/goto?url=CAESYgHrOzAVJ0lLuz6ojtQ7FqO7Wh_vKcw2kHrN-vQMG0J2sxw2cK2R3gX3cDD_JhaHaDVCTHSfzpzSbjtcSJuGMiQy_AbIpuVCar89nKv1YIGcdrYlBR49BzggBqTSl2ILnTtm" target="_blank" rel="noopener noreferrer" data-categories="creative image ai">
+				<a class="game-link" href="sans-fight.html" data-categories="arcade action fighting">
 					<span class="game-number">23</span>
+					<div><h3 class="game-title">Sans Fight</h3><p class="game-meta">Arcade / Action / Fighting</p></div>
+					<div class="mini-preview mini-preview--sans-fight" aria-hidden="true"></div>
+					<span class="play-label">Play <span class="play-icon" aria-hidden="true">→</span></span>
+				</a>
+				<a class="game-link" href="https://www.google.com/goto?url=CAESYgHrOzAVJ0lLuz6ojtQ7FqO7Wh_vKcw2kHrN-vQMG0J2sxw2cK2R3gX3cDD_JhaHaDVCTHSfzpzSbjtcSJuGMiQy_AbIpuVCar89nKv1YIGcdrYlBR49BzggBqTSl2ILnTtm" target="_blank" rel="noopener noreferrer" data-categories="creative image ai">
+					<span class="game-number">24</span>
 					<div><h3 class="game-title">Image Generator</h3><p class="game-meta">Creative / AI / Image generation</p></div>
 					<div class="mini-preview mini-preview--image-generator" aria-hidden="true"></div>
 					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
