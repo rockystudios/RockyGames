@@ -30,6 +30,14 @@ your browser's local storage and shared by pages on this site in that browser.
 They do not sync between browsers or devices. The embedded third-party games
 cannot report when a game is finished, so they do not award play coins.
 
+## Keyboard shortcuts
+
+Press **Option/Alt + Shift + A** for APSVA MyAccess, **S** for Sora, **H** for
+the Rocky Games home page, or **M** for Mini-games. Use **What's new** in the
+bottom toolbar to review and change the letter bindings. Shortcut bindings and
+the news display preference are saved in this browser and shared across the
+site on this device.
+
 ## Run locally
 
 Serve the repository root with any static web server, for example:

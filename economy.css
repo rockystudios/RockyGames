@@ -42,27 +42,48 @@
 	position: fixed;
 	z-index: 2147483646;
 	inset: 0;
-	width: min(100% - 32px, 440px);
+	width: min(100% - 32px, 640px);
 	max-width: none;
 	max-height: calc(100% - 32px);
+	overflow-y: auto;
 	margin: auto;
-	padding: 26px;
+	padding: clamp(22px, 5vw, 36px);
 	border: 3px solid #202522;
 	background: #f3f1e8;
 	color: #202522;
 	box-shadow: 8px 8px 0 #202522;
-	font: 12px/1.7 'DM Mono', monospace;
+	font: 16px/1.65 'DM Mono', monospace;
 }
 
 .login-reminder::backdrop { background: #202522b8; }
 .login-reminder:not([open]) { display: none; }
 .login-reminder-kicker { margin: 0 0 8px; color: #52645b; font-size: 10px; text-transform: uppercase; }
-.login-reminder h2 { margin: 0; font: 900 clamp(34px, 8vw, 48px)/0.95 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
+.login-reminder h2 { margin: 0; font: 900 clamp(34px, 8vw, 48px)/1.05 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
 .login-reminder kbd { padding: 3px 6px; border: 1px solid #20252266; background: #fffdf6; font: inherit; white-space: nowrap; }
-.login-reminder > p:not(.login-reminder-kicker) { margin: 14px 0 18px; }
+.login-reminder > p:not(.login-reminder-kicker) { margin: 16px 0 22px; }
 .login-reminder-button { min-height: 42px; padding: 8px 18px; border: 2px solid #202522; background: #d9f06b; color: #202522; font: 800 20px/1 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; cursor: pointer; }
 .login-reminder-button:hover { background: white; }
 .login-reminder-button:focus-visible { outline: 3px solid #f36b45; outline-offset: 3px; }
+
+.news-reminder h2,
+.news-reminder h3,
+.news-reminder p,
+.news-reminder li,
+.news-reminder label { color: #202522 !important; }
+.news-reminder .login-reminder-kicker { color: #52645b !important; }
+.news-reminder h3 { margin: 22px 0 12px; font: 800 24px/1.1 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
+.news-reminder .news-intro p { margin: 18px 0 22px; }
+.news-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.news-secondary-button { background: #fffdf6; }
+.news-shortcut-list { display: grid; gap: 8px; margin: 0 0 22px; padding: 0; list-style: none; }
+.news-shortcut-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 12px; border: 1px solid #20252266; background: #fffdf6; }
+.news-shortcut-binding { display: flex; flex-wrap: wrap; gap: 4px; }
+.news-shortcut-binding kbd { padding: 2px 6px; font-size: 13px; }
+.news-shortcut-edit { min-height: 32px; padding: 5px 9px; border: 1px solid #202522; background: #fffdf6; color: #202522; font: 700 13px 'DM Mono', monospace; cursor: pointer; }
+.news-shortcut-edit:hover { background: #d9f06b; }
+.news-shortcut-edit:focus-visible { outline: 3px solid #f36b45; outline-offset: 2px; }
+.news-preference { display: flex; align-items: center; gap: 9px; margin-top: 22px; font-size: 13px; cursor: pointer; }
+.news-preference input { width: 18px; height: 18px; accent-color: #202522; }
 
 [data-game-fullscreen] { position: relative; }
 

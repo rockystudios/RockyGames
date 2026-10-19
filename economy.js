@@ -2,8 +2,17 @@
 	'use strict';
 
 	const STORAGE_KEY = 'rockyGamesEconomy';
-	const LOGIN_REMINDER_KEY = 'rockyGamesLoginReminderDismissed';
+	const SHORTCUT_BINDINGS_KEY = 'rockyGamesShortcutBindings';
+	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
+	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
+	const NEWS_VERSION = 'shortcuts-1';
 	const GAME_REWARD = 5;
+	const SHORTCUTS = [
+		{ id: 'myaccess', code: 'KeyA', label: 'APSVA MyAccess', href: 'https://myaccess.apsva.us/' },
+		{ id: 'sora', code: 'KeyS', label: 'Sora', href: 'https://soraapp.com/' },
+		{ id: 'home', code: 'KeyH', label: 'Rocky Games home', href: 'index.html' },
+		{ id: 'miniGames', code: 'KeyM', label: 'Mini-games', href: 'mini-games.html' }
+	];
 	const prizes = [10, 15, 20, 25, 50, 100];
 	const backgrounds = [
 		{ id: 'default', name: 'Neon Grid', price: 0, color: '#050b07', image: 'radial-gradient(circle at 50% -10%, #0e4b27 0, transparent 48%), linear-gradient(#3cff7a1a 1px, transparent 1px), linear-gradient(90deg, #3cff7a1a 1px, transparent 1px)', size: 'auto, 32px 32px, 32px 32px' },
@@ -20,6 +29,7 @@
 	let state;
 	let storageAvailable = true;
 	let statusTimer;
+	let shortcutBindings = Object.fromEntries(SHORTCUTS.map((shortcut) => [shortcut.id, shortcut.code]));
 
 	function announce(message) {
 		const status = document.querySelector('#rocky-economy-status');
@@ -249,9 +259,86 @@
 		document.addEventListener('webkitfullscreenchange', updateButton);
 	}
 
-	function initializeLoginShortcut() {
+	function readShortcutBindings() {
+		const stored = localStorage.getItem(SHORTCUT_BINDINGS_KEY);
+		if (stored === null) return Object.fromEntries(SHORTCUTS.map((shortcut) => [shortcut.id, shortcut.code]));
+		const parsed = JSON.parse(stored);
+		const valid = parsed && parsed.version === 1 && parsed.bindings
+			&& SHORTCUTS.every((shortcut) => /^Key[A-Z]$/.test(parsed.bindings[shortcut.id] || ''))
+			&& new Set(SHORTCUTS.map((shortcut) => parsed.bindings[shortcut.id])).size === SHORTCUTS.length;
+		if (!valid) throw new Error('Saved shortcut settings are invalid. Your shortcuts were not changed.');
+		return parsed.bindings;
+	}
+
+	function initializeShortcuts(shortcutList) {
+		try {
+			shortcutBindings = readShortcutBindings();
+		} catch (error) {
+			console.error('Rocky Games could not load saved shortcuts:', error);
+			announce(`Could not load shortcuts: ${error.message}`);
+		}
+
+		let capturedShortcutId = null;
+		function renderShortcutList() {
+			shortcutList.replaceChildren();
+			SHORTCUTS.forEach((shortcut) => {
+				const item = document.createElement('li');
+				const label = document.createElement('span');
+				label.textContent = shortcut.label;
+				const binding = document.createElement('span');
+				binding.className = 'news-shortcut-binding';
+				['Option', 'Shift', shortcutBindings[shortcut.id].slice(3)].forEach((key) => {
+					const keycap = document.createElement('kbd');
+					keycap.textContent = key;
+					binding.append(keycap);
+				});
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'news-shortcut-edit';
+				button.textContent = capturedShortcutId === shortcut.id ? 'Press a letter…' : 'Change';
+				button.setAttribute('aria-label', `Change shortcut for ${shortcut.label}`);
+				button.addEventListener('click', () => {
+					capturedShortcutId = shortcut.id;
+					renderShortcutList();
+					shortcutList.querySelector(`[data-shortcut-id="${shortcut.id}"] button`).focus();
+				});
+				item.dataset.shortcutId = shortcut.id;
+				item.append(label, binding, button);
+				shortcutList.append(item);
+			});
+		}
+
 		document.addEventListener('keydown', (event) => {
-			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing || event.code !== 'KeyA') return;
+			if (capturedShortcutId) {
+				if (event.code === 'Escape') {
+					event.preventDefault();
+					capturedShortcutId = null;
+					renderShortcutList();
+					return;
+				}
+				if (!/^Key[A-Z]$/.test(event.code) || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+				event.preventDefault();
+				const conflict = SHORTCUTS.find((shortcut) => shortcut.id !== capturedShortcutId && shortcutBindings[shortcut.id] === event.code);
+				if (conflict) {
+					announce(`${event.code.slice(3)} is already assigned to ${conflict.label}. Choose another letter.`);
+					return;
+				}
+				const shortcut = SHORTCUTS.find((item) => item.id === capturedShortcutId);
+				const nextBindings = { ...shortcutBindings, [capturedShortcutId]: event.code };
+				try {
+					localStorage.setItem(SHORTCUT_BINDINGS_KEY, JSON.stringify({ version: 1, bindings: nextBindings }));
+					shortcutBindings = nextBindings;
+					capturedShortcutId = null;
+					renderShortcutList();
+					announce(`${shortcut.label} shortcut saved on this device.`);
+				} catch (error) {
+					console.error('Rocky Games could not save shortcut settings:', error);
+					announce(`Could not save shortcut: ${error.message}`);
+				}
+				return;
+			}
+
+			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing) return;
 
 			const activeElement = document.activeElement;
 			if (activeElement instanceof HTMLElement && (
@@ -259,63 +346,150 @@
 				|| ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement.tagName)
 			)) return;
 
+			const shortcut = SHORTCUTS.find((item) => shortcutBindings[item.id] === event.code);
+			if (!shortcut) return;
 			event.preventDefault();
-			window.location.assign('https://myaccess.apsva.us/');
+			window.location.assign(new URL(shortcut.href, window.location.href).href);
 		});
+		window.addEventListener('storage', (event) => {
+			if (event.key !== SHORTCUT_BINDINGS_KEY) return;
+			try {
+				shortcutBindings = readShortcutBindings();
+				renderShortcutList();
+			} catch (error) {
+				console.error('Rocky Games could not refresh saved shortcuts:', error);
+				announce(`Could not refresh shortcuts: ${error.message}`);
+			}
+		});
+		return renderShortcutList;
 	}
 
-	function initializeLoginReminder() {
+	function isNewsDismissed() {
 		try {
-			localStorage.removeItem(LOGIN_REMINDER_KEY);
+			return localStorage.getItem(NEWS_DISMISSED_KEY) === NEWS_VERSION
+				|| localStorage.getItem(NEWS_SEEN_KEY) === NEWS_VERSION;
 		} catch (error) {
-			console.error('Rocky Games could not clear the old login reminder preference:', error);
+			console.error('Rocky Games could not read the news preference:', error);
+			announce(`Could not read news preference: ${error.message}`);
+			return false;
 		}
+	}
 
+	function initializeWhatsNew(shortcutList, renderShortcutList) {
 		const dialog = document.createElement('dialog');
-		dialog.className = 'login-reminder';
-		dialog.setAttribute('aria-labelledby', 'login-reminder-title');
+		dialog.className = 'login-reminder news-reminder';
+		dialog.setAttribute('aria-labelledby', 'news-reminder-title');
 		dialog.innerHTML = `
-			<p class="login-reminder-kicker">Quick access</p>
-			<h2 id="login-reminder-title">Need APSVA MyAccess?</h2>
-			<p>Press <kbd>⌥ Option</kbd> + <kbd>⇧ Shift</kbd> + <kbd>A</kbd> to go there instantly.</p>
-			<button class="login-reminder-button" type="button" autofocus>Great!</button>
+			<p class="login-reminder-kicker">Rocky Games update</p>
+			<h2 id="news-reminder-title">We just added more shortcuts!</h2>
+			<section class="news-intro">
+				<p>Get where you want to go faster with these new keyboard shortcuts. Press Option + Shift and a letter any time while you are on Rocky Games.</p>
+				<div class="news-actions">
+					<button class="login-reminder-button" type="button" data-news-action="show-shortcuts">Show me</button>
+					<button class="login-reminder-button news-secondary-button" type="button" data-news-action="close" autofocus>Great!</button>
+				</div>
+			</section>
+			<section class="news-shortcuts" hidden aria-labelledby="news-shortcuts-title">
+				<h3 id="news-shortcuts-title" tabindex="-1">Your shortcuts</h3>
+				<p>Change a shortcut by clicking Change, then pressing an unused letter. Press Escape to cancel. Your choices are saved on this device.</p>
+				<ul class="news-shortcut-list"></ul>
+				<div class="news-actions">
+					<button class="login-reminder-button news-secondary-button" type="button" data-news-action="back">Back</button>
+					<button class="login-reminder-button" type="button" data-news-action="close">Great!</button>
+				</div>
+			</section>
+			<label class="news-preference"><input type="checkbox"> Don't show me this news again</label>
 		`;
 		document.body.append(dialog);
+		shortcutList.className = 'news-shortcut-list';
+		dialog.querySelector('.news-shortcut-list').replaceWith(shortcutList);
+		renderShortcutList();
 
-		dialog.querySelector('button').addEventListener('click', () => {
-			dialog.close();
+		const checkbox = dialog.querySelector('.news-preference input');
+		try {
+			checkbox.checked = localStorage.getItem(NEWS_DISMISSED_KEY) === NEWS_VERSION;
+		} catch (error) {
+			console.error('Rocky Games could not read the news display preference:', error);
+			announce(`Could not read news preference: ${error.message}`);
+		}
+
+		let newsPreferenceChanged = false;
+		checkbox.addEventListener('change', () => {
+			newsPreferenceChanged = true;
+			try {
+				if (checkbox.checked) {
+					localStorage.setItem(NEWS_DISMISSED_KEY, NEWS_VERSION);
+					localStorage.removeItem(NEWS_SEEN_KEY);
+				} else {
+					localStorage.removeItem(NEWS_DISMISSED_KEY);
+					localStorage.removeItem(NEWS_SEEN_KEY);
+				}
+			} catch (error) {
+				console.error('Rocky Games could not save the news display preference:', error);
+				announce(`Could not save news preference: ${error.message}`);
+			}
 		});
 
-		function showReminder() {
+		function saveNewsView() {
+			if (checkbox.checked || newsPreferenceChanged) return;
+			try {
+				localStorage.setItem(NEWS_SEEN_KEY, NEWS_VERSION);
+			} catch (error) {
+				console.error('Rocky Games could not save the news view:', error);
+				announce(`Could not save news preference: ${error.message}`);
+			}
+		}
+		dialog.addEventListener('cancel', saveNewsView);
+
+		dialog.querySelector('[data-news-action="show-shortcuts"]').addEventListener('click', () => {
+			dialog.querySelector('.news-intro').hidden = true;
+			dialog.querySelector('.news-shortcuts').hidden = false;
+			dialog.scrollTop = 0;
+			dialog.querySelector('#news-shortcuts-title').focus();
+		});
+		dialog.querySelector('[data-news-action="back"]').addEventListener('click', () => {
+			dialog.querySelector('.news-shortcuts').hidden = true;
+			dialog.querySelector('.news-intro').hidden = false;
+			dialog.scrollTop = 0;
+			dialog.querySelector('[data-news-action="show-shortcuts"]').focus();
+		});
+		dialog.querySelectorAll('[data-news-action="close"]').forEach((button) => {
+			button.addEventListener('click', () => {
+				saveNewsView();
+				dialog.close();
+			});
+		});
+
+		function showWhatsNew() {
 			if (dialog.open) return;
 			if (typeof dialog.showModal === 'function') {
 				try {
 					dialog.showModal();
 					return;
 				} catch (error) {
-					console.error('Rocky Games could not open the login reminder as a modal:', error);
+					console.error('Rocky Games could not open the news dialog as a modal:', error);
 				}
 			}
 			dialog.setAttribute('open', '');
 		}
 
-		showReminder();
-		return showReminder;
+		document.querySelector('#whats-new-help').addEventListener('click', (event) => {
+			event.preventDefault();
+			showWhatsNew();
+		});
+		if (!isNewsDismissed()) showWhatsNew();
 	}
 
 	function initialize() {
 		initializeFullscreen();
-		initializeLoginShortcut();
-		const showLoginReminder = initializeLoginReminder();
 		const toolbar = document.createElement('nav');
 		toolbar.id = 'rocky-economy-toolbar';
-		toolbar.setAttribute('aria-label', 'Rocky Games wallet');
-		toolbar.innerHTML = '<span id="rocky-economy-balance" aria-live="polite"></span><a href="shop.html#daily-spin">Daily spin</a><a href="shop.html#background-shop">Background shop</a><a href="#login-shortcut-help" id="login-shortcut-help">Shortcut help</a><span id="rocky-economy-status" role="status" aria-live="polite"></span>';
+		toolbar.setAttribute('aria-label', 'Rocky Games shortcuts and wallet');
+		toolbar.innerHTML = '<span id="rocky-economy-balance" aria-live="polite"></span><a href="shop.html#daily-spin">Daily spin</a><a href="shop.html#background-shop">Background shop</a><a href="#whats-new" id="whats-new-help">What\'s new</a><span id="rocky-economy-status" role="status" aria-live="polite"></span>';
 		document.body.append(toolbar);
-		document.querySelector('#login-shortcut-help').addEventListener('click', (event) => {
-			event.preventDefault();
-			showLoginReminder();
-		});
+		const shortcutList = document.createElement('ul');
+		const renderShortcutList = initializeShortcuts(shortcutList);
+		initializeWhatsNew(shortcutList, renderShortcutList);
 		document.querySelector('#spin-button')?.addEventListener('click', spinWheel);
 
 		try {
