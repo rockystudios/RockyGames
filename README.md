@@ -34,9 +34,9 @@ cannot report when a game is finished, so they do not award play coins.
 
 Press **Option/Alt + Shift + A** for APSVA MyAccess, **S** for Sora, **H** for
 the Rocky Games home page, or **M** for Mini-games. Use **What's new** in the
-bottom toolbar to review and change the letter bindings. Shortcut bindings and
-the news display preference are saved in this browser and shared across the
-site on this device.
+bottom toolbar to review and change the URLs and letter bindings, or add your
+own shortcuts. Shortcut settings and the news display preference are saved in
+this browser and shared across the site on this device.
 
 ## Run locally
 

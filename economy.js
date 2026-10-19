@@ -3,6 +3,8 @@
 
 	const STORAGE_KEY = 'rockyGamesEconomy';
 	const SHORTCUT_BINDINGS_KEY = 'rockyGamesShortcutBindings';
+	const SHORTCUT_URLS_KEY = 'rockyGamesShortcutUrls';
+	const CUSTOM_SHORTCUTS_KEY = 'rockyGamesCustomShortcuts';
 	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
 	const NEWS_VERSION = 'shortcuts-1';
@@ -30,6 +32,8 @@
 	let storageAvailable = true;
 	let statusTimer;
 	let shortcutBindings = Object.fromEntries(SHORTCUTS.map((shortcut) => [shortcut.id, shortcut.code]));
+	let shortcutUrls = {};
+	let customShortcuts = [];
 
 	function announce(message) {
 		const status = document.querySelector('#rocky-economy-status');
@@ -270,24 +274,134 @@
 		return parsed.bindings;
 	}
 
+	function parseShortcutUrl(value) {
+		const url = new URL(value);
+		if (!['http:', 'https:'].includes(url.protocol)) throw new Error('Use a URL that starts with http:// or https://.');
+		return url.href;
+	}
+
+	function readShortcutUrls() {
+		const stored = localStorage.getItem(SHORTCUT_URLS_KEY);
+		if (stored === null) return {};
+		const parsed = JSON.parse(stored);
+		if (!parsed || parsed.version !== 1 || !parsed.urls
+			|| Object.entries(parsed.urls).some(([id, url]) => !SHORTCUTS.some((shortcut) => shortcut.id === id) || typeof url !== 'string' || parseShortcutUrl(url) !== url)) {
+			throw new Error('Saved shortcut URLs are invalid. Your shortcuts were not changed.');
+		}
+		return parsed.urls;
+	}
+
+	function readCustomShortcuts() {
+		const stored = localStorage.getItem(CUSTOM_SHORTCUTS_KEY);
+		if (stored === null) return [];
+		const parsed = JSON.parse(stored);
+		const valid = parsed && parsed.version === 1 && Array.isArray(parsed.shortcuts)
+			&& parsed.shortcuts.every((shortcut) => shortcut && /^custom-[a-z0-9-]+$/.test(shortcut.id)
+				&& typeof shortcut.label === 'string' && shortcut.label.trim() && shortcut.label.length <= 60
+				&& typeof shortcut.href === 'string' && parseShortcutUrl(shortcut.href) === shortcut.href
+				&& /^Key[A-Z]$/.test(shortcut.code))
+			&& new Set(parsed.shortcuts.map((shortcut) => shortcut.id)).size === parsed.shortcuts.length
+			&& new Set(parsed.shortcuts.map((shortcut) => shortcut.code)).size === parsed.shortcuts.length
+			&& parsed.shortcuts.every((shortcut) => !SHORTCUTS.some((builtin) => shortcutBindings[builtin.id] === shortcut.code));
+		if (!valid) throw new Error('Saved custom shortcuts are invalid. Your shortcuts were not changed.');
+		return parsed.shortcuts;
+	}
+
+	function getShortcuts() {
+		return [
+			...SHORTCUTS.map((shortcut) => ({
+				...shortcut,
+				code: shortcutBindings[shortcut.id],
+				href: shortcutUrls[shortcut.id] || shortcut.href
+			})),
+			...customShortcuts
+		];
+	}
+
 	function initializeShortcuts(shortcutList) {
 		try {
 			shortcutBindings = readShortcutBindings();
+			shortcutUrls = readShortcutUrls();
+			customShortcuts = readCustomShortcuts();
 		} catch (error) {
 			console.error('Rocky Games could not load saved shortcuts:', error);
 			announce(`Could not load shortcuts: ${error.message}`);
 		}
 
-		let capturedShortcutId = null;
+		function storeCustomShortcuts(nextShortcuts) {
+			localStorage.setItem(CUSTOM_SHORTCUTS_KEY, JSON.stringify({ version: 1, shortcuts: nextShortcuts }));
+			customShortcuts = nextShortcuts;
+		}
+
 		function renderShortcutList() {
 			shortcutList.replaceChildren();
-			SHORTCUTS.forEach((shortcut) => {
+			getShortcuts().forEach((shortcut) => {
 				const item = document.createElement('li');
-				const label = document.createElement('span');
-				label.textContent = shortcut.label;
+				item.classList.add('news-shortcut-item');
+				item.dataset.shortcutId = shortcut.id;
+				const details = document.createElement('div');
+				details.className = 'news-shortcut-details';
+				const title = document.createElement('strong');
+				title.textContent = shortcut.label;
+				const nameLabel = document.createElement('label');
+				nameLabel.className = 'news-shortcut-label';
+				nameLabel.textContent = 'Name';
+				const labelInput = document.createElement('input');
+				labelInput.type = 'text';
+				labelInput.value = shortcut.label;
+				labelInput.maxLength = 60;
+				labelInput.disabled = !shortcut.id.startsWith('custom-');
+				labelInput.id = `shortcut-name-${shortcut.id}`;
+				nameLabel.htmlFor = labelInput.id;
+				labelInput.setAttribute('aria-label', `${shortcut.label} shortcut name`);
+				const urlLabel = document.createElement('label');
+				urlLabel.className = 'news-shortcut-label';
+				urlLabel.textContent = 'URL';
+				const urlInput = document.createElement('input');
+				urlInput.type = 'url';
+				urlInput.value = shortcut.href;
+				urlInput.required = true;
+				urlInput.id = `shortcut-url-${shortcut.id}`;
+				urlLabel.htmlFor = urlInput.id;
+				urlInput.setAttribute('aria-label', `${shortcut.label} shortcut URL`);
+				const urlForm = document.createElement('form');
+				urlForm.className = 'news-shortcut-url-form';
+				const nameField = document.createElement('div');
+				nameField.append(nameLabel, labelInput);
+				if (shortcut.id.startsWith('custom-')) details.append(nameField);
+				else details.append(title);
+				urlForm.addEventListener('submit', (event) => {
+					event.preventDefault();
+					try {
+						const href = parseShortcutUrl(urlInput.value.trim());
+						if (shortcut.id.startsWith('custom-')) {
+							const labelValue = labelInput.value.trim();
+							if (!labelValue || labelValue.length > 60) throw new Error('Enter a name of 1 to 60 characters.');
+							storeCustomShortcuts(customShortcuts.map((entry) => entry.id === shortcut.id ? { ...entry, label: labelValue, href } : entry));
+						} else {
+							const nextUrls = { ...shortcutUrls, [shortcut.id]: href };
+							localStorage.setItem(SHORTCUT_URLS_KEY, JSON.stringify({ version: 1, urls: nextUrls }));
+							shortcutUrls = nextUrls;
+						}
+						announce(`${shortcut.label} URL saved on this device.`);
+						renderShortcutList();
+					} catch (error) {
+						console.error('Rocky Games could not save a shortcut URL:', error);
+						announce(`Could not save shortcut URL: ${error.message}`);
+					}
+				});
+				const urlField = document.createElement('div');
+				urlField.append(urlLabel, urlInput);
+				urlForm.append(urlField);
+				const urlSave = document.createElement('button');
+				urlSave.type = 'submit';
+				urlSave.className = 'news-shortcut-edit';
+				urlSave.textContent = 'Save URL';
+				urlForm.append(urlSave);
+				details.append(urlForm);
 				const binding = document.createElement('span');
 				binding.className = 'news-shortcut-binding';
-				['Option', 'Shift', shortcutBindings[shortcut.id].slice(3)].forEach((key) => {
+				['Option', 'Shift', shortcut.code.slice(3)].forEach((key) => {
 					const keycap = document.createElement('kbd');
 					keycap.textContent = key;
 					binding.append(keycap);
@@ -295,49 +409,59 @@
 				const button = document.createElement('button');
 				button.type = 'button';
 				button.className = 'news-shortcut-edit';
-				button.textContent = capturedShortcutId === shortcut.id ? 'Press a letter…' : 'Change';
-				button.setAttribute('aria-label', `Change shortcut for ${shortcut.label}`);
+				button.textContent = 'Change key';
+				button.setAttribute('aria-label', `Change shortcut key for ${shortcut.label}`);
 				button.addEventListener('click', () => {
-					capturedShortcutId = shortcut.id;
-					renderShortcutList();
-					shortcutList.querySelector(`[data-shortcut-id="${shortcut.id}"] button`).focus();
+					const letter = window.prompt(`Enter a new letter for ${shortcut.label} (Option + Shift + letter):`, shortcut.code.slice(3));
+					if (letter === null) return;
+					const code = `Key${letter.trim().toUpperCase()}`;
+					if (!/^Key[A-Z]$/.test(code)) {
+						announce('Choose one letter from A to Z.');
+						return;
+					}
+					const conflict = getShortcuts().find((entry) => entry.id !== shortcut.id && entry.code === code);
+					if (conflict) {
+						announce(`${code.slice(3)} is already assigned to ${conflict.label}. Choose another letter.`);
+						return;
+					}
+					try {
+						if (shortcut.id.startsWith('custom-')) {
+							storeCustomShortcuts(customShortcuts.map((entry) => entry.id === shortcut.id ? { ...entry, code } : entry));
+						} else {
+							const nextBindings = { ...shortcutBindings, [shortcut.id]: code };
+							localStorage.setItem(SHORTCUT_BINDINGS_KEY, JSON.stringify({ version: 1, bindings: nextBindings }));
+							shortcutBindings = nextBindings;
+						}
+						renderShortcutList();
+						announce(`${shortcut.label} shortcut saved on this device.`);
+					} catch (error) {
+						console.error('Rocky Games could not save shortcut settings:', error);
+						announce(`Could not save shortcut: ${error.message}`);
+					}
 				});
-				item.dataset.shortcutId = shortcut.id;
-				item.append(label, binding, button);
+				item.append(details, binding, button);
+				if (shortcut.id.startsWith('custom-')) {
+					const removeButton = document.createElement('button');
+					removeButton.type = 'button';
+					removeButton.className = 'news-shortcut-edit news-shortcut-delete';
+					removeButton.textContent = 'Remove';
+					removeButton.addEventListener('click', () => {
+						try {
+							storeCustomShortcuts(customShortcuts.filter((entry) => entry.id !== shortcut.id));
+							renderShortcutList();
+							announce(`${shortcut.label} shortcut removed.`);
+						} catch (error) {
+							console.error('Rocky Games could not remove a custom shortcut:', error);
+							announce(`Could not remove shortcut: ${error.message}`);
+						}
+					});
+					item.append(removeButton);
+				}
 				shortcutList.append(item);
 			});
 		}
 
 		document.addEventListener('keydown', (event) => {
-			if (capturedShortcutId) {
-				if (event.code === 'Escape') {
-					event.preventDefault();
-					capturedShortcutId = null;
-					renderShortcutList();
-					return;
-				}
-				if (!/^Key[A-Z]$/.test(event.code) || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-				event.preventDefault();
-				const conflict = SHORTCUTS.find((shortcut) => shortcut.id !== capturedShortcutId && shortcutBindings[shortcut.id] === event.code);
-				if (conflict) {
-					announce(`${event.code.slice(3)} is already assigned to ${conflict.label}. Choose another letter.`);
-					return;
-				}
-				const shortcut = SHORTCUTS.find((item) => item.id === capturedShortcutId);
-				const nextBindings = { ...shortcutBindings, [capturedShortcutId]: event.code };
-				try {
-					localStorage.setItem(SHORTCUT_BINDINGS_KEY, JSON.stringify({ version: 1, bindings: nextBindings }));
-					shortcutBindings = nextBindings;
-					capturedShortcutId = null;
-					renderShortcutList();
-					announce(`${shortcut.label} shortcut saved on this device.`);
-				} catch (error) {
-					console.error('Rocky Games could not save shortcut settings:', error);
-					announce(`Could not save shortcut: ${error.message}`);
-				}
-				return;
-			}
-
 			if (!event.altKey || !event.shiftKey || event.ctrlKey || event.metaKey || event.repeat || event.isComposing) return;
 
 			const activeElement = document.activeElement;
@@ -346,19 +470,45 @@
 				|| ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeElement.tagName)
 			)) return;
 
-			const shortcut = SHORTCUTS.find((item) => shortcutBindings[item.id] === event.code);
+			const shortcut = getShortcuts().find((item) => item.code === event.code);
 			if (!shortcut) return;
 			event.preventDefault();
 			window.location.assign(new URL(shortcut.href, window.location.href).href);
 		});
 		window.addEventListener('storage', (event) => {
-			if (event.key !== SHORTCUT_BINDINGS_KEY) return;
+			if (![SHORTCUT_BINDINGS_KEY, SHORTCUT_URLS_KEY, CUSTOM_SHORTCUTS_KEY].includes(event.key)) return;
 			try {
 				shortcutBindings = readShortcutBindings();
+				shortcutUrls = readShortcutUrls();
+				customShortcuts = readCustomShortcuts();
 				renderShortcutList();
 			} catch (error) {
 				console.error('Rocky Games could not refresh saved shortcuts:', error);
 				announce(`Could not refresh shortcuts: ${error.message}`);
+			}
+		});
+
+		document.addEventListener('submit', (event) => {
+			if (!(event.target instanceof HTMLFormElement) || !event.target.matches('.news-shortcut-add-form')) return;
+			event.preventDefault();
+			const addForm = event.target;
+			const name = addForm.querySelector('[name="shortcutName"]').value.trim();
+			const hrefInput = addForm.querySelector('[name="shortcutUrl"]');
+			const letter = addForm.querySelector('[name="shortcutLetter"]').value.trim().toUpperCase();
+			try {
+				if (!name || name.length > 60) throw new Error('Enter a name of 1 to 60 characters.');
+				const href = parseShortcutUrl(hrefInput.value.trim());
+				if (!/^[A-Z]$/.test(letter)) throw new Error('Choose one letter from A to Z.');
+				const code = `Key${letter}`;
+				if (getShortcuts().some((shortcut) => shortcut.code === code)) throw new Error(`${letter} is already assigned. Choose another letter.`);
+				const id = `custom-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+				storeCustomShortcuts([...customShortcuts, { id, label: name, href, code }]);
+				addForm.reset();
+				renderShortcutList();
+				announce(`${name} shortcut added and saved on this device.`);
+			} catch (error) {
+				console.error('Rocky Games could not add a custom shortcut:', error);
+				announce(`Could not add shortcut: ${error.message}`);
 			}
 		});
 		return renderShortcutList;
@@ -391,8 +541,15 @@
 			</section>
 			<section class="news-shortcuts" hidden aria-labelledby="news-shortcuts-title">
 				<h3 id="news-shortcuts-title" tabindex="-1">Your shortcuts</h3>
-				<p>Change a shortcut by clicking Change, then pressing an unused letter. Press Escape to cancel. Your choices are saved on this device.</p>
+				<p>Change any URL or key, or add your own shortcut. Shortcuts use Option + Shift + letter, and your settings are saved on this device.</p>
 				<ul class="news-shortcut-list"></ul>
+				<form class="news-shortcut-add-form">
+					<h4>Add a shortcut</h4>
+					<label>Name <input name="shortcutName" type="text" maxlength="60" required></label>
+					<label>URL <input name="shortcutUrl" type="url" placeholder="https://example.com" required></label>
+					<label>Key letter <input name="shortcutLetter" type="text" pattern="[A-Za-z]" maxlength="1" placeholder="B" required></label>
+					<button class="login-reminder-button" type="submit">Add shortcut</button>
+				</form>
 				<div class="news-actions">
 					<button class="login-reminder-button news-secondary-button" type="button" data-news-action="back">Back</button>
 					<button class="login-reminder-button" type="button" data-news-action="close">Great!</button>

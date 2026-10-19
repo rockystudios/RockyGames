@@ -77,11 +77,24 @@
 .news-secondary-button { background: #fffdf6; }
 .news-shortcut-list { display: grid; gap: 8px; margin: 0 0 22px; padding: 0; list-style: none; }
 .news-shortcut-list li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; padding: 10px 12px; border: 1px solid #20252266; background: #fffdf6; }
+.news-shortcut-item { align-items: flex-start !important; }
+.news-shortcut-details { display: grid; flex: 1 1 260px; gap: 8px; min-width: 0; }
+.news-shortcut-url-form { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.news-shortcut-url-form > div { display: grid; flex: 1 1 180px; gap: 3px; min-width: 0; }
+.news-shortcut-url-form input,
+.news-shortcut-add-form input { box-sizing: border-box; width: 100%; min-height: 36px; padding: 6px 8px; border: 1px solid #20252266; background: #fffdf6; color: #202522; font: 13px 'DM Mono', monospace; }
+.news-shortcut-url-form input:disabled { border-color: transparent; background: transparent; font-weight: 700; }
+.news-shortcut-label { font-size: 11px; font-weight: 700; }
 .news-shortcut-binding { display: flex; flex-wrap: wrap; gap: 4px; }
 .news-shortcut-binding kbd { padding: 2px 6px; font-size: 13px; }
 .news-shortcut-edit { min-height: 32px; padding: 5px 9px; border: 1px solid #202522; background: #fffdf6; color: #202522; font: 700 13px 'DM Mono', monospace; cursor: pointer; }
 .news-shortcut-edit:hover { background: #d9f06b; }
 .news-shortcut-edit:focus-visible { outline: 3px solid #f36b45; outline-offset: 2px; }
+.news-shortcut-delete { border-color: #a43d2a; color: #7a2718; }
+.news-shortcut-add-form { display: grid; gap: 12px; margin: 20px 0; padding: 14px; border: 1px solid #20252266; background: #fffdf6; }
+.news-shortcut-add-form h4 { margin: 0; font: 800 20px/1 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
+.news-shortcut-add-form label { display: grid; gap: 4px; color: #202522 !important; font-size: 12px; font-weight: 700; }
+.news-shortcut-add-form button { justify-self: start; }
 .news-preference { display: flex; align-items: center; gap: 9px; margin-top: 22px; font-size: 13px; cursor: pointer; }
 .news-preference input { width: 18px; height: 18px; accent-color: #202522; }
 
