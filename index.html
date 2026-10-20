@@ -177,6 +177,8 @@
 		.mini-preview--sans-fight::before { top: 50%; left: 50%; display: grid; width: 92px; height: 92px; place-items: center; border: 3px solid var(--ink); border-radius: 50%; background: #f3f1e8; color: #202522; content: 'VS'; font: 900 32px var(--display); transform: translate(-50%, -50%); }
 		.mini-preview--image-generator { background: linear-gradient(135deg, #252842, #8a5cf6 52%, #f6a7d7); }
 		.mini-preview--image-generator::before { top: 50%; left: 50%; color: #fff; content: '✦'; font: 72px/1 var(--display); text-shadow: 0 0 24px #fff; transform: translate(-50%, -50%); }
+		.mini-preview--shorty { background: linear-gradient(135deg, #202522 0 35%, #55b9cc 35% 68%, #e5be54 68%); }
+		.mini-preview--shorty::before { top: 50%; left: 50%; display: grid; width: 88px; height: 88px; place-items: center; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); content: 'S'; font: 900 54px/1 var(--display); transform: translate(-50%, -50%) rotate(-8deg); }
 		.mini-preview--moto { background: linear-gradient(160deg, #55b9cc 0 54%, #d9f06b 54% 58%, #a8cf98 58%); }
 		.preview-bike { position: absolute; z-index: 1; top: 54%; left: 50%; width: 58px; height: 22px; border-bottom: 4px solid var(--orange); transform: translate(-50%, -50%) rotate(-18deg); }
 		.preview-bike::before, .preview-bike::after { position: absolute; bottom: -11px; width: 16px; aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
@@ -374,7 +376,7 @@
 		<section aria-labelledby="catalog-title">
 			<div class="catalog-heading">
 				<h2 id="catalog-title">The arcade</h2>
-				<span class="catalog-count" id="catalogCount" aria-live="polite">24 games</span>
+				<span class="catalog-count" id="catalogCount" aria-live="polite">25 games</span>
 			</div>
 			<div class="catalog-tools">
 				<label class="search-label" for="gameSearch">Search games
@@ -541,6 +543,12 @@
 					<span class="game-number">24</span>
 					<div><h3 class="game-title">Image Generator</h3><p class="game-meta">Creative / AI / Image generation</p></div>
 					<div class="mini-preview mini-preview--image-generator" aria-hidden="true"></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://iloveshorty.github.io/play/?id=691" target="_blank" rel="noopener noreferrer" data-categories="arcade browser external">
+					<span class="game-number">25</span>
+					<div><h3 class="game-title">Shorty</h3><p class="game-meta">Arcade / Browser game / External</p></div>
+					<div class="mini-preview mini-preview--shorty" aria-hidden="true"></div>
 					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
 				</a>
 			</div>
