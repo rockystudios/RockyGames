@@ -179,6 +179,8 @@
 		.mini-preview--image-generator::before { top: 50%; left: 50%; color: #fff; content: '✦'; font: 72px/1 var(--display); text-shadow: 0 0 24px #fff; transform: translate(-50%, -50%); }
 		.mini-preview--shorty { background: linear-gradient(135deg, #202522 0 35%, #55b9cc 35% 68%, #e5be54 68%); }
 		.mini-preview--shorty::before { top: 50%; left: 50%; display: grid; width: 88px; height: 88px; place-items: center; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); content: 'S'; font: 900 54px/1 var(--display); transform: translate(-50%, -50%) rotate(-8deg); }
+		.mini-preview--external { display: grid; place-items: center; background: repeating-linear-gradient(135deg, #55b9cc 0 24px, #d9f06b 24px 48px, #f36b45 48px 72px); }
+		.mini-preview--external span { max-width: 90%; padding: 8px 12px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); font: 800 24px/0.95 var(--display); text-align: center; text-transform: uppercase; }
 		.mini-preview--moto { background: linear-gradient(160deg, #55b9cc 0 54%, #d9f06b 54% 58%, #a8cf98 58%); }
 		.preview-bike { position: absolute; z-index: 1; top: 54%; left: 50%; width: 58px; height: 22px; border-bottom: 4px solid var(--orange); transform: translate(-50%, -50%) rotate(-18deg); }
 		.preview-bike::before, .preview-bike::after { position: absolute; bottom: -11px; width: 16px; aspect-ratio: 1; border: 3px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
@@ -376,7 +378,7 @@
 		<section aria-labelledby="catalog-title">
 			<div class="catalog-heading">
 				<h2 id="catalog-title">The arcade</h2>
-				<span class="catalog-count" id="catalogCount" aria-live="polite">25 games</span>
+				<span class="catalog-count" id="catalogCount" aria-live="polite">34 games</span>
 			</div>
 			<div class="catalog-tools">
 				<label class="search-label" for="gameSearch">Search games
@@ -549,6 +551,60 @@
 					<span class="game-number">25</span>
 					<div><h3 class="game-title">Shorty</h3><p class="game-meta">Arcade / Browser game / External</p></div>
 					<div class="mini-preview mini-preview--shorty" aria-hidden="true"></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/project-sand/index.html" target="_blank" rel="noopener noreferrer" data-categories="sandbox creative physics">
+					<span class="game-number">26</span>
+					<div><h3 class="game-title">Project Sand</h3><p class="game-meta">Sandbox / Creative / Physics</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>Project Sand</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/moto-x3m-pool-party/index.html" target="_blank" rel="noopener noreferrer" data-categories="arcade driving racing">
+					<span class="game-number">27</span>
+					<div><h3 class="game-title">Moto X3M Pool Party</h3><p class="game-meta">Arcade / Motorbike / Racing</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>Moto X3M</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/bitlife/index.html" target="_blank" rel="noopener noreferrer" data-categories="simulation strategy life">
+					<span class="game-number">28</span>
+					<div><h3 class="game-title">BitLife</h3><p class="game-meta">Simulation / Life / Choices</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>BitLife</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/ball-sort-puzzle/index.html" target="_blank" rel="noopener noreferrer" data-categories="puzzle logic sorting">
+					<span class="game-number">29</span>
+					<div><h3 class="game-title">Ball Sort Puzzle</h3><p class="game-meta">Puzzle / Logic / Sorting</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>Ball Sort</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/cookie-clicker/index.html" target="_blank" rel="noopener noreferrer" data-categories="strategy idle clicker">
+					<span class="game-number">30</span>
+					<div><h3 class="game-title">Cookie Clicker</h3><p class="game-meta">Strategy / Idle / Clicker</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>Cookie Clicker</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/minesweeper/index.html" target="_blank" rel="noopener noreferrer" data-categories="puzzle logic">
+					<span class="game-number">31</span>
+					<div><h3 class="game-title">Minesweeper</h3><p class="game-meta">Puzzle / Logic / Classic</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>Minesweeper</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/fnaf-1/index.html" target="_blank" rel="noopener noreferrer" data-categories="arcade horror survival">
+					<span class="game-number">32</span>
+					<div><h3 class="game-title">FNAF 1</h3><p class="game-meta">Horror / Survival / Strategy</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>FNAF 1</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/slope/index.html" target="_blank" rel="noopener noreferrer" data-categories="arcade 3d runner reflex">
+					<span class="game-number">33</span>
+					<div><h3 class="game-title">Slope</h3><p class="game-meta">Arcade / 3D / Reflex</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>Slope</span></div>
+					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
+				</a>
+				<a class="game-link" href="https://tunnle-rush-2025.github.io/projects/stickman-hook/index.html" target="_blank" rel="noopener noreferrer" data-categories="arcade platformer reflex">
+					<span class="game-number">34</span>
+					<div><h3 class="game-title">Stickman Hook</h3><p class="game-meta">Arcade / Platformer / Reflex</p></div>
+					<div class="mini-preview mini-preview--external" aria-hidden="true"><span>Stickman Hook</span></div>
 					<span class="play-label">Open <span class="play-icon" aria-hidden="true">↗</span></span>
 				</a>
 			</div>
