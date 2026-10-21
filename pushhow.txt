@@ -1,0 +1,2 @@
+git commit -m "Allow custom shortcut URLs and bindings" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+git push origin main

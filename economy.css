@@ -356,6 +356,10 @@ footer,
 	color: #041008 !important;
 }
 
+.brand-mark {
+	color: #041008 !important;
+}
+
 .game-link:hover,
 .shop-link:hover,
 .filter-button:hover,
@@ -377,6 +381,17 @@ footer,
 .action-button:hover,
 .login-reminder-button:hover {
 	background-color: #8aff9f !important;
+	color: #041008 !important;
+}
+
+.brand-mark,
+.shop-link,
+.shop-button:not(:disabled),
+.action-button,
+.login-reminder-button,
+.filter-button[aria-pressed="true"],
+.game-nav a[aria-current="page"],
+.mode-nav a[aria-current="page"] {
 	color: #041008 !important;
 }
 
