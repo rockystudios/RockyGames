@@ -8,8 +8,8 @@
 	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
 	const NEWS_VERSION = 'chance-arcade-1';
-	const ACCESS_GRANTED_KEY = 'rockyGamesAccessGranted';
-	const ACCESS_CODE = 'RUOK67';
+	const ACCESS_GRANTED_KEY = 'rockyGamesAccessGrantedV2';
+	const ACCESS_CODE = 'ROCKYLITC1378';
 	const GAME_REWARD = 5;
 	const SHORTCUTS = [
 		{ id: 'myaccess', code: 'KeyA', label: 'APSVA MyAccess', href: 'https://myaccess.apsva.us/' },
