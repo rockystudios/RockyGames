@@ -65,6 +65,13 @@
 .login-reminder-button:hover { background: white; }
 .login-reminder-button:focus-visible { outline: 3px solid #f36b45; outline-offset: 3px; }
 
+.rocky-access-gate { width: min(100% - 32px, 520px); }
+.rocky-access-gate form { display: grid; gap: 10px; }
+.rocky-access-gate form label { font-size: 13px; font-weight: 700; }
+.rocky-access-gate form input { min-height: 42px; padding: 8px 10px; border: 1px solid #20252266; background: #fffdf6; color: #202522; font: 16px 'DM Mono', monospace; }
+.rocky-access-gate form input:focus-visible { outline: 3px solid #f36b45; outline-offset: 2px; }
+.rocky-access-error { min-height: 1.5em; margin: 0 !important; color: #a12f1d; font-size: 13px; }
+
 .news-reminder h2,
 .news-reminder h3,
 .news-reminder p,
