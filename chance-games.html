@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#050b07">
+	<title>Chance Arcade | Rocky Games</title>
+	<link rel="stylesheet" href="economy.css?v=sci-fi-theme-11">
+	<script src="economy.js?v=chance-games-1" defer></script>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+
+		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; --orange: #f36b45; --mono: 'DM Mono', monospace; --display: 'Barlow Condensed', Impact, sans-serif; }
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--mono); }
+		a { color: inherit; }
+		header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 12px max(20px, calc((100vw - 1040px) / 2)); border-bottom: 2px solid var(--ink); background: var(--paper); }
+		.brand { font: 900 23px/1 var(--display); text-decoration: none; text-transform: uppercase; }
+		.home-link { font-size: 10px; text-transform: uppercase; }
+		main { width: min(100% - 40px, 1040px); margin: 0 auto; padding-bottom: 100px; }
+		.intro { padding: 38px 0 24px; }
+		.kicker { margin: 0 0 8px; color: #52645b; font-size: 10px; text-transform: uppercase; }
+		h1 { margin: 0; font: 900 clamp(48px, 8vw, 78px)/0.9 var(--display); text-transform: uppercase; }
+		.intro-copy { max-width: 700px; font-size: 11px; line-height: 1.8; }
+		.notice { padding: 12px 14px; border-left: 5px solid var(--orange); background: #fffdf6; font-size: 10px; line-height: 1.7; }
+		.game-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
+		.game-card { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 2px solid var(--ink); background: #fffdf6; box-shadow: 4px 4px 0 var(--ink); }
+		.game-card h2 { margin: 0; font: 800 30px/1 var(--display); text-transform: uppercase; }
+		.game-description { min-height: 58px; font-size: 10px; line-height: 1.7; }
+		.odds { margin: 0 0 14px; padding: 10px; background: var(--paper); font-size: 10px; line-height: 1.7; }
+		.game-form { display: grid; gap: 10px; margin-top: auto; }
+		.game-form label { display: grid; gap: 5px; font-size: 10px; }
+		.game-form input, .game-form select { width: 100%; min-height: 40px; padding: 8px; border: 2px solid var(--ink); background: white; color: var(--ink); font: 14px var(--mono); }
+		.play-button { min-height: 42px; padding: 8px 12px; border: 2px solid var(--ink); background: var(--lime); color: var(--ink); font: 800 18px var(--display); text-transform: uppercase; cursor: pointer; }
+		.play-button:hover { background: white; }
+		.play-button:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+		.result { min-height: 42px; margin: 12px 0 0; font-size: 10px; line-height: 1.7; }
+		.wheel-wrap { position: relative; width: min(100%, 180px); aspect-ratio: 1; margin: 10px auto 16px; }
+		.wheel-pointer { position: absolute; z-index: 1; top: -4px; left: 50%; width: 0; height: 0; border: 12px solid transparent; border-top: 0; border-bottom: 22px solid var(--ink); transform: translateX(-50%); }
+		.wheel { position: absolute; inset: 7px; border: 4px solid var(--ink); border-radius: 50%; background: conic-gradient(from 0deg, var(--lime) 0 45deg, #d8d4f2 45deg 90deg, #f6b5b5 90deg 135deg, #a9d6e5 135deg 180deg, #e5be54 180deg 225deg, #f0e8bd 225deg 270deg, #b8d8a5 270deg 315deg, #ddd8c8 315deg 360deg); box-shadow: 3px 3px 0 var(--ink); transition: transform 2.4s cubic-bezier(.12,.72,.16,1); }
+		.wheel::before { position: absolute; top: 13%; left: 58%; content: '★'; font: 800 21px var(--display); }
+		.wheel::after { position: absolute; inset: 41%; border: 2px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
+		.site-links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; font-size: 10px; }
+		@media (max-width: 760px) { .game-grid { grid-template-columns: 1fr; } .game-description { min-height: 0; } }
+		@media (max-width: 650px) { header { min-height: 60px; padding: 10px 14px; } main { width: calc(100% - 28px); } }
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+	</style>
+</head>
+<body>
+	<header>
+		<a class="brand" href="index.html">Rocky Games</a>
+		<a class="home-link" href="index.html">← Arcade home</a>
+	</header>
+	<main>
+		<div class="intro">
+			<p class="kicker">Rocky Games / Chance arcade</p>
+			<h1>Play by the odds.</h1>
+			<p class="intro-copy">Three simple games, with the chances and coin changes shown up front. These use Rocky Games virtual coins only; they have no cash value. Each play risks 1–10 coins, and results are generated fairly. No real money, hidden odds, or almost-win effects.</p>
+		</div>
+		<p class="notice">Set a small limit for yourself and take a break whenever you like. Need coins? The daily spin and free built-in games are in the <a href="shop.html">shop</a>.</p>
+		<div class="game-grid">
+			<article class="game-card">
+				<h2>Call it</h2>
+				<p class="game-description">Pick heads or tails, then flip a fair virtual coin.</p>
+				<p class="odds"><strong>Odds:</strong> 1 in 2 to win.<br><strong>Win:</strong> gain your wager.<br><strong>Lose:</strong> lose your wager.</p>
+				<form class="game-form" data-game="coin">
+					<label>Pick a side
+						<select name="choice"><option value="heads">Heads</option><option value="tails">Tails</option></select>
+					</label>
+					<label>Wager (1–10 coins)
+						<input name="amount" type="number" min="1" max="10" step="1" inputmode="numeric" value="1" required>
+					</label>
+					<button class="play-button" type="submit">Flip coin</button>
+				</form>
+				<p class="result" role="status" aria-live="polite"></p>
+			</article>
+			<article class="game-card">
+				<h2>Lucky seven</h2>
+				<p class="game-description">Roll two six-sided dice. The target is a total of seven.</p>
+				<p class="odds"><strong>Odds:</strong> 6 of 36 rolls (1 in 6).<br><strong>Win:</strong> gain 5× your wager.<br><strong>Lose:</strong> lose your wager.</p>
+				<form class="game-form" data-game="seven">
+					<label>Wager (1–10 coins)
+						<input name="amount" type="number" min="1" max="10" step="1" inputmode="numeric" value="1" required>
+					</label>
+					<button class="play-button" type="submit">Roll dice</button>
+				</form>
+				<p class="result" role="status" aria-live="polite"></p>
+			</article>
+			<article class="game-card">
+				<h2>Prize wheel</h2>
+				<div class="wheel-wrap" aria-hidden="true"><span class="wheel-pointer"></span><div class="wheel" id="chance-wheel"></div></div>
+				<p class="game-description">Spin eight equal sections: one prize, seven no-prize sections.</p>
+				<p class="odds"><strong>Odds:</strong> 1 in 8 to win.<br><strong>Win:</strong> gain 7× your wager.<br><strong>Lose:</strong> lose your wager.</p>
+				<form class="game-form" data-game="wheel">
+					<label>Wager (1–10 coins)
+						<input name="amount" type="number" min="1" max="10" step="1" inputmode="numeric" value="1" required>
+					</label>
+					<button class="play-button" type="submit">Spin wheel</button>
+				</form>
+				<p class="result" role="status" aria-live="polite"></p>
+			</article>
+		</div>
+		<nav class="site-links" aria-label="More Rocky Games">
+			<a href="shop.html">Daily spin and background shop</a>
+			<a href="index.html">Browse all games</a>
+		</nav>
+	</main>
+	<script>
+		(() => {
+			const wheel = document.querySelector('#chance-wheel');
+			let wheelRotation = 0;
+
+			document.querySelectorAll('.game-form').forEach((form) => {
+				form.addEventListener('submit', (event) => {
+					event.preventDefault();
+					const amount = form.elements.amount.valueAsNumber;
+					if (!form.reportValidity()) return;
+					const gameId = form.dataset.game;
+					const result = window.RockyEconomy.playChanceGame(gameId, amount, form.elements.choice?.value);
+					if (!result) return;
+					const output = form.parentElement.querySelector('.result');
+					if (gameId === 'wheel') {
+						const target = 360 * 5 + 360 - (result.outcome * 45 + 22.5);
+						wheelRotation += target;
+						wheel.style.transform = `rotate(${wheelRotation}deg)`;
+						output.textContent = `Landed on section ${result.outcome + 1} of 8: ${result.won ? 'prize' : 'no prize'}. ${result.won ? 'You gained' : 'You lost'} ${Math.abs(result.netCoins)} coins. Balance: ${result.balance}.`;
+					} else if (gameId === 'seven') {
+						output.textContent = `The dice total was ${result.outcome}. ${result.won ? 'You gained' : 'You lost'} ${Math.abs(result.netCoins)} coins. Balance: ${result.balance}.`;
+					} else {
+						output.textContent = `The coin landed ${result.outcome}. ${result.won ? 'You gained' : 'You lost'} ${Math.abs(result.netCoins)} coins. Balance: ${result.balance}.`;
+					}
+				});
+			});
+		})();
+	</script>
+</body>
+</html>

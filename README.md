@@ -31,6 +31,11 @@ and shared by pages on this site in that browser. They do not sync between
 browsers or devices. The embedded third-party games cannot report when a game
 is finished, so they do not award play coins.
 
+The Chance Arcade has a coin call, a dice roll, and an eight-section prize
+wheel. Each game displays its odds and coin changes before play; wagers are
+limited to 1–10 virtual coins. Outcomes use the published odds, with no
+near-miss effects or real-money play.
+
 ## Keyboard shortcuts
 
 Press **Option/Alt + Shift + A** for APSVA MyAccess, **S** for Sora, **H** for

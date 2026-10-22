@@ -239,6 +239,77 @@
 			: `Not this time—you lost ${amount} coins. New balance: ${state.coins} coins.`;
 	}
 
+	function randomIndex(length) {
+		const range = 0x100000000;
+		const limit = range - (range % length);
+		const values = new Uint32Array(1);
+		let value;
+		do {
+			window.crypto.getRandomValues(values);
+			value = values[0];
+		} while (value >= limit);
+		return value % length;
+	}
+
+	function playChanceGame(gameId, amount, choice) {
+		const games = {
+			coin: { maxWinnings: 1 },
+			seven: { maxWinnings: 5 },
+			wheel: { maxWinnings: 7 }
+		};
+		const game = games[gameId];
+		if (!game || !Number.isSafeInteger(amount) || amount < 1 || amount > 10) {
+			announce('Choose a valid game and wager from 1 to 10 coins.');
+			return null;
+		}
+		if (!storageAvailable || !state) {
+			announce('Your coin balance is unavailable. No game was played.');
+			return null;
+		}
+		if (amount > state.coins) {
+			announce('You do not have enough coins for that wager.');
+			return null;
+		}
+		if (gameId === 'coin' && !['heads', 'tails'].includes(choice)) {
+			announce('Choose heads or tails before playing.');
+			return null;
+		}
+		let outcome;
+		try {
+			if (gameId === 'coin') {
+				outcome = randomIndex(2) === 0 ? 'heads' : 'tails';
+			} else if (gameId === 'seven') {
+				outcome = randomIndex(6) + randomIndex(6) + 2;
+			} else {
+				outcome = randomIndex(8);
+			}
+		} catch (error) {
+			console.error('Rocky Games could not generate a chance-game result:', error);
+			announce('A fair result could not be generated. No coins were changed.');
+			return null;
+		}
+		const won = gameId === 'coin' ? outcome === choice
+			: gameId === 'seven' ? outcome === 7
+				: outcome === 0;
+		const netCoins = won ? amount * game.maxWinnings : -amount;
+		let balance = 0;
+		const changed = update((next) => {
+			if (amount > next.coins) {
+				announce('You do not have enough coins for that wager.');
+				return false;
+			}
+			if (!Number.isSafeInteger(next.coins + netCoins)) {
+				announce('That win would exceed your wallet limit. Try a smaller wager.');
+				return false;
+			}
+			next.coins += netCoins;
+			balance = next.coins;
+			return true;
+		});
+		if (!changed) return null;
+		return { gameId, outcome, won, netCoins, balance };
+	}
+
 	function rewardGameCompletion(game) {
 		const rewarded = update((next) => {
 			next.coins += GAME_REWARD;
@@ -754,7 +825,7 @@
 		}
 	});
 
-	window.RockyEconomy = { rewardGameCompletion };
+	window.RockyEconomy = { playChanceGame, rewardGameCompletion };
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
 	else initialize();
 })();
