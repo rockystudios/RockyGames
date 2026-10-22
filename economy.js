@@ -600,7 +600,6 @@
 			<section class="news-intro">
 				<ul class="news-update-list">
 					<li><strong>Suggest a game!</strong> Have a game you want to add to Rocky Games? <a href="https://forms.gle/bnZNEvsSMgCAtDAZ8" target="_blank" rel="noopener">Fill out this form</a>.</li>
-					<li><strong>Double or nothing!</strong> Wager your Rocky Games coins for a 50/50 chance to double them. You can also lose your wager. No real money is used. <a href="shop.html#coin-double">Try it in the shop</a>.</li>
 				</ul>
 				<p>Use Option + Shift + a letter for a shortcut. Select “Edit shortcuts” to change shortcuts or add your own.</p>
 				<div class="news-actions">
