@@ -233,17 +233,25 @@
 }
 
 :root {
-	color-scheme: dark !important;
-	--ink: #d7ffe1 !important;
-	--paper: #07110b !important;
-	--lime: #65ff88 !important;
-	--orange: #a7ffc0 !important;
-	--blue: #3be8a5 !important;
-	--panel: #0a1a10 !important;
+	color-scheme: dark;
+	--site-text-color: #d7ffe1;
+	--site-muted-text-color: #91cba0;
+	--site-foreground-color: #09150d;
+	--site-foreground-text-color: #d7ffe1;
+	--site-foreground-muted-color: #91cba0;
+	--site-accent-color: #65ff88;
+	--site-accent-text-color: #041008;
+	--site-border-color: #28613a;
+	--ink: var(--site-text-color) !important;
+	--paper: var(--site-foreground-color) !important;
+	--lime: var(--site-accent-color) !important;
+	--orange: var(--site-accent-color) !important;
+	--blue: var(--site-accent-color) !important;
+	--panel: var(--site-foreground-color) !important;
 }
 
 body {
-	color: #d7ffe1 !important;
+	color: var(--site-text-color) !important;
 	background-color: #050b07 !important;
 	background-image: radial-gradient(circle at 50% -10%, #0e4b27 0, transparent 48%), linear-gradient(#3cff7a1a 1px, transparent 1px), linear-gradient(90deg, #3cff7a1a 1px, transparent 1px) !important;
 	background-size: auto, 32px 32px, 32px 32px !important;
@@ -257,26 +265,28 @@ header,
 .game-bar,
 .game-controls,
 .background-card,
+.game-card,
+.notice,
 .overlay-content,
 .instructions,
 .game-link {
-	border-color: #28613a !important;
-	background-color: #09150d !important;
-	color: #d7ffe1 !important;
+	border-color: var(--site-border-color) !important;
+	background-color: var(--site-foreground-color) !important;
+	color: var(--site-foreground-text-color) !important;
 }
 
 .game-link,
 .game-shell,
 .background-card,
 .overlay-content {
-	box-shadow: 0 0 18px #24ff6b16, 0 0 0 1px #65ff8830 !important;
+	box-shadow: 0 0 18px color-mix(in srgb, var(--site-accent-color) 9%, transparent), 0 0 0 1px color-mix(in srgb, var(--site-accent-color) 19%, transparent) !important;
 }
 
 .game-wrap,
 .game-frame {
-	border-color: #28613a !important;
+	border-color: var(--site-border-color) !important;
 	background-color: #030805 !important;
-	box-shadow: 0 0 24px #24ff6b20 !important;
+	box-shadow: 0 0 24px color-mix(in srgb, var(--site-accent-color) 12%, transparent) !important;
 }
 
 h1,
@@ -285,7 +295,7 @@ h3,
 .brand,
 .game-title,
 #gameTitle {
-	color: #e4ffeb !important;
+	color: var(--site-foreground-text-color) !important;
 }
 
 .brand-mark,
@@ -296,10 +306,10 @@ h3,
 .action-button,
 .shop-button,
 .login-reminder-button {
-	border-color: #65ff88 !important;
-	background-color: #65ff88 !important;
-	color: #041008 !important;
-	box-shadow: 0 0 14px #65ff8840 !important;
+	border-color: var(--site-accent-color) !important;
+	background-color: var(--site-accent-color) !important;
+	color: var(--site-accent-text-color) !important;
+	box-shadow: 0 0 14px color-mix(in srgb, var(--site-accent-color) 25%, transparent) !important;
 }
 
 a,
@@ -315,27 +325,23 @@ a,
 footer,
 .empty-state,
 .favorites-status,
-.login-reminder-kicker,
-.background-card p {
+.login-reminder-kicker {
 	color: var(--site-muted-text-color, #91cba0) !important;
 }
 
 a { color: var(--site-link-color, #91cba0) !important; }
-header a,
-.site-header a,
-.game-link,
+.game-link a,
 .game-shell a,
 .game-bar a,
 .game-controls a,
 .game-nav a,
 .mode-nav a,
-.overlay-content a,
-#rocky-economy-toolbar a { color: #d7ffe1 !important; }
-.header-note,
+.overlay-content a { color: var(--site-foreground-text-color) !important; }
 .game-link .game-number,
 .game-link .game-meta,
-.background-card p,
-.login-reminder-kicker { color: #91cba0 !important; }
+.background-card p { color: var(--site-foreground-muted-color) !important; }
+.header-note { color: var(--site-foreground-muted-color) !important; }
+.login-reminder-kicker { color: var(--site-muted-text-color) !important; }
 
 .game-nav a,
 .mode-nav a,
@@ -348,7 +354,7 @@ header a,
 .login-reminder-button,
 #rocky-economy-toolbar,
 #rocky-economy-status {
-	border-color: #28613a !important;
+	border-color: var(--site-border-color) !important;
 }
 
 .search-input,
@@ -356,25 +362,33 @@ header a,
 .game-nav a,
 .mode-nav a,
 .favorite-button,
+.game-card,
+.notice,
 .prize-list li,
 .shop-button:not(:disabled),
+.odds,
+.game-form input,
+.game-form select,
+.wager-form input,
+.news-shortcut-url-form input,
+.news-shortcut-add-form input,
 .action-button,
 #rocky-economy-toolbar,
 #rocky-economy-status {
-	background-color: #0b1b10 !important;
-	color: #c9f8d3 !important;
+	background-color: var(--site-foreground-color) !important;
+	color: var(--site-foreground-text-color) !important;
 }
 
 .shop-link,
 .shop-button:not(:disabled),
 .action-button,
 .login-reminder-button {
-	background-color: #65ff88 !important;
-	color: #041008 !important;
+	background-color: var(--site-accent-color) !important;
+	color: var(--site-accent-text-color) !important;
 }
 
 .brand-mark {
-	color: #041008 !important;
+	color: var(--site-accent-text-color) !important;
 }
 
 .game-link:hover,
@@ -387,18 +401,18 @@ header a,
 .shop-button:hover:not(:disabled),
 .action-button:hover,
 .login-reminder-button:hover {
-	border-color: #65ff88 !important;
-	background-color: #12351d !important;
-	color: #caffd4 !important;
-	box-shadow: 0 0 18px #65ff8850 !important;
+	border-color: var(--site-accent-color) !important;
+	background-color: var(--site-foreground-color) !important;
+	color: var(--site-foreground-text-color) !important;
+	box-shadow: 0 0 18px color-mix(in srgb, var(--site-accent-color) 31%, transparent) !important;
 }
 
 .shop-link:hover,
 .shop-button:hover:not(:disabled),
 .action-button:hover,
 .login-reminder-button:hover {
-	background-color: #8aff9f !important;
-	color: #041008 !important;
+	background-color: var(--site-accent-color) !important;
+	color: var(--site-accent-text-color) !important;
 }
 
 .brand-mark,
@@ -409,25 +423,25 @@ header a,
 .filter-button[aria-pressed="true"],
 .game-nav a[aria-current="page"],
 .mode-nav a[aria-current="page"] {
-	color: #041008 !important;
+	color: var(--site-accent-text-color) !important;
 }
 
 input:focus-visible,
 button:focus-visible,
 a:focus-visible {
-	outline-color: #65ff88 !important;
+	outline-color: var(--site-accent-color) !important;
 }
 
 #rocky-economy-toolbar {
-	border-color: #28613a !important;
-	background: #09150d !important;
-	box-shadow: 0 0 16px #24ff6b30 !important;
-	color: #d7ffe1 !important;
+	border-color: var(--site-border-color) !important;
+	background: var(--site-foreground-color) !important;
+	box-shadow: 0 0 16px color-mix(in srgb, var(--site-accent-color) 19%, transparent) !important;
+	color: var(--site-foreground-text-color) !important;
 }
 
 #rocky-economy-status {
-	border-color: #28613a !important;
-	background: #09150d !important;
-	box-shadow: 0 0 16px #24ff6b30 !important;
-	color: #d7ffe1 !important;
+	border-color: var(--site-border-color) !important;
+	background: var(--site-foreground-color) !important;
+	box-shadow: 0 0 16px color-mix(in srgb, var(--site-accent-color) 19%, transparent) !important;
+	color: var(--site-foreground-text-color) !important;
 }

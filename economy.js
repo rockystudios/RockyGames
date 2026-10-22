@@ -17,11 +17,16 @@
 	];
 	const prizes = [10, 15, 20, 25, 50, 100];
 	const backgrounds = [
-		{ id: 'default', name: 'Neon Grid', price: 0, color: '#050b07', image: 'radial-gradient(circle at 50% -10%, #0e4b27 0, transparent 48%), linear-gradient(#3cff7a1a 1px, transparent 1px), linear-gradient(90deg, #3cff7a1a 1px, transparent 1px)', size: 'auto, 32px 32px, 32px 32px' },
-		{ id: 'sunset', name: 'Sunset Pop', price: 50, color: '#ffe0c2', image: 'linear-gradient(145deg, #ffe0c2, #f6b5b5 55%, #d7c1ed)' },
-		{ id: 'ocean', name: 'Cool Water', price: 75, color: '#d7f0ee', image: 'linear-gradient(135deg, #d7f0ee, #a9d6e5 55%, #c5d8f0)' },
-		{ id: 'meadow', name: 'Meadow', price: 100, color: '#e2f0d1', image: 'linear-gradient(145deg, #e2f0d1, #b8d8a5 55%, #f0e8bd)' },
-		{ id: 'lavender', name: 'Soft Lavender', price: 125, color: '#eee5f7', image: 'linear-gradient(135deg, #eee5f7, #d8d4f2 55%, #f7dfeb)' }
+		{ id: 'default', name: 'Neon Grid', price: 0, dark: true, color: '#050b07', text: '#d7ffe1', muted: '#91cba0', foreground: '#09150d', foregroundText: '#d7ffe1', foregroundMuted: '#91cba0', accent: '#65ff88', accentText: '#041008', border: '#28613a', image: 'radial-gradient(circle at 50% -10%, #0e4b27 0, transparent 48%), linear-gradient(#3cff7a1a 1px, transparent 1px), linear-gradient(90deg, #3cff7a1a 1px, transparent 1px)', size: 'auto, 32px 32px, 32px 32px' },
+		{ id: 'sunset', name: 'Sunset Pop', price: 50, dark: false, color: '#ffe0c2', text: '#202522', muted: '#52645b', foreground: '#fffaf2', foregroundText: '#202522', foregroundMuted: '#52645b', accent: '#a63824', accentText: '#ffffff', border: '#b36c4c', image: 'linear-gradient(145deg, #ffe0c2, #f6b5b5 55%, #d7c1ed)' },
+		{ id: 'ocean', name: 'Cool Water', price: 75, dark: false, color: '#d7f0ee', text: '#162a33', muted: '#385461', foreground: '#f5ffff', foregroundText: '#162a33', foregroundMuted: '#385461', accent: '#176477', accentText: '#ffffff', border: '#548b91', image: 'linear-gradient(135deg, #d7f0ee, #a9d6e5 55%, #c5d8f0)' },
+		{ id: 'meadow', name: 'Meadow', price: 100, dark: false, color: '#e2f0d1', text: '#1d301d', muted: '#405b3e', foreground: '#f8fff1', foregroundText: '#1d301d', foregroundMuted: '#405b3e', accent: '#376c38', accentText: '#ffffff', border: '#77936b', image: 'linear-gradient(145deg, #e2f0d1, #b8d8a5 55%, #f0e8bd)' },
+		{ id: 'lavender', name: 'Soft Lavender', price: 125, dark: false, color: '#eee5f7', text: '#30243a', muted: '#554763', foreground: '#fffaff', foregroundText: '#30243a', foregroundMuted: '#554763', accent: '#624087', accentText: '#ffffff', border: '#9987ad', image: 'linear-gradient(135deg, #eee5f7, #d8d4f2 55%, #f7dfeb)' },
+		{ id: 'midnight', name: 'Midnight Blue', price: 150, dark: true, color: '#101b32', text: '#edf3ff', muted: '#b6c9e8', foreground: '#192844', foregroundText: '#edf3ff', foregroundMuted: '#b6c9e8', accent: '#76c8f5', accentText: '#10243a', border: '#54759c', image: 'radial-gradient(circle at 75% 18%, #334d79, transparent 38%), linear-gradient(145deg, #101b32, #152747 60%, #263a5d)' },
+		{ id: 'berry', name: 'Berry Blush', price: 175, dark: false, color: '#f7dce8', text: '#351d2a', muted: '#654052', foreground: '#fff7fa', foregroundText: '#351d2a', foregroundMuted: '#654052', accent: '#a32e5a', accentText: '#ffffff', border: '#b77a92', image: 'linear-gradient(145deg, #f7dce8, #f2c5d4 50%, #ead7f2)' },
+		{ id: 'citrus', name: 'Citrus Cream', price: 200, dark: false, color: '#fff2bc', text: '#352c13', muted: '#62562e', foreground: '#fffbe6', foregroundText: '#352c13', foregroundMuted: '#62562e', accent: '#756018', accentText: '#ffffff', border: '#aa9146', image: 'linear-gradient(145deg, #fff2bc, #f7dc83 55%, #e7edb0)' },
+		{ id: 'forest', name: 'Forest Canopy', price: 225, dark: true, color: '#10261c', text: '#e7f5e9', muted: '#b5d1bd', foreground: '#193629', foregroundText: '#e7f5e9', foregroundMuted: '#b5d1bd', accent: '#8ed7a4', accentText: '#10261c', border: '#47745a', image: 'radial-gradient(circle at 20% 12%, #436a45, transparent 35%), linear-gradient(145deg, #10261c, #183e2b 60%, #24503a)' },
+		{ id: 'starlight', name: 'Starlight', price: 250, dark: false, color: '#e5eaf3', text: '#1f293b', muted: '#4b596e', foreground: '#f8faff', foregroundText: '#1f293b', foregroundMuted: '#4b596e', accent: '#394f78', accentText: '#ffffff', border: '#8491a7', image: 'radial-gradient(circle at 78% 14%, #ffffff 0 1px, transparent 2px), radial-gradient(circle at 20% 68%, #ffffff 0 1px, transparent 2px), linear-gradient(145deg, #e5eaf3, #cbd5e5 55%, #b8c4d8)' }
 	];
 	const backgroundById = new Map(backgrounds.map((background) => [background.id, background]));
 	const today = () => {
@@ -95,22 +100,28 @@
 
 	function applyBackground() {
 		const background = backgroundById.get(state.activeBackground);
-		const hex = background.color.slice(1);
-		const channels = [0, 2, 4].map((offset) => {
-			const channel = parseInt(hex.slice(offset, offset + 2), 16) / 255;
-			return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-		});
-		const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
-		const textColor = luminance > 0.179 ? '#202522' : '#f3f1e8';
-		const mutedTextColor = luminance > 0.179 ? '#52645b' : '#91cba0';
 		document.body.style.setProperty('background-color', background.color, 'important');
 		document.body.style.setProperty('background-image', background.image, 'important');
 		document.body.style.setProperty('background-size', background.size || 'cover', 'important');
 		document.body.style.setProperty('background-position', 'center', 'important');
 		document.body.style.setProperty('background-attachment', background.size ? 'initial' : 'fixed', 'important');
-		document.body.style.setProperty('color', textColor, 'important');
-		document.body.style.setProperty('--site-link-color', textColor);
-		document.body.style.setProperty('--site-muted-text-color', mutedTextColor);
+		document.body.style.setProperty('color', background.text, 'important');
+		document.documentElement.style.setProperty('color-scheme', background.dark ? 'dark' : 'light', 'important');
+		document.documentElement.style.setProperty('--site-text-color', background.text);
+		document.documentElement.style.setProperty('--site-link-color', background.text);
+		document.documentElement.style.setProperty('--site-muted-text-color', background.muted);
+		document.documentElement.style.setProperty('--site-foreground-color', background.foreground);
+		document.documentElement.style.setProperty('--site-foreground-text-color', background.foregroundText);
+		document.documentElement.style.setProperty('--site-foreground-muted-color', background.foregroundMuted);
+		document.documentElement.style.setProperty('--site-accent-color', background.accent);
+		document.documentElement.style.setProperty('--site-accent-text-color', background.accentText);
+		document.documentElement.style.setProperty('--site-border-color', background.border);
+		document.documentElement.style.setProperty('--ink', background.text, 'important');
+		document.documentElement.style.setProperty('--paper', background.foreground, 'important');
+		document.documentElement.style.setProperty('--lime', background.accent, 'important');
+		document.documentElement.style.setProperty('--orange', background.accent, 'important');
+		document.documentElement.style.setProperty('--blue', background.accent, 'important');
+		document.documentElement.style.setProperty('--panel', background.foreground, 'important');
 	}
 
 	function render() {
