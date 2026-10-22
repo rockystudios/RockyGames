@@ -102,12 +102,15 @@
 		});
 		const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
 		const textColor = luminance > 0.179 ? '#202522' : '#f3f1e8';
+		const mutedTextColor = luminance > 0.179 ? '#52645b' : '#91cba0';
 		document.body.style.setProperty('background-color', background.color, 'important');
 		document.body.style.setProperty('background-image', background.image, 'important');
 		document.body.style.setProperty('background-size', background.size || 'cover', 'important');
 		document.body.style.setProperty('background-position', 'center', 'important');
 		document.body.style.setProperty('background-attachment', background.size ? 'initial' : 'fixed', 'important');
 		document.body.style.setProperty('color', textColor, 'important');
+		document.body.style.setProperty('--site-link-color', textColor);
+		document.body.style.setProperty('--site-muted-text-color', mutedTextColor);
 	}
 
 	function render() {

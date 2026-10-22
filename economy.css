@@ -317,8 +317,25 @@ footer,
 .favorites-status,
 .login-reminder-kicker,
 .background-card p {
-	color: #91cba0 !important;
+	color: var(--site-muted-text-color, #91cba0) !important;
 }
+
+a { color: var(--site-link-color, #91cba0) !important; }
+header a,
+.site-header a,
+.game-link,
+.game-shell a,
+.game-bar a,
+.game-controls a,
+.game-nav a,
+.mode-nav a,
+.overlay-content a,
+#rocky-economy-toolbar a { color: #d7ffe1 !important; }
+.header-note,
+.game-link .game-number,
+.game-link .game-meta,
+.background-card p,
+.login-reminder-kicker { color: #91cba0 !important; }
 
 .game-nav a,
 .mode-nav a,
