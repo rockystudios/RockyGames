@@ -65,33 +65,6 @@
 .login-reminder-button:hover { background: white; }
 .login-reminder-button:focus-visible { outline: 3px solid #f36b45; outline-offset: 3px; }
 
-.rocky-access-gate {
-	position: fixed;
-	inset: 0;
-	display: none;
-	width: 100%;
-	height: 100%;
-	max-width: none;
-	max-height: none;
-	margin: 0;
-	padding: clamp(24px, 6vw, 64px);
-	border: 0;
-	border-radius: 0;
-	background: #09150d !important;
-	color: #d7ffe1 !important;
-	box-shadow: none;
-}
-.rocky-access-gate[open] { display: grid; align-content: center; }
-.rocky-access-gate::backdrop { background: #050b07; }
-.rocky-access-gate h2 { color: #d7ffe1 !important; }
-.rocky-access-gate .login-reminder-kicker { color: #91cba0 !important; }
-.rocky-access-gate > p:not(.login-reminder-kicker) { color: #d7ffe1 !important; }
-.rocky-access-gate form { display: grid; gap: 10px; }
-.rocky-access-gate form label { color: #d7ffe1; font-size: 13px; font-weight: 700; }
-.rocky-access-gate form input { min-height: 46px; padding: 8px 10px; border: 2px solid #65ff88; background: #050b07; color: #ffffff; font: 16px 'DM Mono', monospace; }
-.rocky-access-gate form input:focus-visible { outline: 3px solid #f36b45; outline-offset: 2px; }
-.rocky-access-error { min-height: 1.5em; margin: 0 !important; color: #ff9588; font-size: 13px; }
-
 .news-reminder h2,
 .news-reminder h3,
 .news-reminder p,

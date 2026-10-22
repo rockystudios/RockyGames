@@ -16,21 +16,16 @@ The deployment workflow publishes the HTML files at the repository root. The
 games use relative links, so they work from the `/RockyGames/` project-site
 path as well as when served locally.
 
-## Access code
+## Games+
 
-The full-screen access prompt asks visitors to get the shared code from Thanos.
-Approval is saved in that browser's local storage, so it is not requested again
-unless that data is cleared. This is a client-side prompt, not secure
-authentication: the static site does not verify access on a server.
-
-The larger **Games+** button at the bottom of the arcade asks for the site's
-access code and opens a gold-themed page with the full catalog and a Browser
-link. Games+ reads its game list from the main catalog, so new games appear
-there automatically. The button grants one-time access for that navigation;
-opening the Games+ URL directly requires entering the code. The Browser is a
-clickable Games+ card that opens its own Rocky Games page with the experience
-embedded. Like the site-entry prompt, the Games+ prompt is client-side and is
-not secure authentication.
+The main website opens without an access code. The larger **Games+** button at
+the bottom of the arcade asks for the access code before opening a gold-themed
+page with the full catalog and a Browser link. Games+ reads its game list from
+the main catalog, so new games appear there automatically. The button grants
+one-time access for that navigation; opening the Games+ URL directly requires
+entering the code. The Browser is a clickable Games+ card that opens its own
+Rocky Games page with the experience embedded. The Games+ prompt is
+client-side, not secure authentication.
 
 Several games are embedded from third-party sites and need an internet
 connection. If an embedded game fails to load, use its original site or return

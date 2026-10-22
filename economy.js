@@ -8,8 +8,6 @@
 	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
 	const NEWS_VERSION = 'chance-arcade-1';
-	const ACCESS_GRANTED_KEY = 'rockyGamesAccessGrantedV2';
-	const ACCESS_CODE = 'ROCKYLITC1378';
 	const GAME_REWARD = 5;
 	const SHORTCUTS = [
 		{ id: 'myaccess', code: 'KeyA', label: 'APSVA MyAccess', href: 'https://myaccess.apsva.us/' },
@@ -685,7 +683,7 @@
 		}
 	}
 
-	function initializeWhatsNew(shortcutList, renderShortcutList, showInitialNews) {
+	function initializeWhatsNew(shortcutList, renderShortcutList) {
 		const dialog = document.createElement('dialog');
 		dialog.className = 'login-reminder news-reminder';
 		dialog.setAttribute('aria-labelledby', 'news-reminder-title');
@@ -797,70 +795,10 @@
 			event.preventDefault();
 			showWhatsNew();
 		});
-		if (showInitialNews && !isNewsDismissed()) showWhatsNew();
-		document.addEventListener('rocky-games-access-granted', () => {
-			if (!isNewsDismissed()) showWhatsNew();
-		}, { once: true });
-	}
-
-	function initializeAccessGate() {
-		try {
-			if (localStorage.getItem(ACCESS_GRANTED_KEY) === 'true') return true;
-		} catch (error) {
-			console.error('Rocky Games could not read access approval:', error);
-		}
-
-		const dialog = document.createElement('dialog');
-		dialog.className = 'login-reminder rocky-access-gate';
-		dialog.setAttribute('aria-labelledby', 'rocky-access-title');
-		dialog.innerHTML = `
-			<p class="login-reminder-kicker">Rocky Games</p>
-			<h2 id="rocky-access-title">Enter access code</h2>
-			<p>Ask Thanos for the access code to continue.</p>
-			<form>
-				<label for="rocky-access-code">Access code</label>
-				<input id="rocky-access-code" name="accessCode" type="password" autocomplete="off" required autofocus>
-				<p class="rocky-access-error" role="alert" aria-live="polite"></p>
-				<button class="login-reminder-button" type="submit">Continue</button>
-			</form>
-		`;
-		document.body.append(dialog);
-
-		const form = dialog.querySelector('form');
-		const input = dialog.querySelector('#rocky-access-code');
-		const errorMessage = dialog.querySelector('.rocky-access-error');
-		form.addEventListener('submit', (event) => {
-			event.preventDefault();
-			if (input.value !== ACCESS_CODE) {
-				errorMessage.textContent = 'That code is not correct. Try again.';
-				input.select();
-				return;
-			}
-
-			try {
-				localStorage.setItem(ACCESS_GRANTED_KEY, 'true');
-			} catch (error) {
-				console.error('Rocky Games could not save access approval:', error);
-				errorMessage.textContent = 'Access could not be saved in this browser. Enable local storage and try again.';
-				return;
-			}
-
-			dialog.close();
-			document.dispatchEvent(new Event('rocky-games-access-granted'));
-		});
-		input.addEventListener('input', () => {
-			errorMessage.textContent = '';
-		});
-		dialog.addEventListener('cancel', (event) => {
-			event.preventDefault();
-		});
-		if (typeof dialog.showModal === 'function') dialog.showModal();
-		else dialog.setAttribute('open', '');
-		return false;
+		if (!isNewsDismissed()) showWhatsNew();
 	}
 
 	function initialize() {
-		const accessGranted = initializeAccessGate();
 		initializeFullscreen();
 		const toolbar = document.createElement('nav');
 		toolbar.id = 'rocky-economy-toolbar';
@@ -869,7 +807,7 @@
 		document.body.append(toolbar);
 		const shortcutList = document.createElement('ul');
 		const renderShortcutList = initializeShortcuts(shortcutList);
-		initializeWhatsNew(shortcutList, renderShortcutList, accessGranted);
+		initializeWhatsNew(shortcutList, renderShortcutList);
 		document.querySelector('#spin-button')?.addEventListener('click', spinWheel);
 		document.querySelector('#wager-amount')?.addEventListener('input', renderWager);
 		document.querySelector('#wager-form')?.addEventListener('submit', (event) => {
