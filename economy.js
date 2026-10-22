@@ -7,7 +7,7 @@
 	const CUSTOM_SHORTCUTS_KEY = 'rockyGamesCustomShortcuts';
 	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
-	const NEWS_VERSION = 'game-request-and-wager-1';
+	const NEWS_VERSION = 'chance-arcade-1';
 	const GAME_REWARD = 5;
 	const SHORTCUTS = [
 		{ id: 'myaccess', code: 'KeyA', label: 'APSVA MyAccess', href: 'https://myaccess.apsva.us/' },
@@ -670,7 +670,7 @@
 			<h2 id="news-reminder-title">What's new</h2>
 			<section class="news-intro">
 				<ul class="news-update-list">
-					<li><strong>Suggest a game!</strong> Have a game you want to add to Rocky Games? <a href="https://forms.gle/bnZNEvsSMgCAtDAZ8" target="_blank" rel="noopener">Fill out this form</a>.</li>
+					<li><strong>Suggest a game!</strong> Have a game you want to add to Rocky Games? <a href="https://forms.gle/bnZNEvsSMgCAtDAZ8" target="_blank" rel="noopener">Fill out this form</a> or try the <a href="chance-games.html">Chance Arcade</a>.</li>
 				</ul>
 				<p>Use Option + Shift + a letter for a shortcut. Select “Edit shortcuts” to change shortcuts or add your own.</p>
 				<div class="news-actions">
