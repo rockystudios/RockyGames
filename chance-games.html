@@ -6,7 +6,7 @@
 	<meta name="theme-color" content="#050b07">
 	<title>Chance Arcade | Rocky Games</title>
 	<link rel="stylesheet" href="economy.css?v=sci-fi-theme-11">
-	<script src="economy.js?v=chance-games-1" defer></script>
+	<script src="economy.js?v=chance-games-2" defer></script>
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
 
@@ -14,17 +14,17 @@
 		* { box-sizing: border-box; }
 		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--mono); }
 		a { color: inherit; }
-		header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 12px max(20px, calc((100vw - 1040px) / 2)); border-bottom: 2px solid var(--ink); background: var(--paper); }
+		header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 12px max(20px, calc((100vw - 1040px) / 2)); border-bottom: 2px solid var(--ink); background: var(--paper); color: var(--ink); }
 		.brand { font: 900 23px/1 var(--display); text-decoration: none; text-transform: uppercase; }
 		.home-link { font-size: 10px; text-transform: uppercase; }
 		main { width: min(100% - 40px, 1040px); margin: 0 auto; padding-bottom: 100px; }
 		.intro { padding: 38px 0 24px; }
-		.kicker { margin: 0 0 8px; color: #52645b; font-size: 10px; text-transform: uppercase; }
+		.kicker { margin: 0 0 8px; font-size: 10px; text-transform: uppercase; }
 		h1 { margin: 0; font: 900 clamp(48px, 8vw, 78px)/0.9 var(--display); text-transform: uppercase; }
 		.intro-copy { max-width: 700px; font-size: 11px; line-height: 1.8; }
-		.notice { padding: 12px 14px; border-left: 5px solid var(--orange); background: #fffdf6; font-size: 10px; line-height: 1.7; }
+		.notice { padding: 12px 14px; border-left: 5px solid var(--orange); background: #fffdf6; color: var(--ink); font-size: 10px; line-height: 1.7; }
 		.game-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 24px; }
-		.game-card { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 2px solid var(--ink); background: #fffdf6; box-shadow: 4px 4px 0 var(--ink); }
+		.game-card { display: flex; flex-direction: column; min-width: 0; padding: 16px; border: 2px solid var(--ink); background: #fffdf6; color: var(--ink); box-shadow: 4px 4px 0 var(--ink); }
 		.game-card h2 { margin: 0; font: 800 30px/1 var(--display); text-transform: uppercase; }
 		.game-description { min-height: 58px; font-size: 10px; line-height: 1.7; }
 		.odds { margin: 0 0 14px; padding: 10px; background: var(--paper); font-size: 10px; line-height: 1.7; }
@@ -37,7 +37,7 @@
 		.result { min-height: 42px; margin: 12px 0 0; font-size: 10px; line-height: 1.7; }
 		.wheel-wrap { position: relative; width: min(100%, 180px); aspect-ratio: 1; margin: 10px auto 16px; }
 		.wheel-pointer { position: absolute; z-index: 1; top: -4px; left: 50%; width: 0; height: 0; border: 12px solid transparent; border-top: 0; border-bottom: 22px solid var(--ink); transform: translateX(-50%); }
-		.wheel { position: absolute; inset: 7px; border: 4px solid var(--ink); border-radius: 50%; background: conic-gradient(from 0deg, var(--lime) 0 45deg, #d8d4f2 45deg 90deg, #f6b5b5 90deg 135deg, #a9d6e5 135deg 180deg, #e5be54 180deg 225deg, #f0e8bd 225deg 270deg, #b8d8a5 270deg 315deg, #ddd8c8 315deg 360deg); box-shadow: 3px 3px 0 var(--ink); transition: transform 2.4s cubic-bezier(.12,.72,.16,1); }
+		.wheel { position: absolute; inset: 7px; border: 4px solid var(--ink); border-radius: 50%; background: conic-gradient(from 0deg, var(--lime) 0 45deg, #d8d4f2 45deg 90deg, #f6b5b5 90deg 135deg, #267889 135deg 180deg, #e5be54 180deg 225deg, #f0e8bd 225deg 270deg, #b8d8a5 270deg 315deg, #ddd8c8 315deg 360deg); box-shadow: 3px 3px 0 var(--ink); transition: transform 2.4s cubic-bezier(.12,.72,.16,1); }
 		.wheel::before { position: absolute; top: 13%; left: 58%; content: '★'; font: 800 21px var(--display); }
 		.wheel::after { position: absolute; inset: 41%; border: 2px solid var(--ink); border-radius: 50%; background: var(--paper); content: ''; }
 		.site-links { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 28px; font-size: 10px; }

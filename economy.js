@@ -95,11 +95,19 @@
 
 	function applyBackground() {
 		const background = backgroundById.get(state.activeBackground);
+		const hex = background.color.slice(1);
+		const channels = [0, 2, 4].map((offset) => {
+			const channel = parseInt(hex.slice(offset, offset + 2), 16) / 255;
+			return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+		});
+		const luminance = channels[0] * 0.2126 + channels[1] * 0.7152 + channels[2] * 0.0722;
+		const textColor = luminance > 0.179 ? '#202522' : '#f3f1e8';
 		document.body.style.setProperty('background-color', background.color, 'important');
 		document.body.style.setProperty('background-image', background.image, 'important');
 		document.body.style.setProperty('background-size', background.size || 'cover', 'important');
 		document.body.style.setProperty('background-position', 'center', 'important');
 		document.body.style.setProperty('background-attachment', background.size ? 'initial' : 'fixed', 'important');
+		document.body.style.setProperty('color', textColor, 'important');
 	}
 
 	function render() {

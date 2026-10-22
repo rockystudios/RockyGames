@@ -27,9 +27,10 @@ Spinning awards 10, 15, 20, 25, 50, or 100 coins; finishing a built-in game
 awards 5 coins. The shop also offers a virtual-coin 50/50 wager: win to double
 the wager or lose the coins you put in. No real money is used. Purchased
 backgrounds and the active selection are saved in your browser's local storage
-and shared by pages on this site in that browser. They do not sync between
-browsers or devices. The embedded third-party games cannot report when a game
-is finished, so they do not award play coins.
+and shared by pages on this site in that browser. Text automatically switches
+between light and dark for contrast with the selected background. Backgrounds
+do not sync between browsers or devices. The embedded third-party games cannot
+report when a game is finished, so they do not award play coins.
 
 The Chance Arcade has a coin call, a dice roll, and an eight-section prize
 wheel. Each game displays its odds and coin changes before play; wagers are
