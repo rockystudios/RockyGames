@@ -816,7 +816,7 @@
 		dialog.innerHTML = `
 			<p class="login-reminder-kicker">Rocky Games</p>
 			<h2 id="rocky-access-title">Enter access code</h2>
-			<p>This site is for people with the access code.</p>
+			<p>Ask Thanos for the access code to continue.</p>
 			<form>
 				<label for="rocky-access-code">Access code</label>
 				<input id="rocky-access-code" name="accessCode" type="password" autocomplete="off" required autofocus>

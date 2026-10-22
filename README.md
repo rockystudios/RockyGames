@@ -18,10 +18,10 @@ path as well as when served locally.
 
 ## Access code
 
-The site asks for the shared access code the first time it is opened in a
-browser. Approval is saved in that browser's local storage, so it is not
-requested again unless that data is cleared. This is a client-side prompt, not
-secure authentication: the static site does not verify access on a server.
+The full-screen access prompt asks visitors to get the shared code from Thanos.
+Approval is saved in that browser's local storage, so it is not requested again
+unless that data is cleared. This is a client-side prompt, not secure
+authentication: the static site does not verify access on a server.
 
 Several games are embedded from third-party sites and need an internet
 connection. If an embedded game fails to load, use its original site or return
