@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#b8860b">
+	<title>Rocky Games+ | Gold Arcade</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+
+		:root { color-scheme: light; --ink: #30230b; --gold: #e5be54; --paper: #fff3ca; --mono: 'DM Mono', monospace; --display: 'Barlow Condensed', Impact, sans-serif; }
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(#30230b16 0.7px, transparent 0.7px), linear-gradient(145deg, #f8e6a5, #d5a632 58%, #f5d878); background-size: 8px 8px, cover; font-family: var(--mono); }
+		a { color: inherit; }
+		.site-header { display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 0 max(24px, calc((100vw - 1120px) / 2)); border-bottom: 2px solid var(--ink); background: #f8e6a5; }
+		.brand { display: flex; align-items: center; gap: 10px; font: 900 25px/1 var(--display); text-decoration: none; text-transform: uppercase; }
+		.brand-mark { display: grid; width: 32px; aspect-ratio: 1; place-items: center; border: 2px solid var(--ink); background: var(--gold); font: 500 16px var(--mono); }
+		.home-link { padding: 10px 14px; border: 2px solid var(--ink); background: var(--paper); box-shadow: 3px 3px 0 var(--ink); font-size: 10px; text-decoration: none; text-transform: uppercase; }
+		main { width: min(100% - 48px, 1120px); margin: 0 auto; }
+		.intro { padding: clamp(44px, 8vw, 76px) 0 30px; }
+		.kicker { margin: 0 0 12px; font-size: 10px; text-transform: uppercase; }
+		h1 { margin: 0; font: 900 clamp(58px, 9vw, 96px)/0.85 var(--display); text-transform: uppercase; }
+		.intro p:last-child { max-width: 540px; margin: 18px 0 0; font-size: 11px; line-height: 1.7; }
+		.section-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 12px; border-top: 2px solid var(--ink); font-size: 10px; text-transform: uppercase; }
+		.section-heading h2 { margin: 0; font: inherit; }
+		.game-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; padding: 18px 0; }
+		.game-link { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 42px 154px 1fr; min-width: 0; min-height: 284px; border: 1px solid #30230b99; background: var(--paper); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); text-decoration: none; transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease; }
+		.game-link:hover { background: #fff9e5; box-shadow: 6px 6px 0 var(--ink); transform: translateY(-2px); }
+		.game-link:focus-visible, .home-link:focus-visible { outline: 3px solid #9a5410; outline-offset: 3px; }
+		.game-number { grid-column: 1; grid-row: 1; align-self: center; padding: 0 14px; font-size: 10px; }
+		.game-link > div:nth-child(2) { grid-column: 1 / -1; grid-row: 3; align-self: end; padding: 12px 14px 16px; }
+		.game-link > div:nth-child(3) { grid-column: 1 / -1; grid-row: 2; width: 100%; height: 154px; overflow: hidden; background: linear-gradient(135deg, #e5be54, #f8e6a5); }
+		.game-link > div:nth-child(3) img { width: 100%; height: 100%; object-fit: cover; }
+		.game-title { margin: 0; font: 800 clamp(28px, 3vw, 38px)/0.95 var(--display); text-transform: uppercase; }
+		.game-meta { margin: 7px 0 0; font-size: 9px; line-height: 1.5; text-transform: uppercase; }
+		.play-label { grid-column: 2; grid-row: 1; align-self: center; padding-right: 14px; font-size: 9px; text-transform: uppercase; }
+		.browser-card { grid-template-rows: 42px 154px 1fr; }
+		.browser-art { display: grid; place-items: center; color: #5a3a00; font: 900 76px/1 var(--display); }
+		.browser-art span { display: grid; width: 92px; height: 92px; place-items: center; border: 4px solid currentColor; border-radius: 50%; background: #ffe9a3; box-shadow: inset 0 0 0 8px #d6a53c; }
+		.status { margin: 0; padding: 22px 0; font-size: 11px; }
+		.status:empty { display: none; }
+		footer { width: min(100% - 48px, 1120px); margin: 48px auto 0; padding: 16px 0 24px; border-top: 1px solid #30230b66; font-size: 9px; text-transform: uppercase; }
+		@media (max-width: 820px) { .site-header { min-height: 64px; padding: 0 20px; } main, footer { width: calc(100% - 40px); } .game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; } }
+		@media (max-width: 540px) { .site-header { padding: 8px 14px; } main, footer { width: calc(100% - 32px); } .game-grid { grid-template-columns: minmax(0, 1fr); } .game-link { min-height: 270px; grid-template-rows: 40px 142px 1fr; } .game-link > div:nth-child(3) { height: 142px; } .game-title { font-size: 34px; } }
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">R+</span> Rocky Games+</a>
+		<a class="home-link" href="index.html">Back to main arcade</a>
+	</header>
+	<main>
+		<section class="intro" aria-labelledby="page-title">
+			<p class="kicker">Rocky Games / Gold arcade</p>
+			<h1 id="page-title">Games+</h1>
+			<p>All the games from the main arcade, plus extra places to explore.</p>
+		</section>
+		<section aria-labelledby="catalog-title">
+			<div class="section-heading">
+				<h2 id="catalog-title">The full collection</h2>
+				<span id="catalogCount" aria-live="polite">Loading games...</span>
+			</div>
+			<div class="game-grid" id="gameGrid"></div>
+			<p class="status" id="loadStatus" role="status" aria-live="polite"></p>
+		</section>
+		<section aria-labelledby="extras-title">
+			<div class="section-heading">
+				<h2 id="extras-title">Extras</h2>
+				<span>More to explore</span>
+			</div>
+			<div class="game-grid">
+				<a class="game-link browser-card" href="https://s3.amazonaws.com/lotoso/index.html" target="_blank" rel="noopener noreferrer">
+					<span class="game-number">EXTRA</span>
+					<span class="play-label">Open ↗</span>
+					<span class="browser-art" aria-hidden="true"><span>◎</span></span>
+					<div><h3 class="game-title">Browser</h3><p class="game-meta">Open the Browser experience in a new tab</p></div>
+				</a>
+			</div>
+		</section>
+	</main>
+	<footer>Rocky Games+ / Gold arcade</footer>
+	<script>
+		(() => {
+			const ACCESS_KEY = 'rockyGamesPlusAccessGranted';
+			let hasAccess = false;
+			try {
+				hasAccess = sessionStorage.getItem(ACCESS_KEY) === 'true';
+			} catch (error) {
+				console.error('Rocky Games+ could not read access approval:', error);
+			}
+			if (!hasAccess) {
+				window.location.replace('index.html');
+				return;
+			}
+			const gameGrid = document.querySelector('#gameGrid');
+			const catalogCount = document.querySelector('#catalogCount');
+			const loadStatus = document.querySelector('#loadStatus');
+			fetch('index.html')
+				.then((response) => {
+					if (!response.ok) throw new Error(`The arcade returned ${response.status}.`);
+					return response.text();
+				})
+				.then((html) => {
+					const source = new DOMParser().parseFromString(html, 'text/html');
+					const games = [...source.querySelectorAll('#gameGrid > .game-link')];
+					if (!games.length) throw new Error('No games were found in the main catalog.');
+					games.forEach((game) => gameGrid.append(game.cloneNode(true)));
+					catalogCount.textContent = `${games.length} ${games.length === 1 ? 'game' : 'games'}`;
+				})
+				.catch((error) => {
+					console.error('Rocky Games+ could not load the main catalog:', error);
+					catalogCount.textContent = 'Catalog unavailable';
+					loadStatus.textContent = 'The game list could not be loaded. Return to the main arcade and try again.';
+				});
+		})();
+	</script>
+</body>
+</html>

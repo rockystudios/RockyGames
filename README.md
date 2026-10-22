@@ -23,6 +23,12 @@ Approval is saved in that browser's local storage, so it is not requested again
 unless that data is cleared. This is a client-side prompt, not secure
 authentication: the static site does not verify access on a server.
 
+The **Games+** button at the bottom of the arcade asks for a separate code and
+opens a gold-themed page with the full catalog and a Browser link. Games+ reads
+its game list from the main catalog, so new games appear there automatically.
+Its approval lasts for the current browser tab session. Like the site-entry
+prompt, the Games+ prompt is client-side and is not secure authentication.
+
 Several games are embedded from third-party sites and need an internet
 connection. If an embedded game fails to load, use its original site or return
 later. The built-in mini-games are included in this repository.
