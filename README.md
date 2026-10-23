@@ -47,10 +47,14 @@ and shared by pages on this site in that browser. The site asks for a username
 on first visit; the username and purchased nameplate outlines and fonts are
 saved in the same browser storage. Each background has a coordinated text,
 panel, accent, and border palette for readable contrast. The
-shop includes fifteen additional themes: Midnight Blue, Berry Blush, Citrus
+shop includes twenty-five additional themes: Midnight Blue, Berry Blush, Citrus
 Cream, Forest Canopy, Starlight, Aurora Borealis, Ember Glow, Desert Dusk, Coral
-Reef, Cherry Blossom, Vaporwave, Alpine Morning, Deep Space, Monochrome, and
-Golden Hour.
+Reef, Cherry Blossom, Vaporwave, Alpine Morning, Deep Space, Monochrome, Golden
+Hour, Rainbow Cascade, Mossy Grove, Glacier Bay, Lavender Fields, Volcanic
+Night, Candy Clouds, Bamboo Garden, Starry Night, Tropical Splash, and
+Blueprint. The nameplate shop also has ten new outlines and fonts: Pixel Arcade,
+Frost Frame, Comic Pop, Mint Leaf, Cosmic Orbit, Ruby Crown, Electric Lime,
+Ocean Wave, Royal Scroll, and Prism.
 Backgrounds do not sync between browsers or devices. The embedded third-party
 games cannot report when a game is finished, so they do not award play coins.
 
