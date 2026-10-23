@@ -51,6 +51,9 @@ The Chance Arcade has a coin call, a dice roll, and an eight-section prize
 wheel. Each game displays its odds and coin changes before play; wagers can be
 any whole number up to the available virtual-coin balance. Outcomes use the
 published odds, with no near-miss effects or real-money play.
+The Chance Arcade also accepts the coin code `ROCKYLITC1378` to add a
+user-entered whole-number amount. Because this is a static site, the code is
+checked in the browser and is not a secure secret.
 
 ## Keyboard shortcuts
 

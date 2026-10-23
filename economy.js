@@ -271,6 +271,29 @@
 			: `Not this time—you lost ${amount} coins. New balance: ${state.coins} coins.`;
 	}
 
+	function addCoins(amount) {
+		if (!Number.isSafeInteger(amount) || amount <= 0) {
+			announce('Enter a whole-number coin amount greater than zero.');
+			return false;
+		}
+		if (!storageAvailable || !state) {
+			announce('Your coin balance is unavailable. No coins were added.');
+			return false;
+		}
+		let balance;
+		const changed = update((next) => {
+			if (!Number.isSafeInteger(next.coins + amount)) {
+				announce('That amount would exceed your wallet limit. Try a smaller amount.');
+				return false;
+			}
+			next.coins += amount;
+			balance = next.coins;
+			return true;
+		});
+		if (changed) announce(`${amount} coins added. New balance: ${balance} coins.`);
+		return changed;
+	}
+
 	function randomIndex(length) {
 		const range = 0x100000000;
 		const limit = range - (range % length);
@@ -857,7 +880,7 @@
 		}
 	});
 
-	window.RockyEconomy = { playChanceGame, rewardGameCompletion };
+	window.RockyEconomy = { addCoins, playChanceGame, rewardGameCompletion };
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
 	else initialize();
 })();
