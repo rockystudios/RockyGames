@@ -40,15 +40,17 @@ the wager or lose the coins you put in. No real money is used. Purchased
 backgrounds and the active selection are saved in your browser's local storage
 and shared by pages on this site in that browser. Each background has a
 coordinated text, panel, accent, and border palette for readable contrast. The
-shop includes five additional themes: Midnight Blue, Berry Blush, Citrus Cream,
-Forest Canopy, and Starlight.
+shop includes fifteen additional themes: Midnight Blue, Berry Blush, Citrus
+Cream, Forest Canopy, Starlight, Aurora Borealis, Ember Glow, Desert Dusk, Coral
+Reef, Cherry Blossom, Vaporwave, Alpine Morning, Deep Space, Monochrome, and
+Golden Hour.
 Backgrounds do not sync between browsers or devices. The embedded third-party
 games cannot report when a game is finished, so they do not award play coins.
 
 The Chance Arcade has a coin call, a dice roll, and an eight-section prize
-wheel. Each game displays its odds and coin changes before play; wagers are
-limited to 1–10 virtual coins. Outcomes use the published odds, with no
-near-miss effects or real-money play.
+wheel. Each game displays its odds and coin changes before play; wagers can be
+any whole number up to the available virtual-coin balance. Outcomes use the
+published odds, with no near-miss effects or real-money play.
 
 ## Keyboard shortcuts
 

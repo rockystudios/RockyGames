@@ -7,7 +7,7 @@
 	<meta name="theme-color" content="#050b07">
 	<title>Chance Arcade | Rocky Games</title>
 	<link rel="stylesheet" href="economy.css?v=public-site-1">
-	<script src="economy.js?v=public-site-1" defer></script>
+	<script src="economy.js?v=public-site-2" defer></script>
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
 
@@ -57,7 +57,7 @@
 		<div class="intro">
 			<p class="kicker">Rocky Games / Chance arcade</p>
 			<h1>Play by the odds.</h1>
-			<p class="intro-copy">Three simple games, with the chances and coin changes shown up front. These use Rocky Games virtual coins only; they have no cash value. Each play risks 1–10 coins, and results are generated fairly. No real money, hidden odds, or almost-win effects.</p>
+			<p class="intro-copy">Three simple games, with the chances and coin changes shown up front. These use Rocky Games virtual coins only; they have no cash value. Wager any whole amount up to your available balance, and results are generated fairly. No real money, hidden odds, or almost-win effects.</p>
 		</div>
 		<p class="notice">Set a small limit for yourself and take a break whenever you like. Need coins? The daily spin and free built-in games are in the <a href="shop.html">shop</a>.</p>
 		<div class="game-grid">
@@ -69,8 +69,8 @@
 					<label>Pick a side
 						<select name="choice"><option value="heads">Heads</option><option value="tails">Tails</option></select>
 					</label>
-					<label>Wager (1–10 coins)
-						<input name="amount" type="number" min="1" max="10" step="1" inputmode="numeric" value="1" required>
+					<label>Wager (coins)
+						<input name="amount" type="number" min="1" step="1" inputmode="numeric" value="1" required>
 					</label>
 					<button class="play-button" type="submit">Flip coin</button>
 				</form>
@@ -81,8 +81,8 @@
 				<p class="game-description">Roll two six-sided dice. The target is a total of seven.</p>
 				<p class="odds"><strong>Odds:</strong> 6 of 36 rolls (1 in 6).<br><strong>Win:</strong> gain 5× your wager.<br><strong>Lose:</strong> lose your wager.</p>
 				<form class="game-form" data-game="seven">
-					<label>Wager (1–10 coins)
-						<input name="amount" type="number" min="1" max="10" step="1" inputmode="numeric" value="1" required>
+					<label>Wager (coins)
+						<input name="amount" type="number" min="1" step="1" inputmode="numeric" value="1" required>
 					</label>
 					<button class="play-button" type="submit">Roll dice</button>
 				</form>
@@ -94,8 +94,8 @@
 				<p class="game-description">Spin eight equal sections: one prize, seven no-prize sections.</p>
 				<p class="odds"><strong>Odds:</strong> 1 in 8 to win.<br><strong>Win:</strong> gain 7× your wager.<br><strong>Lose:</strong> lose your wager.</p>
 				<form class="game-form" data-game="wheel">
-					<label>Wager (1–10 coins)
-						<input name="amount" type="number" min="1" max="10" step="1" inputmode="numeric" value="1" required>
+					<label>Wager (coins)
+						<input name="amount" type="number" min="1" step="1" inputmode="numeric" value="1" required>
 					</label>
 					<button class="play-button" type="submit">Spin wheel</button>
 				</form>
