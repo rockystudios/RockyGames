@@ -1,7 +1,7 @@
 # Rocky Games
 
-A small static arcade site with six built-in mini-games, Lane Runner, and Moto
-X3M.
+A small static arcade site with built-in mini-games, original arcade games,
+and links to browser-based tools and games.
 
 ## Publish with GitHub Pages
 
@@ -30,6 +30,11 @@ client-side, not secure authentication.
 Several games are embedded from third-party sites and need an internet
 connection. If an embedded game fails to load, use its original site or return
 later. The built-in mini-games are included in this repository.
+
+The arcade also links to the RapidTables Click Counter. **Spud Survival** is an
+original potato-themed arena survival game inspired by the survivor genre; its
+seeds, permanent upgrades, best wave, and best takedown count are saved in the
+current browser.
 
 ## Coins and backgrounds
 

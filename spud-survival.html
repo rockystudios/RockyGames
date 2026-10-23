@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#10180f">
+	<link rel="stylesheet" href="economy.css?v=public-site-2">
+	<title>Spud Survival | Rocky Games</title>
+	<style>
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+		:root { color-scheme: dark; --ink: #e7f1dc; --paper: #111a10; --panel: #1b2818; --lime: #b8e467; --orange: #f18a58; --mono: 'DM Mono', monospace; --display: 'Barlow Condensed', Impact, sans-serif; }
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(circle at 50% 0, #31452b, transparent 48%), #10180f; font-family: var(--mono); }
+		a { color: inherit; }
+		.site-header { display: flex; align-items: center; justify-content: space-between; min-height: 68px; padding: 0 max(20px, calc((100vw - 1040px) / 2)); border-bottom: 2px solid #82956b; background: #111a10; }
+		.brand { display: flex; align-items: center; gap: 9px; font: 900 22px/1 var(--display); text-decoration: none; text-transform: uppercase; }
+		.brand-mark { display: grid; width: 30px; aspect-ratio: 1; place-items: center; border: 2px solid var(--ink); background: var(--lime); color: #17200f; font: 500 15px var(--mono); }
+		.home-link { font-size: 10px; text-transform: uppercase; text-underline-offset: 4px; }
+		main { width: min(100% - 40px, 1040px); margin: 0 auto; }
+		.page-heading { padding: 34px 0 18px; }
+		.kicker { margin: 0 0 6px; color: #bed0a9; font-size: 10px; text-transform: uppercase; }
+		h1 { margin: 0; font: 900 clamp(42px, 8vw, 72px)/0.9 var(--display); text-transform: uppercase; }
+		.intro { margin: 10px 0 0; color: #bdcbb2; font-size: 11px; line-height: 1.7; }
+		.game-shell { overflow: hidden; border: 2px solid #82956b; background: var(--panel); box-shadow: 6px 6px 0 #070b06; }
+		.hud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 12px; border-bottom: 2px solid #82956b; }
+		.stat { display: grid; gap: 4px; min-width: 0; }
+		.stat-label { color: #bdcbb2; font-size: 8px; text-transform: uppercase; }
+		.stat-value { overflow: hidden; font-size: 14px; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+		.stage { position: relative; background: #24351d; }
+		canvas { display: block; width: 100%; aspect-ratio: 900 / 560; touch-action: none; }
+		.overlay { position: absolute; inset: 0; display: grid; align-content: center; justify-items: center; overflow-y: auto; padding: 20px; background: #10180fe8; text-align: center; }
+		.overlay[hidden] { display: none; }
+		.overlay h2 { margin: 0; font: 900 clamp(38px, 8vw, 70px)/0.9 var(--display); text-transform: uppercase; }
+		.overlay p { max-width: 460px; margin: 12px 0; color: #d4dfc9; font-size: 11px; line-height: 1.7; }
+		.level-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+		.level-options:empty { display: none; }
+		.action-button, .shop-button, .dpad button { min-height: 38px; padding: 7px 12px; border: 2px solid #a9c18a; background: var(--lime); color: #17200f; font: 800 17px/1 var(--display); text-transform: uppercase; cursor: pointer; }
+		.action-button:hover, .shop-button:hover, .dpad button:hover { background: #e3f7b4; }
+		.action-button:focus-visible, .shop-button:focus-visible, .dpad button:focus-visible, .home-link:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
+		.level-options button { width: min(100%, 210px); min-height: 68px; padding: 10px; border: 2px solid var(--lime); background: #1b2818; color: var(--ink); font: 12px var(--mono); cursor: pointer; }
+		.level-options button:hover { background: #31452b; }
+		.level-options strong, .level-options span { display: block; }
+		.level-options span { margin-top: 5px; color: #bdcbb2; font-size: 9px; }
+		.controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-top: 2px solid #82956b; }
+		#status { margin: 0; color: #bdcbb2; font-size: 10px; line-height: 1.6; }
+		.dpad { display: none; grid-template-columns: repeat(3, 38px); grid-template-rows: repeat(2, 34px); gap: 3px; width: max-content; margin: 12px auto; }
+		.dpad button { min-height: 34px; padding: 0; font: 16px var(--mono); touch-action: none; user-select: none; }
+		.dpad [data-dir="up"] { grid-column: 2; }
+		.dpad [data-dir="left"] { grid-column: 1; grid-row: 2; }
+		.dpad [data-dir="down"] { grid-column: 2; grid-row: 2; }
+		.dpad [data-dir="right"] { grid-column: 3; grid-row: 2; }
+		.save-panel { display: grid; grid-template-columns: 1fr auto; gap: 16px; margin: 18px 0 32px; padding: 16px; border: 1px solid #82956b; background: #1b2818; }
+		.save-panel h2 { margin: 0 0 6px; font: 800 25px/1 var(--display); text-transform: uppercase; }
+		.save-panel p { margin: 0; color: #bdcbb2; font-size: 10px; line-height: 1.7; }
+		.upgrades { display: flex; flex-wrap: wrap; justify-content: end; gap: 8px; }
+		.shop-button { min-height: 44px; font: 700 11px/1.4 var(--mono); }
+		.shop-button:disabled { opacity: .5; cursor: not-allowed; }
+		footer { display: flex; justify-content: space-between; gap: 16px; width: min(100% - 40px, 1040px); margin: 0 auto; padding: 14px 0 22px; border-top: 1px solid #82956b; color: #bdcbb2; font-size: 9px; text-transform: uppercase; }
+		@media (max-width: 620px) {
+			.site-header { min-height: 60px; padding: 0 14px; }
+			main, footer { width: calc(100% - 28px); }
+			.page-heading { padding-top: 28px; }
+			.hud { grid-template-columns: repeat(2, 1fr); }
+			.controls { align-items: flex-start; }
+			#status { max-width: 62%; }
+			.dpad { display: grid; }
+			.save-panel { grid-template-columns: 1fr; }
+			.upgrades { justify-content: start; }
+		}
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
+	</style>
+</head>
+<body>
+	<header class="site-header">
+		<a class="brand" href="index.html"><span class="brand-mark" aria-hidden="true">R</span> Rocky Games</a>
+		<a class="home-link" href="index.html">← Arcade home</a>
+	</header>
+	<main>
+		<section class="page-heading" aria-labelledby="page-title">
+			<p class="kicker">Original arena survival / saved upgrades</p>
+			<h1 id="page-title">Spud Survival</h1>
+			<p class="intro">An original Brotato-style arena survival game. Move, dodge, and let your spud blaster handle the crowd. Survive as long as you can, collect seeds, and buy permanent upgrades.</p>
+		</section>
+		<section class="game-shell" data-game-fullscreen aria-label="Spud Survival game">
+			<div class="hud" aria-live="polite">
+				<div class="stat"><span class="stat-label">Health</span><span class="stat-value" id="healthStat">100 / 100</span></div>
+				<div class="stat"><span class="stat-label">Wave</span><span class="stat-value" id="waveStat">1</span></div>
+				<div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timeStat">0:00</span></div>
+				<div class="stat"><span class="stat-label">Takedowns</span><span class="stat-value" id="spudsStat">0</span></div>
+			</div>
+			<div class="stage">
+				<canvas id="board" width="900" height="560" aria-label="Arena: move with WASD or arrow keys and automatically shoot nearby enemies"></canvas>
+				<div class="overlay" id="overlay">
+					<h2 id="overlayTitle">Ready, spud?</h2>
+					<p id="overlayCopy">Move with WASD or arrow keys. Your blaster automatically fires at the nearest enemy. Collect glowing seeds and survive!</p>
+					<div class="level-options" id="levelOptions"></div>
+				</div>
+			</div>
+			<div class="dpad" aria-label="Touch movement controls">
+				<button type="button" data-dir="up" aria-label="Move up">↑</button>
+				<button type="button" data-dir="left" aria-label="Move left">←</button>
+				<button type="button" data-dir="down" aria-label="Move down">↓</button>
+				<button type="button" data-dir="right" aria-label="Move right">→</button>
+			</div>
+			<div class="controls">
+				<p id="status" role="status" aria-live="polite">Your upgrades and best run are saved on this device.</p>
+				<button class="action-button" id="startButton" type="button">Start run</button>
+			</div>
+		</section>
+		<section class="save-panel" aria-labelledby="save-title">
+			<div>
+				<h2 id="save-title">Saved stash: <span id="seedBank">0</span> seeds</h2>
+				<p id="saveSummary">Best wave: 0 · Best takedowns: 0</p>
+				<p id="saveStatus" role="status" aria-live="polite">Progress saves automatically in this browser.</p>
+			</div>
+			<div class="upgrades" id="upgrades" aria-label="Permanent upgrades"></div>
+		</section>
+	</main>
+	<footer><span>Rocky Games</span><span>Spud Survival</span></footer>
+	<script>
+		(() => {
+			'use strict';
+
+			const SAVE_KEY = 'rockySpudSurvivalSaveV1';
+			const W = 900;
+			const H = 560;
+			const canvas = document.querySelector('#board');
+			const ctx = canvas.getContext('2d');
+			const status = document.querySelector('#status');
+			const saveStatus = document.querySelector('#saveStatus');
+			const overlay = document.querySelector('#overlay');
+			const overlayTitle = document.querySelector('#overlayTitle');
+			const overlayCopy = document.querySelector('#overlayCopy');
+			const levelOptions = document.querySelector('#levelOptions');
+			const startButton = document.querySelector('#startButton');
+			const keys = new Set();
+			const upgradeDetails = {
+				damage: { label: 'Seed blaster', cost: (level) => 5 + level * 5, description: 'More damage per shot' },
+				speed: { label: 'Quick roots', cost: (level) => 5 + level * 5, description: 'Move a little faster' },
+				health: { label: 'Thick skin', cost: (level) => 5 + level * 5, description: 'More starting health' }
+			};
+			const emptySave = () => ({ version: 1, seeds: 0, bestWave: 0, bestKills: 0, upgrades: { damage: 0, speed: 0, health: 0 } });
+			let save = emptySave();
+			let canSave = true;
+			let run = null;
+			let previousTime = 0;
+
+			function isValidSave(value) {
+				return value && value.version === 1
+					&& Number.isSafeInteger(value.seeds) && value.seeds >= 0
+					&& Number.isSafeInteger(value.bestWave) && value.bestWave >= 0
+					&& Number.isSafeInteger(value.bestKills) && value.bestKills >= 0
+					&& value.upgrades && ['damage', 'speed', 'health'].every((key) => Number.isSafeInteger(value.upgrades[key]) && value.upgrades[key] >= 0 && value.upgrades[key] <= 10);
+			}
+
+			function persistSave() {
+				if (!canSave) return false;
+				try {
+					localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+					saveStatus.textContent = 'Progress saves automatically in this browser.';
+					return true;
+				} catch (error) {
+					canSave = false;
+					console.error('Spud Survival could not save progress:', error);
+					saveStatus.textContent = 'Could not save progress. Check this browser’s storage settings.';
+					return false;
+				}
+			}
+
+			function renderSave() {
+				document.querySelector('#seedBank').textContent = save.seeds;
+				document.querySelector('#saveSummary').textContent = `Best wave: ${save.bestWave} · Best takedowns: ${save.bestKills}`;
+				const upgrades = document.querySelector('#upgrades');
+				upgrades.replaceChildren();
+				Object.entries(upgradeDetails).forEach(([id, upgrade]) => {
+					const level = save.upgrades[id];
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.className = 'shop-button';
+					button.disabled = !canSave || level >= 10 || save.seeds < upgrade.cost(level);
+					button.textContent = level >= 10
+						? `${upgrade.label} · MAX`
+						: `${upgrade.label} ${level}/10 · ${upgrade.cost(level)} seeds`;
+					button.setAttribute('aria-label', `${upgrade.label}, level ${level}. ${upgrade.description}. ${level >= 10 ? 'Maximum level reached.' : `Costs ${upgrade.cost(level)} seeds.`}`);
+					button.addEventListener('click', () => {
+						if (level >= 10 || save.seeds < upgrade.cost(level)) return;
+						save.seeds -= upgrade.cost(level);
+						save.upgrades[id] += 1;
+						if (persistSave()) {
+							renderSave();
+							status.textContent = `${upgrade.label} upgraded to level ${save.upgrades[id]}.`;
+						}
+					});
+					upgrades.append(button);
+				});
+			}
+
+			try {
+				const stored = localStorage.getItem(SAVE_KEY);
+				if (stored !== null) {
+					const parsed = JSON.parse(stored);
+					if (!isValidSave(parsed)) throw new Error('Saved Spud Survival data is invalid.');
+					save = parsed;
+				}
+			} catch (error) {
+				canSave = false;
+				console.error('Spud Survival could not load saved progress:', error);
+				saveStatus.textContent = 'Saved data could not be read. Your existing save was left unchanged; clear this game’s saved data to start over.';
+			}
+			renderSave();
+
+			function setOverlay(title, copy, choices = []) {
+				overlayTitle.textContent = title;
+				overlayCopy.textContent = copy;
+				levelOptions.replaceChildren();
+				choices.forEach((choice) => {
+					const button = document.createElement('button');
+					button.type = 'button';
+					button.innerHTML = `<strong>${choice.title}</strong><span>${choice.description}</span>`;
+					button.addEventListener('click', choice.action, { once: true });
+					levelOptions.append(button);
+				});
+				overlay.hidden = false;
+			}
+
+			function startRun() {
+				run = {
+					state: 'playing', time: 0, spawnTimer: 0, shootTimer: 0, invulnerable: 0,
+					player: { x: W / 2, y: H / 2, health: 100 + save.upgrades.health * 12, maxHealth: 100 + save.upgrades.health * 12, radius: 18 },
+					enemies: [], bullets: [], seeds: [], kills: 0, xp: 0, level: 1,
+					damageBoost: 0, speedBoost: 0, fireBoost: 0, pendingLevels: 0
+				};
+				keys.clear();
+				overlay.hidden = true;
+				startButton.textContent = 'Pause';
+				status.textContent = 'Keep moving! The blaster targets the nearest enemy.';
+				updateHud();
+			}
+
+			function resumeRun() {
+				run.state = 'playing';
+				overlay.hidden = true;
+				startButton.textContent = 'Pause';
+				status.textContent = 'Run resumed.';
+			}
+
+			function pauseRun() {
+				if (!run || run.state !== 'playing') return;
+				run.state = 'paused';
+				keys.clear();
+				startButton.textContent = 'Resume';
+				status.textContent = 'Run paused.';
+				setOverlay('Paused', 'Take a breather, then jump back into the arena.');
+			}
+
+			function levelUp() {
+				if (!run || run.state !== 'playing') return;
+				run.state = 'levelup';
+				startButton.textContent = 'Paused';
+				const choices = [
+					{ title: 'Hotter seeds', description: 'Blaster damage +25%', action: () => { run.damageBoost += 0.25; resumeRun(); } },
+					{ title: 'Fast roots', description: 'Movement speed +12%', action: () => { run.speedBoost += 0.12; resumeRun(); } },
+					{ title: 'Potato skin', description: 'Restore 35 health', action: () => { run.player.health = Math.min(run.player.maxHealth, run.player.health + 35); resumeRun(); } },
+					{ title: 'Rapid sprouts', description: 'Fire rate +15%', action: () => { run.fireBoost += 0.15; resumeRun(); } }
+				].sort(() => Math.random() - 0.5).slice(0, 3);
+				setOverlay(`Level ${run.level}!`, 'Choose one boost for this run.', choices);
+			}
+
+			function finishRun() {
+				if (!run || run.state === 'over') return;
+				run.state = 'over';
+				keys.clear();
+				const wave = Math.floor(run.time / 20) + 1;
+				const earned = Math.max(1, Math.floor(run.kills / 3) + wave);
+				save.seeds += earned;
+				save.bestWave = Math.max(save.bestWave, wave);
+				save.bestKills = Math.max(save.bestKills, run.kills);
+				persistSave();
+				renderSave();
+				startButton.textContent = 'Play again';
+				status.textContent = `Run ended. You earned ${earned} seeds.`;
+				setOverlay('Spud down!', `You reached wave ${wave}, took down ${run.kills} critters, and earned ${earned} seeds. Upgrade your kit and try again.`);
+				window.RockyEconomy?.rewardGameCompletion('Spud Survival');
+			}
+
+			function updateHud() {
+				if (!run) return;
+				document.querySelector('#healthStat').textContent = `${Math.ceil(run.player.health)} / ${run.player.maxHealth}`;
+				document.querySelector('#waveStat').textContent = Math.floor(run.time / 20) + 1;
+				const seconds = Math.floor(run.time);
+				document.querySelector('#timeStat').textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
+				document.querySelector('#spudsStat').textContent = run.kills;
+			}
+
+			function spawnEnemy() {
+				const side = Math.floor(Math.random() * 4);
+				const margin = 28;
+				const point = side === 0 ? { x: Math.random() * W, y: -margin }
+					: side === 1 ? { x: W + margin, y: Math.random() * H }
+					: side === 2 ? { x: Math.random() * W, y: H + margin }
+					: { x: -margin, y: Math.random() * H };
+				const wave = Math.floor(run.time / 20) + 1;
+				const brute = wave >= 3 && Math.random() < 0.12;
+				run.enemies.push({
+					...point, radius: brute ? 22 : 13 + Math.random() * 4,
+					health: brute ? 5 + wave : 2 + Math.floor(wave / 2),
+					speed: (brute ? 38 : 54 + Math.random() * 24) + Math.min(36, wave * 2),
+					damage: brute ? 18 : 10, brute
+				});
+			}
+
+			function update(dt) {
+				if (!run || run.state !== 'playing') return;
+				run.time += dt;
+				run.spawnTimer += dt;
+				run.shootTimer -= dt;
+				run.invulnerable = Math.max(0, run.invulnerable - dt);
+				const wave = Math.floor(run.time / 20) + 1;
+				const spawnEvery = Math.max(0.24, 0.92 - wave * 0.045);
+				while (run.spawnTimer >= spawnEvery && run.enemies.length < 100) {
+					run.spawnTimer -= spawnEvery;
+					spawnEnemy();
+				}
+
+				const player = run.player;
+				let dx = Number(keys.has('ArrowRight') || keys.has('KeyD')) - Number(keys.has('ArrowLeft') || keys.has('KeyA'));
+				let dy = Number(keys.has('ArrowDown') || keys.has('KeyS')) - Number(keys.has('ArrowUp') || keys.has('KeyW'));
+				const length = Math.hypot(dx, dy) || 1;
+				const speed = 190 * (1 + save.upgrades.speed * 0.06) * (1 + run.speedBoost);
+				player.x = Math.max(player.radius, Math.min(W - player.radius, player.x + dx / length * speed * dt));
+				player.y = Math.max(player.radius, Math.min(H - player.radius, player.y + dy / length * speed * dt));
+
+				let target = null;
+				let targetDistance = Infinity;
+				run.enemies.forEach((enemy) => {
+					const distance = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+					if (distance < targetDistance) { target = enemy; targetDistance = distance; }
+					const ex = player.x - enemy.x;
+					const ey = player.y - enemy.y;
+					const enemyDistance = Math.hypot(ex, ey) || 1;
+					enemy.x += ex / enemyDistance * enemy.speed * dt;
+					enemy.y += ey / enemyDistance * enemy.speed * dt;
+					if (enemyDistance < player.radius + enemy.radius && run.invulnerable === 0) {
+						player.health -= enemy.damage;
+						run.invulnerable = 0.7;
+						if (player.health <= 0) finishRun();
+					}
+				});
+				if (run.state !== 'playing') return;
+
+				if (target && run.shootTimer <= 0) {
+					const aimX = target.x - player.x;
+					const aimY = target.y - player.y;
+					const aimLength = Math.hypot(aimX, aimY) || 1;
+					const shotSpeed = 420;
+					run.bullets.push({
+						x: player.x, y: player.y,
+						vx: aimX / aimLength * shotSpeed, vy: aimY / aimLength * shotSpeed,
+						damage: (1 + save.upgrades.damage) * (1 + run.damageBoost), life: 1.4
+					});
+					run.shootTimer = 0.38 / (1 + run.fireBoost);
+				}
+
+				run.bullets = run.bullets.filter((bullet) => {
+					bullet.x += bullet.vx * dt;
+					bullet.y += bullet.vy * dt;
+					bullet.life -= dt;
+					for (let index = run.enemies.length - 1; index >= 0; index -= 1) {
+						const enemy = run.enemies[index];
+						if (Math.hypot(enemy.x - bullet.x, enemy.y - bullet.y) < enemy.radius + 5) {
+							enemy.health -= bullet.damage;
+							bullet.life = 0;
+							if (enemy.health <= 0) {
+								run.enemies.splice(index, 1);
+								run.kills += 1;
+								run.seeds.push({ x: enemy.x, y: enemy.y, radius: 7 });
+							}
+							break;
+						}
+					}
+					return bullet.life > 0 && bullet.x > -20 && bullet.x < W + 20 && bullet.y > -20 && bullet.y < H + 20;
+				});
+
+				run.seeds = run.seeds.filter((seed) => {
+					if (Math.hypot(seed.x - player.x, seed.y - player.y) < player.radius + seed.radius + 4) {
+						run.xp += 1;
+						if (run.xp >= run.level * 8) {
+							run.xp -= run.level * 8;
+							run.level += 1;
+							levelUp();
+						}
+						return false;
+					}
+					return true;
+				});
+				updateHud();
+			}
+
+			function draw() {
+				ctx.clearRect(0, 0, W, H);
+				ctx.fillStyle = '#24351d';
+				ctx.fillRect(0, 0, W, H);
+				ctx.strokeStyle = '#ffffff0c';
+				ctx.lineWidth = 1;
+				for (let x = 20; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+				for (let y = 20; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+				if (!run) {
+					drawSpud(W / 2, H / 2, 21, '#f3cf7a', 0);
+					return;
+				}
+				run.seeds.forEach((seed) => {
+					ctx.fillStyle = '#b8e467';
+					ctx.beginPath(); ctx.arc(seed.x, seed.y, seed.radius, 0, Math.PI * 2); ctx.fill();
+					ctx.strokeStyle = '#efffc0'; ctx.stroke();
+				});
+				run.bullets.forEach((bullet) => {
+					ctx.fillStyle = '#f7e69b';
+					ctx.beginPath(); ctx.arc(bullet.x, bullet.y, 5, 0, Math.PI * 2); ctx.fill();
+				});
+				run.enemies.forEach((enemy) => drawSpud(enemy.x, enemy.y, enemy.radius, enemy.brute ? '#b45f4b' : '#87745b', Math.atan2(run.player.y - enemy.y, run.player.x - enemy.x)));
+				if (run.invulnerable === 0 || Math.floor(run.invulnerable * 14) % 2 === 0) drawSpud(run.player.x, run.player.y, run.player.radius, '#f3cf7a', 0);
+			}
+
+			function drawSpud(x, y, radius, color, angle) {
+				ctx.save();
+				ctx.translate(x, y);
+				ctx.rotate(angle);
+				ctx.fillStyle = color;
+				ctx.strokeStyle = '#342b1d';
+				ctx.lineWidth = 3;
+				ctx.beginPath();
+				ctx.ellipse(0, 0, radius * 1.15, radius * 0.9, 0, 0, Math.PI * 2);
+				ctx.fill(); ctx.stroke();
+				ctx.fillStyle = '#2b2418';
+				ctx.beginPath(); ctx.arc(-radius * 0.25, -radius * 0.12, 2.3, 0, Math.PI * 2); ctx.arc(radius * 0.25, -radius * 0.12, 2.3, 0, Math.PI * 2); ctx.fill();
+				ctx.strokeStyle = '#2b2418'; ctx.lineWidth = 2;
+				ctx.beginPath(); ctx.arc(0, radius * 0.05, radius * 0.25, 0.2, Math.PI - 0.2); ctx.stroke();
+				ctx.restore();
+			}
+
+			function frame(time) {
+				const dt = Math.min((time - previousTime) / 1000 || 0, 0.05);
+				previousTime = time;
+				update(dt);
+				draw();
+				requestAnimationFrame(frame);
+			}
+
+			startButton.addEventListener('click', () => {
+				if (!run || run.state === 'over') startRun();
+				else if (run.state === 'paused') resumeRun();
+				else if (run.state === 'playing') pauseRun();
+			});
+			window.addEventListener('keydown', (event) => {
+				if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(event.code)) event.preventDefault();
+				if (event.code === 'Escape' && run?.state === 'playing') { pauseRun(); return; }
+				if (run?.state === 'playing') keys.add(event.code);
+			});
+			window.addEventListener('keyup', (event) => keys.delete(event.code));
+			window.addEventListener('blur', () => keys.clear());
+			document.querySelectorAll('.dpad button').forEach((button) => {
+				const code = { up: 'ArrowUp', down: 'ArrowDown', left: 'ArrowLeft', right: 'ArrowRight' }[button.dataset.dir];
+				button.addEventListener('pointerdown', (event) => { event.preventDefault(); button.setPointerCapture(event.pointerId); keys.add(code); });
+				['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => button.addEventListener(type, () => keys.delete(code)));
+			});
+			requestAnimationFrame(frame);
+		})();
+	</script>
+	<script src="economy.js?v=public-site-2" defer></script>
+</body>
+</html>
