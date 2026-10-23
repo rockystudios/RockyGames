@@ -9,6 +9,13 @@
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
 	const NEWS_VERSION = 'chance-arcade-1';
 	const GAME_REWARD = 5;
+	const NAMEPLATES = [
+		{ id: 'classic', name: 'Classic', price: 0, border: '2px solid #d7ffe1', background: '#09150d', color: '#d7ffe1', font: "'DM Mono', monospace" },
+		{ id: 'pixel-gold', name: 'Pixel Gold', price: 100, border: '3px double #f2c14e', background: '#30260e', color: '#ffe7a3', font: "Georgia, 'Times New Roman', serif" },
+		{ id: 'bubblegum', name: 'Bubblegum', price: 150, border: '2px dashed #ff8fc8', background: '#411c39', color: '#ffe1f1', font: "'Trebuchet MS', sans-serif" },
+		{ id: 'arcade-neon', name: 'Arcade Neon', price: 200, border: '2px solid #55e7ff', background: '#102c42', color: '#c8f8ff', font: "'Arial Black', Arial, sans-serif" },
+		{ id: 'royal', name: 'Royal', price: 250, border: '3px ridge #bba0ff', background: '#30224a', color: '#eee4ff', font: "Georgia, 'Times New Roman', serif" }
+	];
 	const SHORTCUTS = [
 		{ id: 'myaccess', code: 'KeyA', label: 'APSVA MyAccess', href: 'https://myaccess.apsva.us/' },
 		{ id: 'sora', code: 'KeyS', label: 'Sora', href: 'https://soraapp.com/' },
@@ -66,7 +73,14 @@
 			&& value.ownedBackgrounds.every((id) => backgroundById.has(id))
 			&& value.ownedBackgrounds.includes('default')
 			&& backgroundById.has(value.activeBackground)
-			&& value.ownedBackgrounds.includes(value.activeBackground);
+			&& value.ownedBackgrounds.includes(value.activeBackground)
+			&& (value.username === undefined || (typeof value.username === 'string' && value.username.length <= 24 && value.username.trim() === value.username))
+			&& (value.ownedNameplates === undefined || (Array.isArray(value.ownedNameplates)
+				&& value.ownedNameplates.every((id) => NAMEPLATES.some((nameplate) => nameplate.id === id))
+				&& value.ownedNameplates.includes('classic')))
+			&& (value.activeNameplate === undefined || NAMEPLATES.some((nameplate) => nameplate.id === value.activeNameplate))
+			&& (!value.ownedNameplates || value.ownedNameplates.includes(value.activeNameplate || 'classic'))
+			&& (!value.activeNameplate || (value.ownedNameplates || ['classic']).includes(value.activeNameplate));
 	}
 
 	function readState() {
@@ -76,10 +90,19 @@
 			coins: 0,
 			lastSpin: null,
 			ownedBackgrounds: ['default'],
-			activeBackground: 'default'
+			activeBackground: 'default',
+			username: '',
+			ownedNameplates: ['classic'],
+			activeNameplate: 'classic',
+			username: '',
+			ownedNameplates: ['classic'],
+			activeNameplate: 'classic'
 		};
 		const parsed = JSON.parse(stored);
 		if (!isValidState(parsed)) throw new Error('Saved Rocky Games data is invalid. Your saved data was not changed.');
+		parsed.username = parsed.username || '';
+		parsed.ownedNameplates = parsed.ownedNameplates || ['classic'];
+		parsed.activeNameplate = parsed.activeNameplate || 'classic';
 		return parsed;
 	}
 
@@ -99,6 +122,7 @@
 		try {
 			const next = readState();
 			next.ownedBackgrounds = [...next.ownedBackgrounds];
+			next.ownedNameplates = [...next.ownedNameplates];
 			if (!mutator(next)) return false;
 			return persist(next);
 		} catch (error) {
@@ -137,9 +161,69 @@
 	function render() {
 		const balance = document.querySelector('#rocky-economy-balance');
 		if (balance) balance.textContent = storageAvailable ? `${state.coins} coins` : 'Coins unavailable';
+		renderProfile();
 		renderShop();
+		renderNameplateShop();
 		renderSpin();
 		renderWager();
+	}
+
+	function renderProfile() {
+		const button = document.querySelector('#rocky-economy-profile');
+		const username = button?.querySelector('.rocky-profile-name');
+		const nameplate = NAMEPLATES.find((item) => item.id === state.activeNameplate);
+		if (!button || !username || !nameplate) return;
+		username.textContent = state.username || 'Set username';
+		username.style.border = nameplate.border;
+		username.style.backgroundColor = nameplate.background;
+		username.style.color = nameplate.color;
+		username.style.fontFamily = nameplate.font;
+		button.setAttribute('aria-label', state.username ? `Username: ${state.username}. Edit username` : 'Set your username');
+	}
+
+	function renderNameplateShop() {
+		const container = document.querySelector('#nameplate-shop');
+		if (!container || !state) return;
+		container.replaceChildren();
+		NAMEPLATES.forEach((nameplate) => {
+			const owned = state.ownedNameplates.includes(nameplate.id);
+			const selected = state.activeNameplate === nameplate.id;
+			const card = document.createElement('article');
+			card.className = 'background-card';
+			const preview = document.createElement('div');
+			preview.className = 'nameplate-preview';
+			preview.textContent = state.username || 'Your name';
+			preview.style.border = nameplate.border;
+			preview.style.backgroundColor = nameplate.background;
+			preview.style.color = nameplate.color;
+			preview.style.fontFamily = nameplate.font;
+			const title = document.createElement('h3');
+			title.textContent = nameplate.name;
+			const price = document.createElement('p');
+			price.textContent = nameplate.price === 0 ? 'Free' : `${nameplate.price} coins`;
+			const button = document.createElement('button');
+			button.type = 'button';
+			button.className = 'shop-button';
+			button.textContent = selected ? 'Selected' : owned ? 'Use nameplate' : `Buy for ${nameplate.price}`;
+			button.disabled = selected || !storageAvailable || (!owned && state.coins < nameplate.price);
+			button.addEventListener('click', () => {
+				const changed = update((next) => {
+					if (!next.ownedNameplates.includes(nameplate.id)) {
+						if (next.coins < nameplate.price) {
+							announce('You do not have enough coins for this nameplate.');
+							return false;
+						}
+						next.coins -= nameplate.price;
+						next.ownedNameplates.push(nameplate.id);
+					}
+					next.activeNameplate = nameplate.id;
+					return true;
+				});
+				if (changed) announce(`${nameplate.name} nameplate selected.`);
+			});
+			card.append(preview, title, price, button);
+			container.append(card);
+		});
 	}
 
 	function renderShop() {
@@ -292,6 +376,45 @@
 		});
 		if (changed) announce(`${amount} coins added. New balance: ${balance} coins.`);
 		return changed;
+	}
+
+	function setUsername(username) {
+		const cleanUsername = username.trim();
+		if (!cleanUsername || cleanUsername.length > 24) {
+			announce('Your username must be between 1 and 24 characters.');
+			return false;
+		}
+		return update((next) => {
+			next.username = cleanUsername;
+			return true;
+		});
+	}
+
+	function initializeProfile() {
+		const dialog = document.createElement('dialog');
+		dialog.className = 'rocky-profile-dialog';
+		dialog.setAttribute('aria-labelledby', 'rocky-profile-title');
+		dialog.innerHTML = '<p class="rocky-profile-kicker">Rocky Games / Player profile</p><h2 id="rocky-profile-title">Choose your username</h2><p class="rocky-profile-copy">Your name is saved in this browser and shown at the top of Rocky Games pages.</p><form class="rocky-profile-form"><label for="rocky-profile-input">Username<input id="rocky-profile-input" name="username" type="text" maxlength="24" autocomplete="nickname" required></label><p class="rocky-profile-error" role="status" aria-live="polite"></p><button class="rocky-profile-save" type="submit">Save username</button></form>';
+		document.body.append(dialog);
+		const form = dialog.querySelector('.rocky-profile-form');
+		const input = dialog.querySelector('#rocky-profile-input');
+		const error = dialog.querySelector('.rocky-profile-error');
+		const profileButton = document.querySelector('#rocky-economy-profile');
+		const openDialog = () => {
+			input.value = state.username || '';
+			error.textContent = '';
+			if (typeof dialog.showModal === 'function') dialog.showModal();
+			else dialog.setAttribute('open', '');
+			input.focus();
+		};
+		profileButton.addEventListener('click', openDialog);
+		form.addEventListener('submit', (event) => {
+			event.preventDefault();
+			if (!form.reportValidity()) return;
+			if (setUsername(input.value)) dialog.close();
+			else error.textContent = 'Your username could not be saved. Check browser storage and try again.';
+		});
+		if (!state.username && storageAvailable) openDialog();
 	}
 
 	function randomIndex(length) {
@@ -813,6 +936,11 @@
 
 		function showWhatsNew() {
 			if (dialog.open) return;
+			const profileDialog = document.querySelector('.rocky-profile-dialog');
+			if (profileDialog?.open) {
+				profileDialog.addEventListener('close', showWhatsNew, { once: true });
+				return;
+			}
 			if (typeof dialog.showModal === 'function') {
 				try {
 					dialog.showModal();
@@ -838,9 +966,13 @@
 		toolbar.setAttribute('aria-label', 'Rocky Games shortcuts and wallet');
 		toolbar.innerHTML = '<span id="rocky-economy-balance" aria-live="polite"></span><a href="shop.html#daily-spin">Daily spin</a><a href="shop.html#background-shop">Background shop</a><a href="#whats-new" id="whats-new-help">What\'s new</a><span id="rocky-economy-status" role="status" aria-live="polite"></span>';
 		document.body.append(toolbar);
+		const profileButton = document.createElement('button');
+		profileButton.id = 'rocky-economy-profile';
+		profileButton.type = 'button';
+		profileButton.innerHTML = '<span class="rocky-profile-label">Player</span><span class="rocky-profile-name"></span>';
+		document.body.append(profileButton);
 		const shortcutList = document.createElement('ul');
 		const renderShortcutList = initializeShortcuts(shortcutList);
-		initializeWhatsNew(shortcutList, renderShortcutList);
 		document.querySelector('#spin-button')?.addEventListener('click', spinWheel);
 		document.querySelector('#wager-amount')?.addEventListener('input', renderWager);
 		document.querySelector('#wager-form')?.addEventListener('submit', (event) => {
@@ -861,9 +993,11 @@
 			storageAvailable = false;
 			console.error('Rocky Games could not load saved data:', error);
 			announce(`Could not load saved data: ${error.message}`);
-			state = { version: 1, coins: 0, lastSpin: null, ownedBackgrounds: ['default'], activeBackground: 'default' };
+			state = { version: 1, coins: 0, lastSpin: null, ownedBackgrounds: ['default'], activeBackground: 'default', username: '', ownedNameplates: ['classic'], activeNameplate: 'classic' };
 			render();
 		}
+		initializeProfile();
+		initializeWhatsNew(shortcutList, renderShortcutList);
 	}
 
 	window.addEventListener('storage', (event) => {

@@ -38,8 +38,10 @@ Spinning awards 10, 15, 20, 25, 50, or 100 coins; finishing a built-in game
 awards 5 coins. The shop also offers a virtual-coin 50/50 wager: win to double
 the wager or lose the coins you put in. No real money is used. Purchased
 backgrounds and the active selection are saved in your browser's local storage
-and shared by pages on this site in that browser. Each background has a
-coordinated text, panel, accent, and border palette for readable contrast. The
+and shared by pages on this site in that browser. The site asks for a username
+on first visit; the username and purchased nameplate outlines and fonts are
+saved in the same browser storage. Each background has a coordinated text,
+panel, accent, and border palette for readable contrast. The
 shop includes fifteen additional themes: Midnight Blue, Berry Blush, Citrus
 Cream, Forest Canopy, Starlight, Aurora Borealis, Ember Glow, Desert Dusk, Coral
 Reef, Cherry Blossom, Vaporwave, Alpine Morning, Deep Space, Monochrome, and

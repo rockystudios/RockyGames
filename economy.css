@@ -38,6 +38,54 @@
 #rocky-economy-status { position: absolute; bottom: calc(100% + 8px); left: 0; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 8px 10px; border: 1px solid #202522; background: #f3f1e8; box-shadow: 2px 2px 0 #202522; }
 #rocky-economy-status:empty { display: none; }
 
+#rocky-economy-profile {
+	position: fixed;
+	z-index: 30;
+	top: 12px;
+	right: 12px;
+	display: grid;
+	gap: 3px;
+	max-width: min(260px, calc(100vw - 24px));
+	padding: 7px 10px;
+	border: 1px solid #202522;
+	background: #f3f1e8;
+	box-shadow: 2px 2px 0 #202522;
+	color: #202522;
+	text-align: left;
+	cursor: pointer;
+}
+
+.rocky-profile-label { font: 9px/1.2 'DM Mono', monospace; text-transform: uppercase; }
+.rocky-profile-name { overflow: hidden; max-width: 100%; padding: 3px 7px; border-radius: 4px; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+#rocky-economy-profile:focus-visible { outline: 3px solid #f36b45; outline-offset: 3px; }
+
+.rocky-profile-dialog {
+	position: fixed;
+	z-index: 2147483646;
+	inset: 0;
+	width: min(100% - 32px, 480px);
+	max-width: none;
+	max-height: calc(100% - 32px);
+	margin: auto;
+	padding: 24px;
+	border: 3px solid #202522;
+	background: #f3f1e8;
+	color: #202522;
+	box-shadow: 8px 8px 0 #202522;
+	font: 14px/1.6 'DM Mono', monospace;
+}
+
+.rocky-profile-dialog::backdrop { background: #202522b8; }
+.rocky-profile-dialog:not([open]) { display: none; }
+.rocky-profile-kicker { margin: 0 0 8px; color: #52645b; font-size: 10px; text-transform: uppercase; }
+.rocky-profile-dialog h2 { margin: 0; font: 900 38px/1 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
+.rocky-profile-copy { margin: 14px 0; font-size: 11px; }
+.rocky-profile-form { display: grid; gap: 10px; }
+.rocky-profile-form label { display: grid; gap: 5px; font-size: 10px; }
+.rocky-profile-form input { min-height: 42px; padding: 8px 10px; border: 2px solid #202522; background: #fffdf6; color: #202522; font: 15px 'DM Mono', monospace; }
+.rocky-profile-error { min-height: 1em; margin: 0; color: #7a2718; font-size: 10px; }
+.rocky-profile-save { justify-self: start; min-height: 40px; padding: 7px 14px; border: 2px solid #202522; background: #d9f06b; color: #202522; font: 800 18px 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; cursor: pointer; }
+
 .login-reminder {
 	position: fixed;
 	z-index: 2147483646;
