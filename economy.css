@@ -23,8 +23,21 @@
 	white-space: nowrap;
 }
 
+#rocky-display-settings-button {
+	padding: 6px 8px;
+	border: 1px solid #20252266;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-transform: uppercase;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
 #rocky-economy-toolbar a:hover,
-#rocky-economy-toolbar a:focus-visible {
+#rocky-economy-toolbar a:focus-visible,
+#rocky-display-settings-button:hover,
+#rocky-display-settings-button:focus-visible {
 	border-color: #202522;
 	background: #d9f06b;
 }
@@ -271,9 +284,71 @@
 .game-shell:fullscreen .stage canvas,
 .game-shell:-webkit-full-screen .stage canvas { height: 100%; aspect-ratio: auto; }
 
+.rocky-display-settings {
+	position: fixed;
+	inset: 0;
+	width: min(100% - 32px, 420px);
+	max-width: none;
+	margin: auto;
+	padding: 0;
+	border: 2px solid var(--site-border-color, #202522);
+	background: var(--site-foreground-color, #f3f1e8);
+	color: var(--site-foreground-text-color, #202522);
+	box-shadow: 5px 5px 0 #20252288;
+	font: 13px/1.5 'DM Mono', monospace;
+}
+
+.rocky-display-settings::backdrop { background: #101a22aa; }
+.rocky-display-settings:not([open]) { display: none; }
+.rocky-display-settings-content { display: grid; gap: 14px; padding: 22px; }
+.rocky-display-settings h2 { margin: 0; font: 800 28px/1.1 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
+.rocky-display-settings label { display: grid; gap: 5px; font-size: 11px; }
+.rocky-display-settings select { min-height: 40px; padding: 6px 9px; border: 1px solid var(--site-border-color, #202522); background: var(--site-foreground-color, #fffdf6); color: var(--site-foreground-text-color, #202522); font: inherit; }
+.rocky-display-settings .rocky-display-settings-toggle { display: flex; align-items: center; gap: 9px; }
+.rocky-display-settings-toggle input { width: 18px; height: 18px; accent-color: var(--site-accent-color, #202522); }
+.rocky-display-settings-actions { display: flex; justify-content: space-between; gap: 10px; }
+.rocky-display-settings-actions button { min-height: 38px; padding: 6px 12px; border: 1px solid var(--site-border-color, #202522); background: var(--site-foreground-color, #fffdf6); color: var(--site-foreground-text-color, #202522); font: inherit; cursor: pointer; }
+.rocky-display-settings-actions button:last-child { background: var(--site-accent-color, #d9f06b); color: var(--site-accent-text-color, #202522); }
+.rocky-display-settings button:focus-visible,
+.rocky-display-settings select:focus-visible { outline: 3px solid var(--site-accent-color, #f36b45); outline-offset: 2px; }
+
+html[data-rocky-font="system"] body,
+html[data-rocky-font="system"] body *,
+html[data-rocky-font="sans"] body,
+html[data-rocky-font="sans"] body *,
+html[data-rocky-font="serif"] body,
+html[data-rocky-font="serif"] body *,
+html[data-rocky-font="mono"] body,
+html[data-rocky-font="mono"] body * {
+	font-family: var(--rocky-display-font) !important;
+}
+
+html[data-rocky-font="system"] { --rocky-display-font: system-ui, sans-serif; }
+html[data-rocky-font="sans"] { --rocky-display-font: Arial, Helvetica, sans-serif; }
+html[data-rocky-font="serif"] { --rocky-display-font: Georgia, 'Times New Roman', serif; }
+html[data-rocky-font="mono"] { --rocky-display-font: 'DM Mono', 'Courier New', monospace; }
+
+html[data-rocky-line-spacing="relaxed"] body :is(p, li, label, .instructions, .overlay-copy, .intro-note, .game-meta, .news-update-list) {
+	line-height: 1.8 !important;
+}
+
+html[data-rocky-letter-spacing="wide"] body :is(p, li, label, button, a, input, select, h1, h2, h3, span) {
+	letter-spacing: 0.04em !important;
+}
+
+html[data-rocky-reduced-motion="true"] *,
+html[data-rocky-reduced-motion="true"] *::before,
+html[data-rocky-reduced-motion="true"] *::after {
+	animation-duration: 0.01ms !important;
+	animation-iteration-count: 1 !important;
+	scroll-behavior: auto !important;
+	transition-duration: 0.01ms !important;
+}
+
 @media (max-width: 520px) {
-	#rocky-economy-toolbar { right: 8px; bottom: 8px; left: 8px; justify-content: space-between; gap: 4px; padding: 6px; font-size: 9px; }
-	#rocky-economy-toolbar a { padding: 6px 5px; }
+	#rocky-economy-toolbar { right: 8px; bottom: 8px; left: 8px; justify-content: space-between; flex-wrap: wrap; gap: 4px; padding: 6px; font-size: 9px; }
+	#rocky-economy-toolbar a,
+	#rocky-display-settings-button { padding: 6px 5px; }
 	.game-fullscreen-button { top: 8px; right: 8px; width: 38px; }
 	.game-login-link { top: 8px; right: 54px; min-height: 38px; padding: 0 8px; font-size: 10px; }
 	.game-shortcut-menu { top: 8px; right: 100px; }

@@ -7,8 +7,16 @@
 	const CUSTOM_SHORTCUTS_KEY = 'rockyGamesCustomShortcuts';
 	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
+	const DISPLAY_SETTINGS_KEY = 'rockyGamesDisplaySettings';
 	const NEWS_VERSION = 'chance-arcade-1';
 	const GAME_REWARD = 5;
+	const DEFAULT_DISPLAY_SETTINGS = { font: 'system', lineSpacing: 'normal', letterSpacing: 'normal', reducedMotion: false };
+	const DISPLAY_FONTS = {
+		system: 'system-ui, sans-serif',
+		serif: "Georgia, 'Times New Roman', serif",
+		sans: 'Arial, Helvetica, sans-serif',
+		mono: "'DM Mono', 'Courier New', monospace"
+	};
 	const NAMEPLATES = [
 		{ id: 'classic', name: 'Classic', price: 0, border: '2px solid #d7ffe1', background: '#09150d', color: '#d7ffe1', font: "'DM Mono', monospace" },
 		{ id: 'pixel-gold', name: 'Pixel Gold', price: 100, border: '3px double #f2c14e', background: '#30260e', color: '#ffe7a3', font: "Georgia, 'Times New Roman', serif" },
@@ -83,6 +91,79 @@
 		status.textContent = message;
 		window.clearTimeout(statusTimer);
 		statusTimer = window.setTimeout(() => { status.textContent = ''; }, 5000);
+	}
+
+	function readDisplaySettings() {
+		try {
+			const saved = JSON.parse(localStorage.getItem(DISPLAY_SETTINGS_KEY) || 'null');
+			if (saved && Object.hasOwn(DISPLAY_FONTS, saved.font)
+				&& ['normal', 'relaxed'].includes(saved.lineSpacing)
+				&& ['normal', 'wide'].includes(saved.letterSpacing)
+				&& typeof saved.reducedMotion === 'boolean') return saved;
+		} catch (error) {
+			console.error('Rocky Games could not load display settings:', error);
+		}
+		return { ...DEFAULT_DISPLAY_SETTINGS };
+	}
+
+	function applyDisplaySettings(settings) {
+		const root = document.documentElement;
+		root.dataset.rockyFont = settings.font;
+		root.dataset.rockyLineSpacing = settings.lineSpacing;
+		root.dataset.rockyLetterSpacing = settings.letterSpacing;
+		root.dataset.rockyReducedMotion = String(settings.reducedMotion);
+	}
+
+	function initializeDisplaySettings() {
+		const settings = readDisplaySettings();
+		const button = document.querySelector('#rocky-display-settings-button');
+		const dialog = document.createElement('dialog');
+		dialog.className = 'rocky-display-settings';
+		dialog.setAttribute('aria-labelledby', 'rocky-display-settings-title');
+		dialog.innerHTML = '<div class="rocky-display-settings-content"><h2 id="rocky-display-settings-title">Display settings</h2><label>Font<select name="font"><option value="system">System</option><option value="sans">Sans serif</option><option value="serif">Serif</option><option value="mono">Monospace</option></select></label><label>Line spacing<select name="lineSpacing"><option value="normal">Normal</option><option value="relaxed">Relaxed</option></select></label><label>Letter spacing<select name="letterSpacing"><option value="normal">Normal</option><option value="wide">Wide</option></select></label><label class="rocky-display-settings-toggle"><input name="reducedMotion" type="checkbox"> Reduce motion</label><div class="rocky-display-settings-actions"><button type="button" data-display-reset>Reset</button><button type="button" data-display-close>Close</button></div></div>';
+		document.body.append(dialog);
+
+		const formValues = {
+			font: dialog.querySelector('[name="font"]'),
+			lineSpacing: dialog.querySelector('[name="lineSpacing"]'),
+			letterSpacing: dialog.querySelector('[name="letterSpacing"]'),
+			reducedMotion: dialog.querySelector('[name="reducedMotion"]')
+		};
+
+		function updateControls() {
+			Object.entries(formValues).forEach(([key, control]) => {
+				if (control.type === 'checkbox') control.checked = settings[key];
+				else control.value = settings[key];
+			});
+		}
+
+		function saveSettings(next) {
+			try {
+				localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify(next));
+				Object.assign(settings, next);
+				applyDisplaySettings(settings);
+				announce('Display settings saved.');
+			} catch (error) {
+				console.error('Rocky Games could not save display settings:', error);
+				announce('Display settings could not be saved in this browser.');
+			}
+		}
+
+		Object.entries(formValues).forEach(([key, control]) => {
+			control.addEventListener('change', () => saveSettings({ ...settings, [key]: control.type === 'checkbox' ? control.checked : control.value }));
+		});
+		dialog.querySelector('[data-display-reset]').addEventListener('click', () => {
+			saveSettings({ ...DEFAULT_DISPLAY_SETTINGS });
+			updateControls();
+		});
+		dialog.querySelector('[data-display-close]').addEventListener('click', () => dialog.close());
+		button.addEventListener('click', () => {
+			updateControls();
+			if (typeof dialog.showModal === 'function') dialog.showModal();
+			else dialog.setAttribute('open', '');
+		});
+		applyDisplaySettings(settings);
+		updateControls();
 	}
 
 	function isValidState(value) {
@@ -984,8 +1065,9 @@
 		const toolbar = document.createElement('nav');
 		toolbar.id = 'rocky-economy-toolbar';
 		toolbar.setAttribute('aria-label', 'Rocky Games shortcuts and wallet');
-		toolbar.innerHTML = '<span id="rocky-economy-balance" aria-live="polite"></span><a href="shop.html#daily-spin">Daily spin</a><a href="shop.html#background-shop">Background shop</a><a href="#whats-new" id="whats-new-help">What\'s new</a><span id="rocky-economy-status" role="status" aria-live="polite"></span>';
+		toolbar.innerHTML = '<span id="rocky-economy-balance" aria-live="polite"></span><a href="shop.html#daily-spin">Daily spin</a><a href="shop.html#background-shop">Background shop</a><a href="#whats-new" id="whats-new-help">What\'s new</a><button type="button" id="rocky-display-settings-button">Settings</button><span id="rocky-economy-status" role="status" aria-live="polite"></span>';
 		document.body.append(toolbar);
+		initializeDisplaySettings();
 		const profileButton = document.createElement('button');
 		profileButton.id = 'rocky-economy-profile';
 		profileButton.type = 'button';
