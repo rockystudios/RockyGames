@@ -43,6 +43,7 @@
 			<h2>Remove bot accounts</h2>
 			<label>Created in the last (hours, 0 = any time) <input id="noip-hours" type="number" min="0" value="24"></label>
 			<button type="submit">Delete accounts with no IP and 0 coins</button>
+			<button type="button" id="noip-auto">Start auto-remove every 5 seconds</button>
 			<p class="hint">Real players get an IP saved when they visit. Bots that call the database directly never do. You see the list and confirm first.</p>
 		</form>
 		<form id="words-form" hidden>
@@ -274,6 +275,38 @@
 					status.textContent = `Deleted ${hits.length} account(s).`;
 					load();
 				} catch (error) { status.textContent = error.message; }
+			});
+			let autoTimer = null;
+			let autoBusy = false;
+			let autoTotal = 0;
+			const autoButton = document.querySelector('#noip-auto');
+			async function autoClean() {
+				if (autoBusy) return;
+				autoBusy = true;
+				try {
+					const accounts = await apiAll('?select=id,username,coins,created_at,bgs&order=id.asc');
+					const cutoff = Date.now() - 60000;
+					const hits = accounts.filter((a) => !a.username.startsWith('ip:') && !a.username.startsWith('config:') && !(a.bgs && (a.bgs.ip || a.bgs.banned)) && a.coins === 0 && Date.parse(a.created_at) < cutoff);
+					for (let i = 0; i < hits.length; i += 100) await api(`?id=in.(${hits.slice(i, i + 100).map((a) => a.id).join(',')})`, { method: 'DELETE' });
+					autoTotal += hits.length;
+					status.textContent = `Auto-remove is on. Removed ${autoTotal} bot account(s) so far.`;
+				} catch (error) { status.textContent = `Auto-remove error: ${error.message}`; }
+				autoBusy = false;
+			}
+			autoButton.addEventListener('click', () => {
+				if (autoTimer) {
+					clearInterval(autoTimer);
+					autoTimer = null;
+					autoButton.textContent = 'Start auto-remove every 5 seconds';
+					status.textContent = `Auto-remove stopped. Removed ${autoTotal} bot account(s).`;
+					load();
+					return;
+				}
+				if (!confirm('Every 5 seconds, delete accounts with no IP, 0 coins, and older than 1 minute? Keep this page open. Stop it with the same button.')) return;
+				autoTotal = 0;
+				autoButton.textContent = 'Stop auto-remove';
+				autoClean();
+				autoTimer = setInterval(autoClean, 5000);
 			});
 			document.querySelector('#refresh').addEventListener('click', load);
 			document.querySelector('#show-hidden').addEventListener('change', load);
