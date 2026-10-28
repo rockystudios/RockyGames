@@ -12,12 +12,15 @@
 	const DISPLAY_SETTINGS_KEY = 'rockyGamesDisplaySettings';
 	const ACCOUNT_KEY = 'rockyGamesAccount';
 	const BANNED_KEY = 'rockyGamesBanned';
+	const IP_BYPASS_KEY = 'rockyGamesIpBypass';
+	const IP_CACHE_KEY = 'rockyGamesIp';
 	const ADDONS_KEY = 'rockyGamesAddons';
 	const AUTO_CLICK_INTERVAL_MS = 100;
 	const BAN_CHECK_MS = 60000;
 	const LAST_USERNAME_KEY = 'rockyGamesLastUsername';
 	const SUPABASE_URL = 'https://elxnypvvwrumhwakczwe.supabase.co';
 	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
+	const SUPABASE_TABLE = 'account';
 	const NEWS_VERSION = 'web-dashers-1';
 	const GAME_REWARD = 5;
 	const MAX_COINS = 2000000000;
@@ -444,13 +447,30 @@
 		button.disabled = !storageAvailable || !Number.isSafeInteger(amount) || amount <= 0 || amount > state.coins;
 	}
 
-	async function wagerCoins(amount) {
-		const result = await playOnServer('wager', amount);
-		if (!result) return;
+	function wagerCoins(amount) {
+		if (!storageAvailable || !Number.isSafeInteger(amount) || amount <= 0) {
+			announce('Enter a whole-number coin wager greater than zero.');
+			return;
+		}
+		let won = false;
+		const changed = update((next) => {
+			if (amount > next.coins) {
+				announce('You do not have enough coins for that wager.');
+				return false;
+			}
+			if (amount > MAX_COINS - next.coins) {
+				announce('That wager would exceed your wallet limit if you won. Try a smaller amount.');
+				return false;
+			}
+			won = Math.random() < 0.5;
+			next.coins += won ? amount : -amount;
+			return true;
+		});
+		if (!changed) return;
 		const status = document.querySelector('#wager-status');
-		if (status) status.textContent = result.won
-			? `You won! Your ${amount}-coin wager doubled. New balance: ${result.balance} coins.`
-			: `Not this time—you lost ${amount} coins. New balance: ${result.balance} coins.`;
+		if (status) status.textContent = won
+			? `You won! Your ${amount}-coin wager doubled. New balance: ${state.coins} coins.`
+			: `Not this time—you lost ${amount} coins. New balance: ${state.coins} coins.`;
 	}
 
 	function addCoins(amount) {
@@ -516,51 +536,75 @@
 		if (!state.username && storageAvailable && !cloudConfigured()) openDialog();
 	}
 
-	async function playOnServer(gameId, amount, choice) {
-		if (!Number.isSafeInteger(amount) || amount < 1) {
-			announce('Enter a whole-number wager greater than zero.');
+	function randomIndex(length) {
+		const range = 0x100000000;
+		const limit = range - (range % length);
+		const values = new Uint32Array(1);
+		let value;
+		do {
+			window.crypto.getRandomValues(values);
+			value = values[0];
+		} while (value >= limit);
+		return value % length;
+	}
+
+	function playChanceGame(gameId, amount, choice) {
+		const games = {
+			coin: { maxWinnings: 1 },
+			seven: { maxWinnings: 5 },
+			wheel: { maxWinnings: 7 }
+		};
+		const game = games[gameId];
+		if (!game || !Number.isSafeInteger(amount) || amount < 1) {
+			announce('Choose a valid game and enter a whole-number wager greater than zero.');
 			return null;
 		}
 		if (!storageAvailable || !state) {
 			announce('Your coin balance is unavailable. No game was played.');
 			return null;
 		}
-		const auth = accountAuth();
-		if (!auth || !cloudConfigured()) {
-			announce('Sign in to play.');
-			return null;
-		}
-		let result;
-		try {
-			result = await enqueueCloud(() => cloudRpc('rocky_play', { ...auth, p_game: gameId, p_amount: amount, p_choice: choice || null }));
-		} catch (error) {
-			console.error('Rocky Games could not play a chance game:', error);
-			announce('Could not reach the server. No coins were changed.');
-			return null;
-		}
-		if (result.state === 'gone') { signOut(); return null; }
-		if (result.state === 'banned') { banThisDevice(); return null; }
-		if (result.error || result.state !== 'ok') {
-			announce(result.error || 'The game could not be played.');
-			return null;
-		}
-		update((next) => { next.coins = result.balance; return true; });
-		return result;
-	}
-
-	async function playChanceGame(gameId, amount, choice) {
-		if (!['coin', 'seven', 'wheel'].includes(gameId)) {
-			announce('Choose a valid game and enter a whole-number wager greater than zero.');
+		if (amount > state.coins) {
+			announce('You do not have enough coins for that wager.');
 			return null;
 		}
 		if (gameId === 'coin' && !['heads', 'tails'].includes(choice)) {
 			announce('Choose heads or tails before playing.');
 			return null;
 		}
-		const result = await playOnServer(gameId, amount, choice);
-		if (!result) return null;
-		const outcome = gameId === 'coin' ? result.outcome : Number(result.outcome);
-		return { gameId, outcome, won: result.won, netCoins: result.net, balance: result.balance };
+		let outcome;
+		try {
+			if (gameId === 'coin') {
+				outcome = randomIndex(2) === 0 ? 'heads' : 'tails';
+			} else if (gameId === 'seven') {
+				outcome = randomIndex(6) + randomIndex(6) + 2;
+			} else {
+				outcome = randomIndex(8);
+			}
+		} catch (error) {
+			console.error('Rocky Games could not generate a chance-game result:', error);
+			announce('A fair result could not be generated. No coins were changed.');
+			return null;
+		}
+		const won = gameId === 'coin' ? outcome === choice
+			: gameId === 'seven' ? outcome === 7
+				: outcome === 0;
+		const netCoins = won ? amount * game.maxWinnings : -amount;
+		let balance = 0;
+		const changed = update((next) => {
+			if (amount > next.coins) {
+				announce('You do not have enough coins for that wager.');
+				return false;
+			}
+			if (next.coins + netCoins > MAX_COINS) {
+				announce('That win would exceed your wallet limit. Try a smaller wager.');
+				return false;
+			}
+			next.coins += netCoins;
+			balance = next.coins;
+			return true;
+		});
+		if (!changed) return null;
+		return { gameId, outcome, won, netCoins, balance };
 	}
 
 	function rewardGameCompletion(game) {
@@ -1050,46 +1094,64 @@
 		return !SUPABASE_URL.startsWith('PASTE_') && !SUPABASE_ANON_KEY.startsWith('PASTE_');
 	}
 
-	async function cloudRpc(name, args) {
-		const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
-			method: 'POST',
-			headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-			body: JSON.stringify(args || {})
+	async function cloudRequest(query, options = {}) {
+		const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}${query}`, {
+			...options,
+			headers: {
+				apikey: SUPABASE_ANON_KEY,
+				Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+				'Content-Type': 'application/json',
+				Prefer: 'return=representation',
+				...(options.headers || {})
+			}
 		});
 		if (!response.ok) throw new Error(`Server error ${response.status}`);
-		return response.json();
+		return response.status === 204 ? [] : response.json();
 	}
 
-	let cloudQueue = Promise.resolve();
+	let ipPromise = null;
 
-	function enqueueCloud(task) {
-		const run = cloudQueue.then(task);
-		cloudQueue = run.catch(() => {});
-		return run;
+	function getClientIp() {
+		const cached = sessionStorage.getItem(IP_CACHE_KEY);
+		if (cached) return Promise.resolve(cached);
+		if (!ipPromise) {
+			ipPromise = fetch('https://api.ipify.org?format=json')
+				.then((response) => (response.ok ? response.json() : null))
+				.then((data) => {
+					const ip = data && typeof data.ip === 'string' && data.ip.length <= 45 ? data.ip : null;
+					if (ip) sessionStorage.setItem(IP_CACHE_KEY, ip);
+					return ip;
+				})
+				.catch(() => null);
+		}
+		return ipPromise;
 	}
 
-	function accountAuth() {
-		const account = getAccount();
-		return account && typeof account.token === 'string' ? { p_id: account.id, p_token: account.token } : null;
-	}
-
-	async function checkIpBan() {
-		if (document.querySelector('#rocky-ban-screen') || !cloudConfigured()) return;
+	async function isIpBanned() {
+		if (!cloudConfigured()) return false;
+		const ip = await getClientIp();
+		if (!ip || localStorage.getItem(IP_BYPASS_KEY) === ip) return false;
 		try {
-			if (await cloudRpc('rocky_ip_banned')) {
-				document.querySelector('#rocky-auth-gate')?.remove();
-				showBanScreen(true);
-			}
+			const rows = await cloudRequest(`?username=eq.${encodeURIComponent(`ip:${ip}`)}&select=id`);
+			return rows.length > 0;
 		} catch (error) {
-			console.error('Could not check the network block list:', error);
+			return false;
 		}
 	}
 
-	function savePayload(value) {
+	async function checkIpBan() {
+		if (document.querySelector('#rocky-ban-screen')) return;
+		if (await isIpBanned()) {
+			document.querySelector('#rocky-auth-gate')?.remove();
+			showBanScreen(true);
+		}
+	}
+
+	function stateToRow(value) {
 		return {
-			p_coins: Math.min(MAX_COINS, value.coins),
-			p_bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null },
-			p_nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
+			coins: Math.min(MAX_COINS, value.coins),
+			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null, ip: sessionStorage.getItem(IP_CACHE_KEY) || undefined },
+			nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
 		};
 	}
 
@@ -1113,55 +1175,24 @@
 		return next;
 	}
 
-	let savePending = false;
-
-	function sameStateData(a, b) {
-		const list = (value) => [...value].sort().join(',');
-		return a.coins === b.coins && a.activeBackground === b.activeBackground && a.activeNameplate === b.activeNameplate
-			&& list(a.ownedBackgrounds) === list(b.ownedBackgrounds) && list(a.ownedNameplates) === list(b.ownedNameplates);
-	}
-
-	function handleCloudState(result, sent) {
-		if (!getAccount() || !result) return;
-		if (result.state === 'gone') { signOut(); return; }
-		if (result.state === 'banned') { banThisDevice(); return; }
-		if (result.state === 'ip_banned') {
-			document.querySelector('#rocky-auth-gate')?.remove();
-			showBanScreen(true);
-			return;
-		}
-		if (result.state !== 'ok' || !result.row || !sent || savePending) return;
-		if (JSON.stringify(savePayload(state)) !== JSON.stringify(sent)) return;
-		if (!sameStateData(rowToState(result.row, state), state)) {
-			applyAccountState(result.row);
-			announce('Some changes could not be saved to your account, so they were undone.');
+	async function pushToCloud(value) {
+		const account = getAccount();
+		if (!account || !cloudConfigured()) return;
+		try {
+			const updated = await cloudRequest(`?id=eq.${account.id}&bgs->>banned=is.null`, { method: 'PATCH', body: JSON.stringify(stateToRow(value)) });
+			if (!updated.length) checkAccountStatus();
+		} catch (error) {
+			console.error('Rocky Games could not sync to the cloud:', error);
+			announce('Could not save to your account. Check your connection.');
 		}
 	}
 
-	function pushToCloud() {
-		if (savePending || !cloudConfigured() || !getAccount()) return;
-		savePending = true;
-		enqueueCloud(async () => {
-			savePending = false;
-			const auth = accountAuth();
-			if (!auth || !state) return;
-			const sent = savePayload(state);
-			try {
-				handleCloudState(await cloudRpc('rocky_save', { ...auth, ...sent }), sent);
-			} catch (error) {
-				console.error('Rocky Games could not sync to the cloud:', error);
-				announce('Could not save to your account. Check your connection.');
-			}
-		});
-	}
-
-	function applyAccountState(row, token) {
+	function applyAccountState(row) {
 		let previous;
 		try { previous = readState(); } catch (error) { previous = { version: 1, lastSpin: null }; }
 		const next = rowToState(row, previous);
-		const existing = getAccount();
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-		localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: row.id, username: row.username, token: token || (existing && existing.token) }));
+		localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: row.id, username: row.username }));
 		localStorage.setItem(LAST_USERNAME_KEY, row.username);
 		state = next;
 		storageAvailable = true;
@@ -1169,30 +1200,69 @@
 		render();
 	}
 
-	function finishLogin(result, deviceBan) {
-		if (result.banned) {
-			if (/network/.test(result.error || '')) {
-				document.querySelector('#rocky-auth-gate')?.remove();
-				showBanScreen(true);
-			} else if (deviceBan) {
-				banThisDevice();
-			}
-			throw new Error(result.error || 'This account is banned.');
+	const WORDS_ROW = 'config:blocked-words';
+	let blockedWordsPromise;
+
+	function normalizeName(text) {
+		const map = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' };
+		return String(text).toLowerCase().replace(/[013457@$!]/g, (c) => map[c]).replace(/[^a-z]/g, '');
+	}
+
+	function loadBlockedWords() {
+		if (!blockedWordsPromise) {
+			blockedWordsPromise = cloudRequest(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=bgs`)
+				.then((rows) => {
+					const bgs = (rows[0] && rows[0].bgs) || {};
+					return {
+						words: (bgs.words || []).map(normalizeName).filter(Boolean),
+						passwords: (bgs.passwords || []).map(String),
+						coins: (bgs.coins || []).map(Number).filter(Number.isFinite)
+					};
+				})
+				.catch(() => ({ words: [], passwords: [], coins: [] }));
 		}
-		if (!result.ok || !result.row) throw new Error(result.error || 'Something went wrong. Try again.');
-		applyAccountState(result.row, result.token);
+		return blockedWordsPromise;
+	}
+
+	async function hasBlockedWord(name) {
+		if (!cloudConfigured() || name === WORDS_ROW || name.startsWith('ip:')) return false;
+		const clean = normalizeName(name);
+		return (await loadBlockedWords()).words.some((word) => clean.includes(word));
+	}
+
+	async function isBlockedPassword(password) {
+		return cloudConfigured() && (await loadBlockedWords()).passwords.includes(String(password));
+	}
+
+	async function hasBlockedRow(row) {
+		if (!row || row.username === WORDS_ROW || String(row.username).startsWith('ip:')) return false;
+		if (await hasBlockedWord(row.username)) return true;
+		const lists = await loadBlockedWords();
+		return lists.passwords.includes(String(row.password)) || lists.coins.includes(Number(row.coins));
+	}
+
+	async function banForName(id) {
+		const bytes = crypto.getRandomValues(new Uint8Array(12));
+		const password = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+		try { await cloudRequest(`?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password, bgs: { banned: true, reason: 'blocked by admin rules' } }) }); } catch (error) { console.error(error); }
+		banThisDevice();
 	}
 
 	async function signIn(username, password) {
-		finishLogin(await cloudRpc('rocky_login', { p_username: username, p_password: password }), false);
+		const rows = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&select=*`);
+		if (!rows.length) throw new Error('Wrong username or password.');
+		if (rows[0].bgs && rows[0].bgs.banned) throw new Error('This account is banned.');
+		if (await hasBlockedRow(rows[0])) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
+		applyAccountState(rows[0]);
 	}
 
-	const ACCOUNT_CREATION_ENABLED = false;
-	const CREATION_OFF_MESSAGE = 'New accounts are turned off for now. Sign in with an existing account.';
-
 	async function createAccount(username, password) {
-		if (!ACCOUNT_CREATION_ENABLED) throw new Error(CREATION_OFF_MESSAGE);
-		finishLogin(await cloudRpc('rocky_create', { p_username: username, p_password: password }), true);
+		const existing = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&select=id`);
+		if (existing.length) throw new Error('That username is already taken.');
+		if (await isBlockedPassword(password)) throw new Error('That password is not allowed. Pick a different one.');
+		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(freshState()) }) });
+		if (await hasBlockedWord(username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
+		applyAccountState(rows[0]);
 	}
 
 	function freshState() {
@@ -1223,7 +1293,7 @@
 	function showAuthGate() {
 		if (document.querySelector('#rocky-auth-gate')) return;
 		const remembered = localStorage.getItem(LAST_USERNAME_KEY) || '';
-		let mode = remembered || !ACCOUNT_CREATION_ENABLED ? 'signin' : 'create';
+		let mode = remembered ? 'signin' : 'create';
 		const gate = document.createElement('div');
 		gate.id = 'rocky-auth-gate';
 		gate.setAttribute('role', 'dialog');
@@ -1244,9 +1314,8 @@
 			title.textContent = signing ? 'Sign in' : 'Create account';
 			submit.textContent = signing ? 'Sign in' : 'Create account';
 			switcher.textContent = signing ? 'No account? Create one' : 'Have an account? Sign in';
-			switcher.hidden = !ACCOUNT_CREATION_ENABLED;
 			passInput.autocomplete = signing ? 'current-password' : 'new-password';
-			error.textContent = cloudConfigured() ? (ACCOUNT_CREATION_ENABLED ? '' : CREATION_OFF_MESSAGE) : 'Accounts are not set up yet: add the Supabase URL and key in economy.js.';
+			error.textContent = cloudConfigured() ? '' : 'Accounts are not set up yet: add the Supabase URL and key in economy.js.';
 		}
 		userInput.value = mode === 'signin' ? remembered : '';
 		setMode(mode);
@@ -1277,14 +1346,15 @@
 	}
 
 	async function checkAccountStatus(applyRow) {
-		if (!getAccount() || !cloudConfigured()) return;
-		const auth = accountAuth();
-		if (!auth) { signOut(); return; }
+		const account = getAccount();
+		if (!account || !cloudConfigured()) return;
 		try {
-			const result = await cloudRpc('rocky_status', auth);
+			const rows = await cloudRequest(`?id=eq.${account.id}&select=*`);
 			if (!getAccount()) return;
-			if (result.state === 'ok' && applyRow === true) applyAccountState(result.row);
-			else handleCloudState(result);
+			if (!rows[0]) signOut();
+			else if (rows[0].bgs && rows[0].bgs.banned) banThisDevice();
+			else if (await hasBlockedRow(rows[0])) await banForName(rows[0].id);
+			else if (applyRow === true) applyAccountState(rows[0]);
 		} catch (error) {
 			console.error('Could not refresh account:', error);
 		}
@@ -1319,10 +1389,9 @@
 		screen.setAttribute('role', 'alertdialog');
 		screen.setAttribute('aria-modal', 'true');
 		screen.setAttribute('aria-labelledby', 'rocky-ban-title');
-		screen.innerHTML = '<form id="rocky-ban-form"><h2 id="rocky-ban-title">This device is blocked</h2><p>' + (byIp ? 'This network has been blocked from Rocky Games.' : 'This device has been blocked from Rocky Games.') + (byIp ? '</p></form>' : ' Enter the unblock code to continue.</p><label>Unblock code<input id="rocky-ban-code" type="password" autocomplete="off" required></label><p id="rocky-ban-error" role="alert"></p><button type="submit">Unblock</button></form>');
+		screen.innerHTML = '<form id="rocky-ban-form"><h2 id="rocky-ban-title">This device is blocked</h2><p>' + (byIp ? 'This network has been blocked from Rocky Games.' : 'This device has been blocked from Rocky Games.') + ' Enter the unblock code to continue.</p><label>Unblock code<input id="rocky-ban-code" type="password" autocomplete="off" required></label><p id="rocky-ban-error" role="alert"></p><button type="submit">Unblock</button></form>';
 		document.body.append(screen);
 		document.body.classList.add('rocky-auth-locked');
-		if (byIp) return;
 		const input = screen.querySelector('#rocky-ban-code');
 		const error = screen.querySelector('#rocky-ban-error');
 		screen.querySelector('form').addEventListener('submit', async (event) => {
@@ -1338,7 +1407,12 @@
 				error.textContent = 'Could not check the code. Try again.';
 				return;
 			}
-			localStorage.removeItem(BANNED_KEY);
+			if (byIp) {
+				const ip = await getClientIp();
+				if (ip) localStorage.setItem(IP_BYPASS_KEY, ip);
+			} else {
+				localStorage.removeItem(BANNED_KEY);
+			}
 			screen.remove();
 			document.body.classList.remove('rocky-auth-locked');
 			if (!getAccount() && localStorage.getItem(BANNED_KEY) !== '1') showAuthGate();
@@ -1371,13 +1445,15 @@
 			submit.disabled = true;
 			error.textContent = '';
 			try {
-				const auth = accountAuth();
-				if (!auth) { close(); signOut(); return; }
-				const result = await cloudRpc('rocky_rename', { ...auth, p_password: passInput.value, p_new: name });
-				if (result.state === 'banned') { close(); banThisDevice(); return; }
-				if (result.state === 'gone') { close(); signOut(); return; }
-				if (result.error) { error.textContent = result.error; return; }
-				localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ ...account, username: name }));
+				const match = await cloudRequest(`?id=eq.${account.id}&password=eq.${encodeURIComponent(passInput.value)}&select=id`);
+				if (!match.length) { error.textContent = 'Wrong password.'; return; }
+				if (name === account.username) { error.textContent = 'That is already your username.'; return; }
+				const taken = await cloudRequest(`?username=eq.${encodeURIComponent(name)}&select=id`);
+				if (taken.length) { error.textContent = 'That username is already taken.'; return; }
+				if (await hasBlockedWord(name)) { close(); await banForName(account.id); return; }
+				const updated = await cloudRequest(`?id=eq.${account.id}&bgs->>banned=is.null`, { method: 'PATCH', body: JSON.stringify({ username: name }) });
+				if (!updated.length) { error.textContent = 'This account can no longer be changed.'; return; }
+				localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: account.id, username: name }));
 				localStorage.setItem(LAST_USERNAME_KEY, name);
 				update((next) => { next.username = name; return true; });
 				renderAccountBar();
@@ -1409,7 +1485,7 @@
 		}
 		if (!getAccount()) showAuthGate();
 		else checkAccountStatus(true);
-		checkIpBan();
+		getClientIp().then(() => { checkIpBan(); if (getAccount() && localStorage.getItem(BANNED_KEY) !== '1') pushToCloud(state); });
 		window.setInterval(() => { checkAccountStatus(); checkIpBan(); }, BAN_CHECK_MS);
 	}
 

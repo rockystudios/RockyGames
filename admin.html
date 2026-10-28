@@ -57,7 +57,7 @@
 			<fieldset class="list-box">
 				<legend>Passwords</legend>
 				<textarea id="passwords-text" rows="4" placeholder="One password per line" spellcheck="false" autocomplete="off"></textarea>
-				<p class="hint"><span id="passwords-count">0</span> entries. Cannot be used to create accounts. Accounts using one are banned.</p>
+				<p class="hint"><span id="passwords-count">0</span> entries. Cannot be used to create accounts. Exact match.</p>
 				<button type="button" data-ban="passwords">Ban accounts with these passwords</button>
 			</fieldset>
 			<fieldset class="list-box">
@@ -70,7 +70,7 @@
 				<button type="submit">Save lists</button>
 				<button type="button" data-ban="all">Ban accounts matching any list</button>
 			</div>
-			<p class="hint">Save lists first: the ban buttons use the saved lists. Banning also blocks the device. Passwords are stored hashed, so existing accounts are matched when their password is checked.</p>
+			<p class="hint">Save lists to enforce them at sign-up and sign-in. The ban buttons act on existing accounts straight away (after a confirmation) and use the text currently in the boxes, saved or not. Banned accounts also get their device blocked.</p>
 		</form>
 		<h1>Admin panel</h1>
 		<form id="login">
@@ -86,39 +86,33 @@
 			</table>
 		</section>
 	</main>
+	<script src="access-code.js?v=1"></script>
 	<script>
 		(function () {
 			const URL_BASE = 'https://elxnypvvwrumhwakczwe.supabase.co';
 			const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
 			const status = document.querySelector('#status');
 			const rowsEl = document.querySelector('#rows');
-			let adminPassword = '';
 
-			async function rpc(name, args = {}) {
-				const response = await fetch(`${URL_BASE}/rest/v1/rpc/${name}`, {
-					method: 'POST',
-					headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-					body: JSON.stringify({ p_admin: adminPassword, ...args })
+			async function api(query, options = {}) {
+				const response = await fetch(`${URL_BASE}/rest/v1/account${query}`, {
+					...options,
+					headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }
 				});
 				if (!response.ok) throw new Error(`Server error ${response.status}`);
-				const result = await response.json();
-				if (result.error) throw new Error(result.error);
-				return result;
+				return response.json();
 			}
-
-			const norm = (text) => String(text).toLowerCase().replace(/[013457@$!]/g, (c) => ({ '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' })[c]).replace(/[^a-z]/g, '');
-			const isBanned = (account) => Boolean(account.bgs && account.bgs.banned);
 
 			async function load() {
 				status.textContent = 'Loading…';
 				try {
-					const { accounts } = await rpc('rocky_admin_list');
+					const accounts = await api('?select=id,username,coins,bgs&order=coins.desc');
 					rowsEl.replaceChildren();
 					accounts.forEach((account) => {
 						const tr = document.createElement('tr');
 						const cell = (content) => { const td = document.createElement('td'); td.append(content); tr.append(td); return td; };
 						cell(String(account.id));
-						const banned = isBanned(account);
+						const banned = Boolean(account.bgs && account.bgs.banned);
 						const nameInput = document.createElement('input');
 						nameInput.type = 'text';
 						nameInput.maxLength = 24;
@@ -140,9 +134,12 @@
 						rename.textContent = 'Set name';
 						rename.addEventListener('click', async () => {
 							const name = nameInput.value.trim();
+							if (!name || name.length > 24) { status.textContent = 'Username must be 1-24 characters.'; return; }
 							if (name === account.username) { status.textContent = 'That is already the username.'; return; }
 							try {
-								await rpc('rocky_admin_set', { p_id: account.id, p_username: name, p_coins: null });
+								const taken = await api(`?username=eq.${encodeURIComponent(name)}&select=id`);
+								if (taken.length) { status.textContent = `"${name}" is already taken.`; return; }
+								await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ username: name }) });
 								status.textContent = `Renamed ${account.username} to ${name}.`;
 								load();
 							} catch (error) { status.textContent = error.message; }
@@ -154,7 +151,7 @@
 							const value = Number(coins.value);
 							if (!Number.isSafeInteger(value) || value < 0 || value > 2000000000) { status.textContent = 'Coins must be a whole number from 0 to 2,000,000,000.'; return; }
 							try {
-								await rpc('rocky_admin_set', { p_id: account.id, p_username: null, p_coins: value });
+								await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: value }) });
 								status.textContent = `${account.username} now has ${value} coins.`;
 							} catch (error) { status.textContent = error.message; }
 						});
@@ -166,10 +163,11 @@
 							const ban = !banned && confirm(`Also ban "${account.username}"? OK = ban every device signed in to this account. Cancel = just delete it.`);
 							try {
 								if (ban) {
-									await rpc('rocky_admin_ban', { p_id: account.id });
+									const randomPassword = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+									await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: randomPassword, bgs: { banned: true }, nameplates: {} }) });
 									status.textContent = `Banned ${account.username}. Devices are blocked the next time they check in.`;
 								} else {
-									await rpc('rocky_admin_delete', { p_id: account.id });
+									await api(`?id=eq.${account.id}`, { method: 'DELETE' });
 									status.textContent = `Deleted ${account.username}.`;
 								}
 								load();
@@ -190,29 +188,12 @@
 				} catch (error) { status.textContent = error.message; }
 			}
 
-			const LISTS = [['blocked_words', '#words-text'], ['blocked_passwords', '#passwords-text'], ['blocked_coins', '#coins-text']];
-
-			async function loadWords() {
-				try {
-					for (const [key, selector] of LISTS) {
-						const { values } = await rpc('rocky_admin_list_get', { p_key: key });
-						document.querySelector(selector).value = values.join('\n');
-					}
-					updateCounts();
-				} catch (error) { status.textContent = error.message; }
-			}
-
 			document.querySelector('#login').addEventListener('submit', async (event) => {
 				event.preventDefault();
-				adminPassword = document.querySelector('#admin-password').value;
-				try {
-					await rpc('rocky_admin_list_get', { p_key: 'blocked_words' });
-				} catch (error) {
-					adminPassword = '';
-					status.textContent = error.message;
+				if (!(await window.RockyAccess.isValidAccessCode(document.querySelector('#admin-password').value))) {
+					status.textContent = 'Wrong password.';
 					return;
 				}
-				document.querySelector('#admin-password').value = '';
 				document.querySelector('#login').hidden = true;
 				document.querySelector('#panel').hidden = false;
 				document.querySelector('#bulk-form').hidden = false;
@@ -221,47 +202,72 @@
 				loadWords();
 				load();
 			});
+			const WORDS_ROW = 'config:blocked-words';
+			const norm = (text) => String(text).toLowerCase().replace(/[013457@$!]/g, (c) => ({ '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' })[c]).replace(/[^a-z]/g, '');
+			const newPassword = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+			let wordsRowId = null;
+			const readPasswords = () => [...new Set(document.querySelector('#passwords-text').value.split('\n').map((w) => w.trim()).filter(Boolean))];
+			const readCoins = () => [...new Set(document.querySelector('#coins-text').value.split('\n').map((w) => w.trim().replace(/,/g, '')).filter((w) => /^-?\d+$/.test(w)).map(Number))];
 
-			const lines = (selector) => [...new Set(document.querySelector(selector).value.split('\n').map((w) => w.trim()).filter(Boolean))];
-			const readWords = () => lines('#words-text').filter((w) => norm(w).length >= 2);
-			const readPasswords = () => lines('#passwords-text');
-			const readCoins = () => [...new Set(lines('#coins-text').map((w) => w.replace(/,/g, '')).filter((w) => /^\d{1,10}$/.test(w)))];
-			function updateCounts() {
-				document.querySelector('#words-count').textContent = readWords().length;
-				document.querySelector('#passwords-count').textContent = readPasswords().length;
-				document.querySelector('#coins-count').textContent = readCoins().length;
+			async function loadWords() {
+				const rows = await api(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=id,bgs`);
+				wordsRowId = rows[0] ? rows[0].id : null;
+				const saved = (rows[0] && rows[0].bgs) || {};
+				document.querySelector('#words-text').value = (saved.words || []).join('\n');
+				document.querySelector('#passwords-text').value = (saved.passwords || []).join('\n');
+				document.querySelector('#coins-text').value = (saved.coins || []).join('\n');
+				updateCounts();
 			}
-			['words', 'passwords', 'coins'].forEach((name) => document.querySelector(`#${name}-text`).addEventListener('input', updateCounts));
 
 			document.querySelector('#words-form').addEventListener('submit', async (event) => {
 				event.preventDefault();
-				const words = readWords();
-				const passwords = readPasswords();
-				const coins = readCoins();
+				const words = [...new Set(document.querySelector('#words-text').value.split('\n').map((w) => w.trim()).filter((w) => norm(w).length >= 2))];
+				const bgs = { banned: true, config: true, words, passwords: readPasswords(), coins: readCoins() };
 				try {
-					await rpc('rocky_admin_list_set', { p_key: 'blocked_words', p_values: words });
-					await rpc('rocky_admin_list_set', { p_key: 'blocked_passwords', p_values: passwords });
-					await rpc('rocky_admin_list_set', { p_key: 'blocked_coins', p_values: coins.map(String) });
-					status.textContent = `Saved ${words.length} word(s), ${passwords.length} password(s), ${coins.length} coin amount(s).`;
+					if (wordsRowId) await api(`?id=eq.${wordsRowId}`, { method: 'PATCH', body: JSON.stringify({ bgs }) });
+					else {
+						const created = await api('', { method: 'POST', body: JSON.stringify({ username: WORDS_ROW, password: newPassword(), coins: 0, bgs, nameplates: {} }) });
+						wordsRowId = created[0].id;
+					}
+					status.textContent = `Saved ${words.length} word(s), ${bgs.passwords.length} password(s) and ${bgs.coins.length} coin amount(s).`;
+					load();
 				} catch (error) { status.textContent = error.message; }
 			});
 
 			document.querySelectorAll('[data-ban]').forEach((button) => button.addEventListener('click', async () => {
 				const kind = button.dataset.ban;
-				if (!confirm('Ban every existing account that matches the saved ' + (kind === 'all' ? 'lists' : kind + ' list') + '? Save the lists first.')) return;
+				const use = (name) => kind === 'all' || kind === name;
 				try {
-					const result = await rpc('rocky_admin_scan', { p_kind: kind });
-					status.textContent = `Banned ${result.banned} account(s).`;
+					const words = use('words') ? document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2) : [];
+					const passwords = use('passwords') ? readPasswords() : [];
+					const coins = use('coins') ? readCoins() : [];
+					if (!words.length && !passwords.length && !coins.length) { status.textContent = 'That list is empty.'; return; }
+					const accounts = await api('?select=id,username,password,coins,bgs');
+					const hits = accounts.filter((a) => a.username !== WORDS_ROW && !a.username.startsWith('ip:') && !(a.bgs && a.bgs.banned) && (words.some((w) => norm(a.username).includes(w)) || passwords.includes(String(a.password)) || coins.includes(Number(a.coins))));
+					if (!hits.length) { status.textContent = 'No accounts match.'; return; }
+					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
+					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: newPassword(), bgs: { banned: true, reason: 'blocked by admin rules' } }) });
+					status.textContent = `Banned ${hits.length} account(s).`;
 					load();
 				} catch (error) { status.textContent = error.message; }
 			}));
+
+			function updateCounts() {
+				document.querySelector('#words-count').textContent = document.querySelector('#words-text').value.split('\n').filter((w) => norm(w).length >= 2).length;
+				document.querySelector('#passwords-count').textContent = readPasswords().length;
+				document.querySelector('#coins-count').textContent = readCoins().length;
+			}
+			['words', 'passwords', 'coins'].forEach((name) => document.querySelector(`#${name}-text`).addEventListener('input', updateCounts));
 
 			async function banAddress(ip) {
 				const clean = String(ip).trim();
 				if (!/^[0-9a-fA-F:.]{3,45}$/.test(clean)) { status.textContent = 'That does not look like an IP address.'; return; }
 				if (!confirm(`Ban IP ${clean}? Everyone on that network will be blocked.`)) return;
 				try {
-					await rpc('rocky_admin_ban_ip', { p_ip: clean });
+					const existing = await api(`?username=eq.${encodeURIComponent('ip:' + clean)}&select=id`);
+					if (existing.length) { status.textContent = `${clean} is already banned.`; return; }
+					const randomPassword = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+					await api('', { method: 'POST', body: JSON.stringify({ username: 'ip:' + clean, password: randomPassword, coins: 0, bgs: { banned: true, ipBan: true }, nameplates: {} }) });
 					status.textContent = `Banned IP ${clean}.`;
 					load();
 				} catch (error) { status.textContent = error.message; }
@@ -279,16 +285,23 @@
 				const text = document.querySelector('#bulk-text').value.trim().toLowerCase();
 				if (!text || !mode) return;
 				try {
-					const { accounts } = await rpc('rocky_admin_list');
-					const matches = accounts.filter((account) => !account.username.startsWith('ip:') && account.username.toLowerCase().includes(text) && !(mode === 'ban' && isBanned(account)));
+					const accounts = await api('?select=id,username,bgs');
+					const matches = accounts.filter((account) => account.username.toLowerCase().includes(text) && !(mode === 'ban' && account.bgs && account.bgs.banned));
 					if (!matches.length) { status.textContent = `No accounts match "${text}".`; return; }
 					const names = matches.map((account) => account.username).join(', ');
 					const verb = mode === 'ban' ? 'BAN the devices of' : 'DELETE';
 					if (!confirm(`${verb} ${matches.length} account(s)?\n\n${names}\n\nThis cannot be undone.`)) return;
-					for (const account of matches) await rpc(mode === 'ban' ? 'rocky_admin_ban' : 'rocky_admin_delete', { p_id: account.id });
-					status.textContent = mode === 'ban'
-						? `Banned ${matches.length} account(s). Devices are blocked the next time they check in.`
-						: `Deleted ${matches.length} account(s).`;
+					const ids = matches.map((account) => account.id).join(',');
+					if (mode === 'ban') {
+						const randomPassword = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+						for (const account of matches) {
+							await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: randomPassword(), bgs: { banned: true }, nameplates: {} }) });
+						}
+						status.textContent = `Banned ${matches.length} account(s). Devices are blocked the next time they check in.`;
+					} else {
+						await api(`?id=in.(${ids})`, { method: 'DELETE' });
+						status.textContent = `Deleted ${matches.length} account(s).`;
+					}
 					document.querySelector('#bulk-text').value = '';
 					load();
 				} catch (error) { status.textContent = error.message; }
