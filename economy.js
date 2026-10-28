@@ -1632,7 +1632,7 @@
 		}
 	});
 
-	window.RockyEconomy = { playChanceGame, rewardGameCompletion };
+	window.RockyEconomy = { playChanceGame, rewardGameCompletion, nameplates: NAMEPLATES };
 	window.RockyAddons = addonApi;
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
 	else initialize();
