@@ -15,7 +15,7 @@
 		th, td { padding: 6px; border-bottom: 1px solid #202522; text-align: left; }
 		td input[type="number"] { width: 110px; }
 		#status { min-height: 1.4em; }
-		#bulk-form[hidden], #ip-form[hidden], #words-form[hidden] { display: none; }
+		#noip-form[hidden], #bulk-form[hidden], #ip-form[hidden], #words-form[hidden] { display: none; }
 		#ip-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
 		#ip-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
 		#bulk-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
@@ -38,6 +38,12 @@
 			<label>IP address <input id="ip-text" type="text" maxlength="45" autocomplete="off" required></label>
 			<button type="submit">Ban IP</button>
 			<p class="hint">Everyone on this network is blocked, including shared school or home connections. Remove it with "Remove ban record" on its ip: row below.</p>
+		</form>
+		<form id="noip-form" hidden>
+			<h2>Remove bot accounts</h2>
+			<label>Created in the last (hours, 0 = any time) <input id="noip-hours" type="number" min="0" value="24"></label>
+			<button type="submit">Delete accounts with no IP and 0 coins</button>
+			<p class="hint">Real players get an IP saved when they visit. Bots that call the database directly never do. You see the list and confirm first.</p>
 		</form>
 		<form id="words-form" hidden>
 			<h2>Blocked words, passwords and coin amounts</h2>
@@ -187,6 +193,7 @@
 				document.querySelector('#bulk-form').hidden = false;
 				document.querySelector('#ip-form').hidden = false;
 				document.querySelector('#words-form').hidden = false;
+				document.querySelector('#noip-form').hidden = false;
 				loadWords();
 				load();
 			});
@@ -253,6 +260,20 @@
 			document.querySelector('#ip-form').addEventListener('submit', (event) => {
 				event.preventDefault();
 				banAddress(document.querySelector('#ip-text').value).then(() => { document.querySelector('#ip-text').value = ''; });
+			});
+			document.querySelector('#noip-form').addEventListener('submit', async (event) => {
+				event.preventDefault();
+				const hours = Number(document.querySelector('#noip-hours').value) || 0;
+				const since = hours > 0 ? Date.now() - hours * 3600000 : 0;
+				try {
+					const accounts = await apiAll('?select=id,username,coins,created_at,bgs&order=id.asc');
+					const hits = accounts.filter((a) => !a.username.startsWith('ip:') && !a.username.startsWith('config:') && !(a.bgs && (a.bgs.ip || a.bgs.banned)) && a.coins === 0 && Date.parse(a.created_at) >= since);
+					if (!hits.length) { status.textContent = 'No accounts match.'; return; }
+					if (!confirm(`DELETE ${hits.length} account(s) with no IP and 0 coins?\n\nFirst: ${hits.slice(0, 15).map((a) => a.username).join(', ')}${hits.length > 15 ? ', ...' : ''}\n\nThis cannot be undone.`)) return;
+					for (let i = 0; i < hits.length; i += 100) await api(`?id=in.(${hits.slice(i, i + 100).map((a) => a.id).join(',')})`, { method: 'DELETE' });
+					status.textContent = `Deleted ${hits.length} account(s).`;
+					load();
+				} catch (error) { status.textContent = error.message; }
 			});
 			document.querySelector('#refresh').addEventListener('click', load);
 			document.querySelector('#show-hidden').addEventListener('change', load);
