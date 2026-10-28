@@ -1258,30 +1258,11 @@
 	const ACCOUNT_CREATION_ENABLED = true;
 	const CREATION_OFF_MESSAGE = 'New accounts are turned off for now. Sign in with an existing account.';
 
-	const GATE_ROW = 'config:signup-gate';
-	const SIGNUP_GAP_MS = 60 * 60 * 1000;
-
-	async function claimSignupSlot() {
-		const rows = await cloudRequest(`?username=eq.${encodeURIComponent(GATE_ROW)}&select=id,bgs`);
-		const last = rows[0] && rows[0].bgs && Number(rows[0].bgs.last) || 0;
-		const wait = last + SIGNUP_GAP_MS - Date.now();
-		if (wait > 0) throw new Error(`Only one new account can be made per hour. Try again in ${Math.ceil(wait / 60000)} minute(s).`);
-		const bgs = { banned: true, config: true, last: Date.now() };
-		if (!rows[0]) {
-			const bytes = crypto.getRandomValues(new Uint8Array(12));
-			const password = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-			await cloudRequest('', { method: 'POST', body: JSON.stringify({ username: GATE_ROW, password, coins: 0, bgs, nameplates: {} }) });
-			return;
-		}
-		const won = await cloudRequest(`?id=eq.${rows[0].id}&bgs->>last=eq.${last}`, { method: 'PATCH', body: JSON.stringify({ bgs }) });
-		if (!won.length) throw new Error('Someone else just made an account. Try again in an hour.');
-	}
-
 	async function createAccount(username, password) {
 		if (!ACCOUNT_CREATION_ENABLED) throw new Error(CREATION_OFF_MESSAGE);
+		if (!(await getClientIp())) throw new Error('Could not detect your IP address, so an account cannot be created. Turn off any blocker or VPN and try again.');
 		const existing = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&select=id`);
 		if (existing.length) throw new Error('That username is already taken.');
-		await claimSignupSlot();
 		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(freshState()) }) });
 		if (await hasBlockedWord(username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
 		if (await hasBlockedValue(rows[0])) { await banForName(rows[0].id, 'blocked list'); throw new Error('This account is banned.'); }

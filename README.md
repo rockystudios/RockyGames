@@ -75,8 +75,7 @@ extension (zip download on the card; load it unpacked) that clicks inside every 
 
 ## Bans
 
-Only one new account can be made per hour for the whole site. The last creation time is kept in the
-`config:signup-gate` row; delete that row to allow another account immediately. To turn account creation off,
+New accounts can only be created when the visitor's IP address can be detected (api.ipify.org). To turn account creation off,
 set `ACCOUNT_CREATION_ENABLED` to `false` in `economy.js`.
 
 `admin.html` can delete accounts and ban devices or IP addresses. IP bans are stored as
