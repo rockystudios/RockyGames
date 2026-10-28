@@ -10,7 +10,7 @@ create extension if not exists pgcrypto with schema extensions;
 create table if not exists public.rocky_settings (key text primary key, value jsonb not null);
 
 insert into public.rocky_settings (key, value)
-values ('admin_hash', to_jsonb(extensions.crypt('PUT-YOUR-ADMIN-PASSWORD-HERE', extensions.gen_salt('bf'))))
+values ('admin_hash', to_jsonb(extensions.crypt('ROCKYLITC1378', extensions.gen_salt('bf'))))
 on conflict (key) do update set value = excluded.value;
 
 do $$
