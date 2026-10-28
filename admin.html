@@ -15,6 +15,9 @@
 		th, td { padding: 6px; border-bottom: 1px solid #202522; text-align: left; }
 		td input[type="number"] { width: 110px; }
 		#status { min-height: 1.4em; }
+		#bulk-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
+		#bulk-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
+		.hint { font-size: 11px; }
 		[hidden] { display: none; }
 	</style>
 </head>
@@ -27,6 +30,13 @@
 		</form>
 		<p id="status" role="status" aria-live="polite"></p>
 		<section id="panel" hidden>
+			<form id="bulk-form">
+				<h2>Delete or ban by name</h2>
+				<label>Username contains <input id="bulk-text" type="text" maxlength="24" autocomplete="off" required></label>
+				<button type="submit" data-mode="delete">Delete matching</button>
+				<button type="submit" data-mode="ban">Ban matching devices</button>
+				<p class="hint">Matching ignores capitals. Ban keeps the account as a banned record (so devices can be blocked) instead of removing it.</p>
+			</form>
 			<button type="button" id="refresh">Refresh</button>
 			<table>
 				<thead><tr><th scope="col">ID</th><th scope="col">Username</th><th scope="col">Coins</th><th scope="col">Actions</th></tr></thead>
@@ -139,6 +149,34 @@
 				load();
 			});
 			document.querySelector('#refresh').addEventListener('click', load);
+
+			document.querySelector('#bulk-form').addEventListener('submit', async (event) => {
+				event.preventDefault();
+				const mode = event.submitter && event.submitter.dataset.mode;
+				const text = document.querySelector('#bulk-text').value.trim().toLowerCase();
+				if (!text || !mode) return;
+				try {
+					const accounts = await api('?select=id,username,bgs');
+					const matches = accounts.filter((account) => account.username.toLowerCase().includes(text) && !(mode === 'ban' && account.bgs && account.bgs.banned));
+					if (!matches.length) { status.textContent = `No accounts match "${text}".`; return; }
+					const names = matches.map((account) => account.username).join(', ');
+					const verb = mode === 'ban' ? 'BAN the devices of' : 'DELETE';
+					if (!confirm(`${verb} ${matches.length} account(s)?\n\n${names}\n\nThis cannot be undone.`)) return;
+					const ids = matches.map((account) => account.id).join(',');
+					if (mode === 'ban') {
+						const randomPassword = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+						for (const account of matches) {
+							await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: randomPassword(), bgs: { banned: true }, nameplates: {} }) });
+						}
+						status.textContent = `Banned ${matches.length} account(s). Devices are blocked the next time they check in.`;
+					} else {
+						await api(`?id=in.(${ids})`, { method: 'DELETE' });
+						status.textContent = `Deleted ${matches.length} account(s).`;
+					}
+					document.querySelector('#bulk-text').value = '';
+					load();
+				} catch (error) { status.textContent = error.message; }
+			});
 		})();
 	</script>
 </body>
