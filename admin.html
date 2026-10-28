@@ -56,6 +56,7 @@
 		<p id="status" role="status" aria-live="polite"></p>
 		<section id="panel" hidden>
 			<button type="button" id="refresh">Refresh</button>
+			<label><input type="checkbox" id="show-hidden"> Show banned accounts and ban records</label>
 			<table>
 				<thead><tr><th scope="col">ID</th><th scope="col">Username</th><th scope="col">Last IP</th><th scope="col">Coins</th><th scope="col">Actions</th></tr></thead>
 				<tbody id="rows"></tbody>
@@ -93,7 +94,9 @@
 				try {
 					const accounts = await apiAll('?select=id,username,coins,bgs&order=coins.desc,id.asc');
 					rowsEl.replaceChildren();
-					accounts.forEach((account) => {
+					const showHidden = document.querySelector('#show-hidden').checked;
+					const visible = showHidden ? accounts : accounts.filter((account) => !(account.bgs && account.bgs.banned) && !account.username.startsWith('ip:') && !account.username.startsWith('config:'));
+					visible.forEach((account) => {
 						const tr = document.createElement('tr');
 						const cell = (content) => { const td = document.createElement('td'); td.append(content); tr.append(td); return td; };
 						cell(String(account.id));
@@ -169,7 +172,7 @@
 						tr.append(actions);
 						rowsEl.append(tr);
 					});
-					status.textContent = `${accounts.length} accounts.`;
+					status.textContent = `${visible.length} accounts shown (${accounts.length - visible.length} hidden).`;
 				} catch (error) { status.textContent = error.message; }
 			}
 
@@ -252,6 +255,7 @@
 				banAddress(document.querySelector('#ip-text').value).then(() => { document.querySelector('#ip-text').value = ''; });
 			});
 			document.querySelector('#refresh').addEventListener('click', load);
+			document.querySelector('#show-hidden').addEventListener('change', load);
 
 			document.querySelector('#bulk-form').addEventListener('submit', async (event) => {
 				event.preventDefault();
