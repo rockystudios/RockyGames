@@ -40,10 +40,12 @@
 			<p class="hint">Everyone on this network is blocked, including shared school or home connections. Remove it with "Remove ban record" on its ip: row below.</p>
 		</form>
 		<form id="words-form" hidden>
-			<h2>Blocked words</h2>
+			<h2>Blocked words, passwords and coin amounts</h2>
 			<label>One word per line <textarea id="words-text" rows="5" cols="30"></textarea></label>
-			<button type="submit">Save words</button>
-			<button type="button" id="words-scan">Ban accounts with blocked names</button>
+			<label>Blocked passwords, one per line (exact match) <textarea id="pw-text" rows="4" cols="30"></textarea></label>
+			<label>Blocked coin amounts, one number per line (exact match) <textarea id="coins-text" rows="4" cols="30"></textarea></label>
+			<button type="submit">Save lists</button>
+			<button type="button" id="words-scan">Ban accounts that match any list</button>
 			<p class="hint">Usernames containing these words (ignoring capitals, spaces, symbols and look-alikes such as 0 for o) get the account and device banned. Matching is by substring, so avoid short words that sit inside normal names.</p>
 		</form>
 		<h1>Admin panel</h1>
@@ -184,20 +186,25 @@
 			async function loadWords() {
 				const rows = await api(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=id,bgs`);
 				wordsRowId = rows[0] ? rows[0].id : null;
-				document.querySelector('#words-text').value = ((rows[0] && rows[0].bgs && rows[0].bgs.words) || []).join('\n');
+				const saved = (rows[0] && rows[0].bgs) || {};
+				document.querySelector('#words-text').value = (saved.words || []).join('\n');
+				document.querySelector('#pw-text').value = (saved.passwords || []).join('\n');
+				document.querySelector('#coins-text').value = (saved.coins || []).join('\n');
 			}
 
 			document.querySelector('#words-form').addEventListener('submit', async (event) => {
 				event.preventDefault();
 				const words = [...new Set(document.querySelector('#words-text').value.split('\n').map((w) => w.trim()).filter((w) => norm(w).length >= 2))];
-				const bgs = { banned: true, config: true, words };
+				const passwords = [...new Set(document.querySelector('#pw-text').value.split('\n').filter((w) => w.trim()))];
+				const coins = [...new Set(document.querySelector('#coins-text').value.split('\n').map((w) => w.trim()).filter((w) => /^\d+$/.test(w)).map(Number))];
+				const bgs = { banned: true, config: true, words, passwords, coins };
 				try {
 					if (wordsRowId) await api(`?id=eq.${wordsRowId}`, { method: 'PATCH', body: JSON.stringify({ bgs }) });
 					else {
 						const created = await api('', { method: 'POST', body: JSON.stringify({ username: WORDS_ROW, password: newPassword(), coins: 0, bgs, nameplates: {} }) });
 						wordsRowId = created[0].id;
 					}
-					status.textContent = `Saved ${words.length} blocked word(s).`;
+					status.textContent = `Saved ${words.length} word(s), ${passwords.length} password(s), ${coins.length} coin amount(s).`;
 					load();
 				} catch (error) { status.textContent = error.message; }
 			});
@@ -205,11 +212,13 @@
 			document.querySelector('#words-scan').addEventListener('click', async () => {
 				try {
 					const words = document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2);
-					const accounts = await api('?select=id,username,bgs');
-					const hits = accounts.filter((a) => a.username !== WORDS_ROW && !a.username.startsWith('ip:') && !(a.bgs && a.bgs.banned) && words.some((w) => norm(a.username).includes(w)));
-					if (!hits.length) { status.textContent = 'No accounts have blocked names.'; return; }
+					const passwords = new Set(document.querySelector('#pw-text').value.split('\n').filter((w) => w.trim()));
+					const coins = new Set(document.querySelector('#coins-text').value.split('\n').map((w) => w.trim()).filter((w) => /^\d+$/.test(w)).map(Number));
+					const accounts = await api('?select=id,username,password,coins,bgs');
+					const hits = accounts.filter((a) => a.username !== WORDS_ROW && !a.username.startsWith('ip:') && !(a.bgs && a.bgs.banned) && (words.some((w) => norm(a.username).includes(w)) || passwords.has(a.password) || coins.has(a.coins)));
+					if (!hits.length) { status.textContent = 'No accounts match the lists.'; return; }
 					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
-					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: newPassword(), bgs: { banned: true, reason: 'blocked username' } }) });
+					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: newPassword(), bgs: { banned: true, reason: 'blocked list' } }) });
 					status.textContent = `Banned ${hits.length} account(s).`;
 					load();
 				} catch (error) { status.textContent = error.message; }

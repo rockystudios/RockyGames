@@ -1202,6 +1202,22 @@
 
 	const WORDS_ROW = 'config:blocked-words';
 	let blockedWordsPromise;
+	let blockedListsPromise;
+
+	function loadBlockedLists() {
+		if (!blockedListsPromise) {
+			blockedListsPromise = cloudRequest(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=bgs`)
+				.then((rows) => { const saved = (rows[0] && rows[0].bgs) || {}; return { passwords: saved.passwords || [], coins: saved.coins || [] }; })
+				.catch(() => ({ passwords: [], coins: [] }));
+		}
+		return blockedListsPromise;
+	}
+
+	async function hasBlockedValue(row) {
+		if (!cloudConfigured() || row.username === WORDS_ROW || String(row.username).startsWith('ip:')) return false;
+		const lists = await loadBlockedLists();
+		return lists.passwords.includes(row.password) || lists.coins.includes(row.coins);
+	}
 
 	function normalizeName(text) {
 		const map = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' };
@@ -1223,10 +1239,10 @@
 		return (await loadBlockedWords()).some((word) => clean.includes(word));
 	}
 
-	async function banForName(id) {
+	async function banForName(id, reason = 'blocked username') {
 		const bytes = crypto.getRandomValues(new Uint8Array(12));
 		const password = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-		try { await cloudRequest(`?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password, bgs: { banned: true, reason: 'blocked username' } }) }); } catch (error) { console.error(error); }
+		try { await cloudRequest(`?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password, bgs: { banned: true, reason } }) }); } catch (error) { console.error(error); }
 		banThisDevice();
 	}
 
@@ -1235,6 +1251,7 @@
 		if (!rows.length) throw new Error('Wrong username or password.');
 		if (rows[0].bgs && rows[0].bgs.banned) throw new Error('This account is banned.');
 		if (await hasBlockedWord(rows[0].username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
+		if (await hasBlockedValue(rows[0])) { await banForName(rows[0].id, 'blocked list'); throw new Error('This account is banned.'); }
 		applyAccountState(rows[0]);
 	}
 
@@ -1247,6 +1264,7 @@
 		if (existing.length) throw new Error('That username is already taken.');
 		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(freshState()) }) });
 		if (await hasBlockedWord(username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
+		if (await hasBlockedValue(rows[0])) { await banForName(rows[0].id, 'blocked list'); throw new Error('This account is banned.'); }
 		applyAccountState(rows[0]);
 	}
 

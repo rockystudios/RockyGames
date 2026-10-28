@@ -82,6 +82,10 @@ New accounts are off. To turn them back on, set `ACCOUNT_CREATION_ENABLED` to `t
 api.ipify.org and shows a block screen if it is banned. This only blocks visitors whose
 IP lookup works, and a banned network is blocked for everyone on it.
 
+The admin "Blocked words, passwords and coin amounts" form stores its lists in the `config:blocked-words`
+row. An account whose password or coin total exactly matches a list is banned when it signs in, and
+"Ban accounts that match any list" bans existing matches right away.
+
 Admin can also set a list of blocked words. An account whose username contains one (ignoring
 capitals, symbols and look-alikes such as 0 for o) is banned, along with the device, when it
 is created, renamed, signed into or checked. The list is stored in a `config:blocked-words` row.
