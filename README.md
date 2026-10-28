@@ -75,8 +75,9 @@ extension (zip download on the card; load it unpacked) that clicks inside every 
 
 ## Bans
 
-New accounts can only be created when the visitor's IP address can be detected (api.ipify.org). To turn account creation off,
-set `ACCOUNT_CREATION_ENABLED` to `false` in `economy.js`.
+Creating an account needs a creation password (checked in `economy.js` against a SHA-256 hash, `CREATE_CODE_HASH`)
+and a detectable IP address (api.ipify.org). To turn account creation off, set `ACCOUNT_CREATION_ENABLED` to `false`
+in `economy.js`.
 
 `admin.html` can delete accounts and ban devices or IP addresses. IP bans are stored as
 `ip:<address>` rows in the `account` table. Each page looks up the visitor's IP with

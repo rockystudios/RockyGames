@@ -1255,11 +1255,19 @@
 		applyAccountState(rows[0]);
 	}
 
-	const ACCOUNT_CREATION_ENABLED = false;
+	const ACCOUNT_CREATION_ENABLED = true;
+	const CREATE_CODE_HASH = 'bbaf3820917a6e693ee071ac2780129d32c90e0ab8572379e4920fc4e3188698';
+	const CREATE_CODE_NOTE = 'You need the creation password to make an account. This is happening because of Lunamix spamming us.';
+
+	async function isCreateCodeValid(value) {
+		const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value).trim()));
+		return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('') === CREATE_CODE_HASH;
+	}
 	const CREATION_OFF_MESSAGE = 'New accounts are turned off for now. Sign in with an existing account.';
 
-	async function createAccount(username, password) {
+	async function createAccount(username, password, code) {
 		if (!ACCOUNT_CREATION_ENABLED) throw new Error(CREATION_OFF_MESSAGE);
+		if (!(await isCreateCodeValid(code))) throw new Error('Wrong creation password.');
 		if (!(await getClientIp())) throw new Error('Could not detect your IP address, so an account cannot be created. Turn off any blocker or VPN and try again.');
 		const existing = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&select=id`);
 		if (existing.length) throw new Error('That username is already taken.');
@@ -1303,7 +1311,7 @@
 		gate.setAttribute('role', 'dialog');
 		gate.setAttribute('aria-modal', 'true');
 		gate.setAttribute('aria-labelledby', 'rocky-auth-title');
-		gate.innerHTML = '<form id="rocky-auth-form" autocomplete="on"><h2 id="rocky-auth-title"></h2><p id="rocky-auth-note">Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.</p><label>Username<input id="rocky-auth-username" maxlength="24" required autocomplete="username"></label><label>Password<input id="rocky-auth-password" type="password" required autocomplete="current-password"></label><p id="rocky-auth-error" role="alert"></p><button type="submit" id="rocky-auth-submit"></button><button type="button" id="rocky-auth-switch" class="rocky-auth-link"></button></form>';
+		gate.innerHTML = '<form id="rocky-auth-form" autocomplete="on"><h2 id="rocky-auth-title"></h2><p id="rocky-auth-note">Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.</p><label>Username<input id="rocky-auth-username" maxlength="24" required autocomplete="username"></label><label>Password<input id="rocky-auth-password" type="password" required autocomplete="current-password"></label><label id="rocky-auth-code-label">Creation password<input id="rocky-auth-code" type="password" autocomplete="off"></label><p id="rocky-auth-error" role="alert"></p><button type="submit" id="rocky-auth-submit"></button><button type="button" id="rocky-auth-switch" class="rocky-auth-link"></button></form>';
 		document.body.append(gate);
 		document.body.classList.add('rocky-auth-locked');
 		const title = gate.querySelector('#rocky-auth-title');
@@ -1312,6 +1320,9 @@
 		const userInput = gate.querySelector('#rocky-auth-username');
 		const passInput = gate.querySelector('#rocky-auth-password');
 		const error = gate.querySelector('#rocky-auth-error');
+		const codeLabel = gate.querySelector('#rocky-auth-code-label');
+		const codeInput = gate.querySelector('#rocky-auth-code');
+		const note = gate.querySelector('#rocky-auth-note');
 		function setMode(next) {
 			mode = next;
 			const signing = mode === 'signin';
@@ -1319,6 +1330,9 @@
 			submit.textContent = signing ? 'Sign in' : 'Create account';
 			switcher.textContent = signing ? 'No account? Create one' : 'Have an account? Sign in';
 			passInput.autocomplete = signing ? 'current-password' : 'new-password';
+			codeLabel.hidden = signing;
+			codeInput.required = !signing;
+			note.textContent = signing ? 'Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.' : CREATE_CODE_NOTE;
 			error.textContent = cloudConfigured() ? (ACCOUNT_CREATION_ENABLED ? '' : CREATION_OFF_MESSAGE) : 'Accounts are not set up yet: add the Supabase URL and key in economy.js.';
 		}
 		switcher.hidden = !ACCOUNT_CREATION_ENABLED;
@@ -1337,7 +1351,7 @@
 			error.textContent = '';
 			try {
 				if (mode === 'signin') await signIn(username, passInput.value);
-				else await createAccount(username, passInput.value);
+				else await createAccount(username, passInput.value, codeInput.value);
 				gate.remove();
 				document.body.classList.remove('rocky-auth-locked');
 				renderAccountBar();
