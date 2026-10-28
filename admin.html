@@ -15,7 +15,7 @@
 		th, td { padding: 6px; border-bottom: 1px solid #202522; text-align: left; }
 		td input[type="number"] { width: 110px; }
 		#status { min-height: 1.4em; }
-		#bulk-form[hidden], #ip-form[hidden] { display: none; }
+		#bulk-form[hidden], #ip-form[hidden], #words-form[hidden] { display: none; }
 		#ip-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
 		#ip-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
 		#bulk-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
@@ -38,6 +38,13 @@
 			<label>IP address <input id="ip-text" type="text" maxlength="45" autocomplete="off" required></label>
 			<button type="submit">Ban IP</button>
 			<p class="hint">Everyone on this network is blocked, including shared school or home connections. Remove it with "Remove ban record" on its ip: row below.</p>
+		</form>
+		<form id="words-form" hidden>
+			<h2>Blocked words</h2>
+			<label>One word per line <textarea id="words-text" rows="5" cols="30"></textarea></label>
+			<button type="submit">Save words</button>
+			<button type="button" id="words-scan">Ban accounts with blocked names</button>
+			<p class="hint">Usernames containing these words (ignoring capitals, spaces, symbols and look-alikes such as 0 for o) get the account and device banned. Matching is by substring, so avoid short words that sit inside normal names.</p>
 		</form>
 		<h1>Admin panel</h1>
 		<form id="login">
@@ -165,8 +172,49 @@
 				document.querySelector('#panel').hidden = false;
 				document.querySelector('#bulk-form').hidden = false;
 				document.querySelector('#ip-form').hidden = false;
+				document.querySelector('#words-form').hidden = false;
+				loadWords();
 				load();
 			});
+			const WORDS_ROW = 'config:blocked-words';
+			const norm = (text) => String(text).toLowerCase().replace(/[013457@$!]/g, (c) => ({ '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' })[c]).replace(/[^a-z]/g, '');
+			const newPassword = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+			let wordsRowId = null;
+
+			async function loadWords() {
+				const rows = await api(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=id,bgs`);
+				wordsRowId = rows[0] ? rows[0].id : null;
+				document.querySelector('#words-text').value = ((rows[0] && rows[0].bgs && rows[0].bgs.words) || []).join('\n');
+			}
+
+			document.querySelector('#words-form').addEventListener('submit', async (event) => {
+				event.preventDefault();
+				const words = [...new Set(document.querySelector('#words-text').value.split('\n').map((w) => w.trim()).filter((w) => norm(w).length >= 2))];
+				const bgs = { banned: true, config: true, words };
+				try {
+					if (wordsRowId) await api(`?id=eq.${wordsRowId}`, { method: 'PATCH', body: JSON.stringify({ bgs }) });
+					else {
+						const created = await api('', { method: 'POST', body: JSON.stringify({ username: WORDS_ROW, password: newPassword(), coins: 0, bgs, nameplates: {} }) });
+						wordsRowId = created[0].id;
+					}
+					status.textContent = `Saved ${words.length} blocked word(s).`;
+					load();
+				} catch (error) { status.textContent = error.message; }
+			});
+
+			document.querySelector('#words-scan').addEventListener('click', async () => {
+				try {
+					const words = document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2);
+					const accounts = await api('?select=id,username,bgs');
+					const hits = accounts.filter((a) => a.username !== WORDS_ROW && !a.username.startsWith('ip:') && !(a.bgs && a.bgs.banned) && words.some((w) => norm(a.username).includes(w)));
+					if (!hits.length) { status.textContent = 'No accounts have blocked names.'; return; }
+					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
+					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: newPassword(), bgs: { banned: true, reason: 'blocked username' } }) });
+					status.textContent = `Banned ${hits.length} account(s).`;
+					load();
+				} catch (error) { status.textContent = error.message; }
+			});
+
 			async function banAddress(ip) {
 				const clean = String(ip).trim();
 				if (!/^[0-9a-fA-F:.]{3,45}$/.test(clean)) { status.textContent = 'That does not look like an IP address.'; return; }

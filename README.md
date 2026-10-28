@@ -80,6 +80,10 @@ extension (zip download on the card; load it unpacked) that clicks inside every 
 api.ipify.org and shows a block screen if it is banned. This only blocks visitors whose
 IP lookup works, and a banned network is blocked for everyone on it.
 
+Admin can also set a list of blocked words. An account whose username contains one (ignoring
+capitals, symbols and look-alikes such as 0 for o) is banned, along with the device, when it
+is created, renamed, signed into or checked. The list is stored in a `config:blocked-words` row.
+
 ## Keyboard shortcuts
 
 Press **Option/Alt + Shift + A** for APSVA MyAccess, **S** for Sora, **H** for
