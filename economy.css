@@ -568,3 +568,14 @@ a:focus-visible {
 	box-shadow: 0 0 16px color-mix(in srgb, var(--site-accent-color) 19%, transparent) !important;
 	color: var(--site-foreground-text-color) !important;
 }
+
+#rocky-auth-gate{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;background:rgba(0,0,0,.85);padding:1rem}
+#rocky-auth-form{background:#1b1b2b;color:#fff;border-radius:12px;padding:1.5rem;width:min(22rem,100%);display:grid;gap:.8rem}
+#rocky-auth-form label{display:grid;gap:.3rem}
+#rocky-auth-form input{padding:.6rem;border-radius:6px;border:1px solid #666;font:inherit}
+#rocky-auth-form button{padding:.6rem;border-radius:6px;border:0;font:inherit;cursor:pointer}
+#rocky-auth-error{color:#ff8a8a;margin:0;min-height:1.2em}
+.rocky-auth-link{background:none;color:#9ecbff;text-decoration:underline}
+body.rocky-auth-locked{overflow:hidden}
+#rocky-account-bar{position:fixed;left:.5rem;bottom:.5rem;z-index:9999;display:flex;gap:.5rem;align-items:center;background:rgba(0,0,0,.7);color:#fff;padding:.4rem .6rem;border-radius:8px}
+#rocky-account-bar[hidden],#rocky-account-bar [hidden]{display:none}

@@ -8,6 +8,11 @@
 	const NEWS_DISMISSED_KEY = 'rockyGamesNewsDismissed';
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
 	const DISPLAY_SETTINGS_KEY = 'rockyGamesDisplaySettings';
+	const ACCOUNT_KEY = 'rockyGamesAccount';
+	const LAST_USERNAME_KEY = 'rockyGamesLastUsername';
+	const SUPABASE_URL = 'https://elxnypvvwrumhwakczwe.supabase.co';
+	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
+	const SUPABASE_TABLE = 'account';
 	const NEWS_VERSION = 'chance-arcade-1';
 	const GAME_REWARD = 5;
 	const DEFAULT_DISPLAY_SETTINGS = { font: 'system', lineSpacing: 'normal', letterSpacing: 'normal', reducedMotion: false };
@@ -212,6 +217,7 @@
 		state = next;
 		applyBackground();
 		render();
+		pushToCloud(next);
 		return true;
 	}
 
@@ -1060,6 +1066,186 @@
 		if (!isNewsDismissed()) showWhatsNew();
 	}
 
+	function getAccount() {
+		try {
+			const account = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || 'null');
+			return account && Number.isInteger(account.id) && typeof account.username === 'string' ? account : null;
+		} catch (error) {
+			return null;
+		}
+	}
+
+	function cloudConfigured() {
+		return !SUPABASE_URL.startsWith('PASTE_') && !SUPABASE_ANON_KEY.startsWith('PASTE_');
+	}
+
+	async function cloudRequest(query, options = {}) {
+		const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}${query}`, {
+			...options,
+			headers: {
+				apikey: SUPABASE_ANON_KEY,
+				Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+				'Content-Type': 'application/json',
+				Prefer: 'return=representation',
+				...(options.headers || {})
+			}
+		});
+		if (!response.ok) throw new Error(`Server error ${response.status}`);
+		return response.status === 204 ? [] : response.json();
+	}
+
+	function stateToRow(value) {
+		return {
+			coins: value.coins,
+			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground },
+			nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
+		};
+	}
+
+	function rowToState(row, previous) {
+		const next = {
+			...previous,
+			coins: Number.isSafeInteger(row.coins) && row.coins >= 0 ? row.coins : 0,
+			username: row.username,
+			ownedBackgrounds: ['default'],
+			activeBackground: 'default',
+			ownedNameplates: ['classic'],
+			activeNameplate: 'classic'
+		};
+		const bgs = row.bgs || {};
+		if (Array.isArray(bgs.owned)) next.ownedBackgrounds = [...new Set(['default', ...bgs.owned.filter((id) => backgroundById.has(id))])];
+		if (next.ownedBackgrounds.includes(bgs.active)) next.activeBackground = bgs.active;
+		const plates = row.nameplates || {};
+		if (Array.isArray(plates.owned)) next.ownedNameplates = [...new Set(['classic', ...plates.owned.filter((id) => NAMEPLATES.some((item) => item.id === id))])];
+		if (next.ownedNameplates.includes(plates.active)) next.activeNameplate = plates.active;
+		return next;
+	}
+
+	async function pushToCloud(value) {
+		const account = getAccount();
+		if (!account || !cloudConfigured()) return;
+		try {
+			await cloudRequest(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify(stateToRow(value)) });
+		} catch (error) {
+			console.error('Rocky Games could not sync to the cloud:', error);
+			announce('Could not save to your account. Check your connection.');
+		}
+	}
+
+	function applyAccountState(row) {
+		let previous;
+		try { previous = readState(); } catch (error) { previous = { version: 1, lastSpin: null }; }
+		const next = rowToState(row, previous);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+		localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: row.id, username: row.username }));
+		localStorage.setItem(LAST_USERNAME_KEY, row.username);
+		state = next;
+		storageAvailable = true;
+		applyBackground();
+		render();
+	}
+
+	async function signIn(username, password) {
+		const rows = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&select=*`);
+		if (!rows.length) throw new Error('Wrong username or password.');
+		applyAccountState(rows[0]);
+	}
+
+	async function createAccount(username, password) {
+		const existing = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&select=id`);
+		if (existing.length) throw new Error('That username is already taken.');
+		let local;
+		try { local = readState(); } catch (error) { local = { coins: 0, ownedBackgrounds: ['default'], activeBackground: 'default', ownedNameplates: ['classic'], activeNameplate: 'classic' }; }
+		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(local) }) });
+		applyAccountState(rows[0]);
+	}
+
+	function signOut() {
+		localStorage.removeItem(ACCOUNT_KEY);
+		showAuthGate();
+		renderAccountBar();
+	}
+
+	function renderAccountBar() {
+		const bar = document.querySelector('#rocky-account-bar');
+		if (!bar) return;
+		const account = getAccount();
+		bar.querySelector('span').textContent = account ? `Signed in as ${account.username}` : 'Not signed in';
+		bar.querySelector('#rocky-signout-button').hidden = !account;
+		bar.querySelector('#rocky-signin-button').hidden = Boolean(account);
+	}
+
+	function showAuthGate() {
+		if (document.querySelector('#rocky-auth-gate')) return;
+		const remembered = localStorage.getItem(LAST_USERNAME_KEY) || '';
+		let mode = remembered ? 'signin' : 'create';
+		const gate = document.createElement('div');
+		gate.id = 'rocky-auth-gate';
+		gate.setAttribute('role', 'dialog');
+		gate.setAttribute('aria-modal', 'true');
+		gate.setAttribute('aria-labelledby', 'rocky-auth-title');
+		gate.innerHTML = '<form id="rocky-auth-form" autocomplete="on"><h2 id="rocky-auth-title"></h2><p id="rocky-auth-note">Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.</p><label>Username<input id="rocky-auth-username" maxlength="24" required autocomplete="username"></label><label>Password<input id="rocky-auth-password" type="password" required autocomplete="current-password"></label><p id="rocky-auth-error" role="alert"></p><button type="submit" id="rocky-auth-submit"></button><button type="button" id="rocky-auth-switch" class="rocky-auth-link"></button></form>';
+		document.body.append(gate);
+		document.body.classList.add('rocky-auth-locked');
+		const title = gate.querySelector('#rocky-auth-title');
+		const submit = gate.querySelector('#rocky-auth-submit');
+		const switcher = gate.querySelector('#rocky-auth-switch');
+		const userInput = gate.querySelector('#rocky-auth-username');
+		const passInput = gate.querySelector('#rocky-auth-password');
+		const error = gate.querySelector('#rocky-auth-error');
+		function setMode(next) {
+			mode = next;
+			const signing = mode === 'signin';
+			title.textContent = signing ? 'Sign in' : 'Create account';
+			submit.textContent = signing ? 'Sign in' : 'Create account';
+			switcher.textContent = signing ? 'No account? Create one' : 'Have an account? Sign in';
+			passInput.autocomplete = signing ? 'current-password' : 'new-password';
+			error.textContent = cloudConfigured() ? '' : 'Accounts are not set up yet: add the Supabase URL and key in economy.js.';
+		}
+		userInput.value = mode === 'signin' ? remembered : '';
+		setMode(mode);
+		switcher.addEventListener('click', () => {
+			setMode(mode === 'signin' ? 'create' : 'signin');
+			(mode === 'signin' && remembered ? passInput : userInput).focus();
+		});
+		gate.querySelector('form').addEventListener('submit', async (event) => {
+			event.preventDefault();
+			if (!cloudConfigured()) return;
+			const username = userInput.value.trim();
+			if (!username || username.length > 24) { error.textContent = 'Username must be 1-24 characters.'; return; }
+			submit.disabled = true;
+			error.textContent = '';
+			try {
+				if (mode === 'signin') await signIn(username, passInput.value);
+				else await createAccount(username, passInput.value);
+				gate.remove();
+				document.body.classList.remove('rocky-auth-locked');
+				renderAccountBar();
+			} catch (err) {
+				error.textContent = err.message === 'Failed to fetch' ? 'Could not reach the server.' : err.message;
+			} finally {
+				submit.disabled = false;
+			}
+		});
+		(userInput.value ? passInput : userInput).focus();
+	}
+
+	function initializeAccount() {
+		const bar = document.createElement('div');
+		bar.id = 'rocky-account-bar';
+		bar.innerHTML = '<span></span><button type="button" id="rocky-signin-button">Sign in</button><button type="button" id="rocky-signout-button">Sign out</button>';
+		document.body.append(bar);
+		bar.querySelector('#rocky-signin-button').addEventListener('click', showAuthGate);
+		bar.querySelector('#rocky-signout-button').addEventListener('click', signOut);
+		renderAccountBar();
+		if (!getAccount()) showAuthGate();
+		else if (cloudConfigured()) {
+			cloudRequest(`?id=eq.${getAccount().id}&select=*`).then((rows) => {
+				if (rows[0]) applyAccountState(rows[0]);
+			}).catch((error) => console.error('Could not refresh account:', error));
+		}
+	}
+
 	function initialize() {
 		initializeFullscreen();
 		const toolbar = document.createElement('nav');
@@ -1100,6 +1286,7 @@
 		}
 		initializeProfile();
 		initializeWhatsNew(shortcutList, renderShortcutList);
+		initializeAccount();
 	}
 
 	window.addEventListener('storage', (event) => {

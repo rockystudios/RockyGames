@@ -1,2 +1,4 @@
-git commit -m "Allow custom shortcut URLs and bindings" -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+git status
+git add index.html
+git commit -m "Update page title"
 git push origin main
