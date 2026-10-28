@@ -1255,7 +1255,7 @@
 		applyAccountState(rows[0]);
 	}
 
-	const ACCOUNT_CREATION_ENABLED = true;
+	const ACCOUNT_CREATION_ENABLED = false;
 	const CREATION_OFF_MESSAGE = 'New accounts are turned off for now. Sign in with an existing account.';
 
 	async function createAccount(username, password) {
