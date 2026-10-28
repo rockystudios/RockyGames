@@ -1211,15 +1211,8 @@
 	function loadBlockedWords() {
 		if (!blockedWordsPromise) {
 			blockedWordsPromise = cloudRequest(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=bgs`)
-				.then((rows) => {
-					const bgs = (rows[0] && rows[0].bgs) || {};
-					return {
-						words: (bgs.words || []).map(normalizeName).filter(Boolean),
-						passwords: (bgs.passwords || []).map(String),
-						coins: (bgs.coins || []).map(Number).filter(Number.isFinite)
-					};
-				})
-				.catch(() => ({ words: [], passwords: [], coins: [] }));
+				.then((rows) => ((rows[0] && rows[0].bgs && rows[0].bgs.words) || []).map(normalizeName).filter(Boolean))
+				.catch(() => []);
 		}
 		return blockedWordsPromise;
 	}
@@ -1227,24 +1220,13 @@
 	async function hasBlockedWord(name) {
 		if (!cloudConfigured() || name === WORDS_ROW || name.startsWith('ip:')) return false;
 		const clean = normalizeName(name);
-		return (await loadBlockedWords()).words.some((word) => clean.includes(word));
-	}
-
-	async function isBlockedPassword(password) {
-		return cloudConfigured() && (await loadBlockedWords()).passwords.includes(String(password));
-	}
-
-	async function hasBlockedRow(row) {
-		if (!row || row.username === WORDS_ROW || String(row.username).startsWith('ip:')) return false;
-		if (await hasBlockedWord(row.username)) return true;
-		const lists = await loadBlockedWords();
-		return lists.passwords.includes(String(row.password)) || lists.coins.includes(Number(row.coins));
+		return (await loadBlockedWords()).some((word) => clean.includes(word));
 	}
 
 	async function banForName(id) {
 		const bytes = crypto.getRandomValues(new Uint8Array(12));
 		const password = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-		try { await cloudRequest(`?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password, bgs: { banned: true, reason: 'blocked by admin rules' } }) }); } catch (error) { console.error(error); }
+		try { await cloudRequest(`?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password, bgs: { banned: true, reason: 'blocked username' } }) }); } catch (error) { console.error(error); }
 		banThisDevice();
 	}
 
@@ -1252,7 +1234,7 @@
 		const rows = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&select=*`);
 		if (!rows.length) throw new Error('Wrong username or password.');
 		if (rows[0].bgs && rows[0].bgs.banned) throw new Error('This account is banned.');
-		if (await hasBlockedRow(rows[0])) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
+		if (await hasBlockedWord(rows[0].username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
 		applyAccountState(rows[0]);
 	}
 
@@ -1263,7 +1245,6 @@
 		if (!ACCOUNT_CREATION_ENABLED) throw new Error(CREATION_OFF_MESSAGE);
 		const existing = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&select=id`);
 		if (existing.length) throw new Error('That username is already taken.');
-		if (await isBlockedPassword(password)) throw new Error('That password is not allowed. Pick a different one.');
 		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(freshState()) }) });
 		if (await hasBlockedWord(username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
 		applyAccountState(rows[0]);
@@ -1358,7 +1339,7 @@
 			if (!getAccount()) return;
 			if (!rows[0]) signOut();
 			else if (rows[0].bgs && rows[0].bgs.banned) banThisDevice();
-			else if (await hasBlockedRow(rows[0])) await banForName(rows[0].id);
+			else if (await hasBlockedWord(rows[0].username)) await banForName(rows[0].id);
 			else if (applyRow === true) applyAccountState(rows[0]);
 		} catch (error) {
 			console.error('Could not refresh account:', error);
