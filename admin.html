@@ -20,6 +20,13 @@
 		#ip-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
 		#bulk-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
 		#bulk-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
+		#words-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
+		#words-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
+		.list-box { margin: 0 0 12px; padding: 8px 12px; border: 1px solid #202522; }
+		.list-box legend { font-weight: bold; text-transform: uppercase; font-size: 13px; }
+		.list-box textarea { display: block; width: 100%; padding: 8px; font: inherit; font-size: 13px; resize: vertical; border: 2px solid #202522; background: #fff; }
+		.list-box .hint { margin: 6px 0; }
+		.list-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 		.hint { font-size: 11px; }
 		[hidden] { display: none; }
 	</style>
@@ -40,13 +47,30 @@
 			<p class="hint">Everyone on this network is blocked, including shared school or home connections. Remove it with "Remove ban record" on its ip: row below.</p>
 		</form>
 		<form id="words-form" hidden>
-			<h2>Blocked words, passwords and coin amounts</h2>
-			<label>One word per line <textarea id="words-text" rows="5" cols="30"></textarea></label>
-			<label>Blocked passwords, one per line <textarea id="passwords-text" rows="4" cols="30"></textarea></label>
-			<label>Blocked coin amounts, one number per line <textarea id="coins-text" rows="3" cols="30"></textarea></label>
-			<button type="submit">Save words</button>
-			<button type="button" id="words-scan">Ban accounts that match</button>
-			<p class="hint">Usernames containing these words (ignoring capitals, spaces, symbols and look-alikes such as 0 for o) get the account and device banned. Matching is by substring, so avoid short words that sit inside normal names. Blocked passwords cannot be used to create an account, and an account that uses one is banned when it next signs in or checks in. An account holding exactly a blocked coin amount is banned the same way.</p>
+			<h2>Blocked lists</h2>
+			<fieldset class="list-box">
+				<legend>Words in usernames</legend>
+				<textarea id="words-text" rows="5" placeholder="One word per line"></textarea>
+				<p class="hint"><span id="words-count">0</span> entries. Ignores capitals, spaces, symbols and look-alikes (0 for o). Matches inside names, so avoid short words.</p>
+				<button type="button" data-ban="words">Ban accounts with these words</button>
+			</fieldset>
+			<fieldset class="list-box">
+				<legend>Passwords</legend>
+				<textarea id="passwords-text" rows="4" placeholder="One password per line" spellcheck="false" autocomplete="off"></textarea>
+				<p class="hint"><span id="passwords-count">0</span> entries. Cannot be used to create accounts. Exact match.</p>
+				<button type="button" data-ban="passwords">Ban accounts with these passwords</button>
+			</fieldset>
+			<fieldset class="list-box">
+				<legend>Exact coin amounts</legend>
+				<textarea id="coins-text" rows="3" placeholder="One whole number per line, e.g. 999999" spellcheck="false"></textarea>
+				<p class="hint"><span id="coins-count">0</span> valid numbers. Commas are ignored. Lines that are not whole numbers are skipped.</p>
+				<button type="button" data-ban="coins">Ban accounts with these coin amounts</button>
+			</fieldset>
+			<div class="list-actions">
+				<button type="submit">Save lists</button>
+				<button type="button" data-ban="all">Ban accounts matching any list</button>
+			</div>
+			<p class="hint">Save lists to enforce them at sign-up and sign-in. The ban buttons act on existing accounts straight away (after a confirmation) and use the text currently in the boxes, saved or not. Banned accounts also get their device blocked.</p>
 		</form>
 		<h1>Admin panel</h1>
 		<form id="login">
@@ -192,6 +216,7 @@
 				document.querySelector('#words-text').value = (saved.words || []).join('\n');
 				document.querySelector('#passwords-text').value = (saved.passwords || []).join('\n');
 				document.querySelector('#coins-text').value = (saved.coins || []).join('\n');
+				updateCounts();
 			}
 
 			document.querySelector('#words-form').addEventListener('submit', async (event) => {
@@ -209,20 +234,30 @@
 				} catch (error) { status.textContent = error.message; }
 			});
 
-			document.querySelector('#words-scan').addEventListener('click', async () => {
+			document.querySelectorAll('[data-ban]').forEach((button) => button.addEventListener('click', async () => {
+				const kind = button.dataset.ban;
+				const use = (name) => kind === 'all' || kind === name;
 				try {
-					const words = document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2);
-					const passwords = readPasswords();
-					const coins = readCoins();
+					const words = use('words') ? document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2) : [];
+					const passwords = use('passwords') ? readPasswords() : [];
+					const coins = use('coins') ? readCoins() : [];
+					if (!words.length && !passwords.length && !coins.length) { status.textContent = 'That list is empty.'; return; }
 					const accounts = await api('?select=id,username,password,coins,bgs');
 					const hits = accounts.filter((a) => a.username !== WORDS_ROW && !a.username.startsWith('ip:') && !(a.bgs && a.bgs.banned) && (words.some((w) => norm(a.username).includes(w)) || passwords.includes(String(a.password)) || coins.includes(Number(a.coins))));
-					if (!hits.length) { status.textContent = 'No accounts match the blocked lists.'; return; }
+					if (!hits.length) { status.textContent = 'No accounts match.'; return; }
 					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
 					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: newPassword(), bgs: { banned: true, reason: 'blocked by admin rules' } }) });
 					status.textContent = `Banned ${hits.length} account(s).`;
 					load();
 				} catch (error) { status.textContent = error.message; }
-			});
+			}));
+
+			function updateCounts() {
+				document.querySelector('#words-count').textContent = document.querySelector('#words-text').value.split('\n').filter((w) => norm(w).length >= 2).length;
+				document.querySelector('#passwords-count').textContent = readPasswords().length;
+				document.querySelector('#coins-count').textContent = readCoins().length;
+			}
+			['words', 'passwords', 'coins'].forEach((name) => document.querySelector(`#${name}-text`).addEventListener('input', updateCounts));
 
 			async function banAddress(ip) {
 				const clean = String(ip).trim();
