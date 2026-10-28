@@ -88,6 +88,7 @@ stored as `ip:<address>` rows and use the real address Supabase sees, so they ca
 from the browser, though a banned network is blocked for everyone on it and VPNs get around it.
 An account whose username contains a blocked word (ignoring capitals, symbols and look-alikes
 such as 0 for o) is banned, along with the device, when it is created, renamed, signed into or checked.
+The admin page can also block passwords (they can't be used to create an account, and an account signing in with one is banned) and exact coin amounts (an account whose coins equal one is banned). Existing installs run `supabase-update-blocks.sql` once to add this.
 
 ## Keyboard shortcuts
 

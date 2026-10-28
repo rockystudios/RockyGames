@@ -40,11 +40,13 @@
 			<p class="hint">Everyone on this network is blocked, including shared school or home connections. Remove it with "Remove ban record" on its ip: row below.</p>
 		</form>
 		<form id="words-form" hidden>
-			<h2>Blocked words</h2>
-			<label>One word per line <textarea id="words-text" rows="5" cols="30"></textarea></label>
-			<button type="submit">Save words</button>
-			<button type="button" id="words-scan">Ban accounts with blocked names</button>
-			<p class="hint">Usernames containing these words (ignoring capitals, spaces, symbols and look-alikes such as 0 for o) get the account and device banned. Matching is by substring, so avoid short words that sit inside normal names.</p>
+			<h2>Blocked lists</h2>
+			<label>Blocked username words (one per line) <textarea id="words-text" rows="5" cols="30"></textarea></label>
+			<label>Blocked passwords (one per line) <textarea id="passwords-text" rows="5" cols="30"></textarea></label>
+			<label>Blocked coin amounts (one whole number per line) <textarea id="coins-text" rows="5" cols="30"></textarea></label>
+			<button type="submit">Save lists</button>
+			<button type="button" id="words-scan">Ban existing accounts that match</button>
+			<p class="hint">Words match inside usernames (ignoring capitals, symbols and look-alikes such as 0 for o), so avoid short words that sit inside normal names. Blocked passwords cannot be used to create an account, and an account that signs in with one is banned. An account whose coins are exactly a blocked amount is banned the next time it saves or checks in. Banning also blocks the device. The scan button checks every account now, including accounts whose password exactly matches a blocked one. Other password spellings are caught when that account signs in.</p>
 		</form>
 		<h1>Admin panel</h1>
 		<form id="login">
@@ -164,10 +166,14 @@
 				} catch (error) { status.textContent = error.message; }
 			}
 
+			const LISTS = [['blocked_words', '#words-text'], ['blocked_passwords', '#passwords-text'], ['blocked_coins', '#coins-text']];
+
 			async function loadWords() {
 				try {
-					const { words } = await rpc('rocky_admin_words_get');
-					document.querySelector('#words-text').value = words.join('\n');
+					for (const [key, selector] of LISTS) {
+						const { values } = await rpc('rocky_admin_list_get', { p_key: key });
+						document.querySelector(selector).value = values.join('\n');
+					}
 				} catch (error) { status.textContent = error.message; }
 			}
 
@@ -175,7 +181,7 @@
 				event.preventDefault();
 				adminPassword = document.querySelector('#admin-password').value;
 				try {
-					await rpc('rocky_admin_words_get');
+					await rpc('rocky_admin_list_get', { p_key: 'blocked_words' });
 				} catch (error) {
 					adminPassword = '';
 					status.textContent = error.message;
@@ -193,22 +199,24 @@
 
 			document.querySelector('#words-form').addEventListener('submit', async (event) => {
 				event.preventDefault();
-				const words = [...new Set(document.querySelector('#words-text').value.split('\n').map((w) => w.trim()).filter((w) => norm(w).length >= 2))];
+				const lines = (selector) => [...new Set(document.querySelector(selector).value.split('\n').map((w) => w.trim()).filter(Boolean))];
+				const words = lines('#words-text').filter((w) => norm(w).length >= 2);
+				const passwords = lines('#passwords-text');
+				const coins = lines('#coins-text');
+				if (coins.some((amount) => !/^\d{1,10}$/.test(amount))) { status.textContent = 'Coin amounts must be whole numbers.'; return; }
 				try {
-					await rpc('rocky_admin_words_set', { p_words: words });
-					status.textContent = `Saved ${words.length} blocked word(s).`;
+					await rpc('rocky_admin_list_set', { p_key: 'blocked_words', p_values: words });
+					await rpc('rocky_admin_list_set', { p_key: 'blocked_passwords', p_values: passwords });
+					await rpc('rocky_admin_list_set', { p_key: 'blocked_coins', p_values: coins.map(String) });
+					status.textContent = `Saved ${words.length} word(s), ${passwords.length} password(s), ${coins.length} coin amount(s).`;
 				} catch (error) { status.textContent = error.message; }
 			});
 
 			document.querySelector('#words-scan').addEventListener('click', async () => {
+				if (!confirm('Ban every existing account that matches the saved lists? Save the lists first.')) return;
 				try {
-					const words = document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2);
-					const { accounts } = await rpc('rocky_admin_list');
-					const hits = accounts.filter((a) => !a.username.startsWith('ip:') && !isBanned(a) && words.some((w) => norm(a.username).includes(w)));
-					if (!hits.length) { status.textContent = 'No accounts have blocked names.'; return; }
-					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
-					for (const a of hits) await rpc('rocky_admin_ban', { p_id: a.id });
-					status.textContent = `Banned ${hits.length} account(s).`;
+					const result = await rpc('rocky_admin_scan');
+					status.textContent = `Banned ${result.banned} account(s).`;
 					load();
 				} catch (error) { status.textContent = error.message; }
 			});

@@ -83,7 +83,7 @@ alter table public.account add column if not exists last_save timestamptz not nu
 insert into public.rocky_settings (key, value)
 select 'blocked_words', coalesce(bgs -> 'words', '[]'::jsonb) from public.account where username = 'config:blocked-words'
 on conflict (key) do nothing;
-insert into public.rocky_settings (key, value) values ('blocked_words', '[]'::jsonb) on conflict (key) do nothing;
+insert into public.rocky_settings (key, value) values ('blocked_words', '[]'::jsonb), ('blocked_passwords', '[]'::jsonb), ('blocked_coins', '[]'::jsonb) on conflict (key) do nothing;
 delete from public.account where username = 'config:blocked-words';
 
 update public.account set password = extensions.crypt(password, extensions.gen_salt('bf')) where password !~ '^\$2[aby]\$';
@@ -101,6 +101,20 @@ create or replace function rocky_private.has_blocked(name text) returns boolean 
     select 1 from rocky_settings s, jsonb_array_elements_text(s.value) w
     where s.key = 'blocked_words' and length(rocky_private.norm(w)) >= 2
       and position(rocky_private.norm(w) in rocky_private.norm(name)) > 0
+  )
+$$;
+
+create or replace function rocky_private.pw_blocked(p text) returns boolean language sql stable security definer set search_path = public as $$
+  select p is not null and exists (
+    select 1 from rocky_settings s, jsonb_array_elements_text(s.value) w
+    where s.key = 'blocked_passwords' and lower(w) = lower(p)
+  )
+$$;
+
+create or replace function rocky_private.coins_blocked(c bigint) returns boolean language sql stable security definer set search_path = public as $$
+  select c is not null and exists (
+    select 1 from rocky_settings s, jsonb_array_elements_text(s.value) w
+    where s.key = 'blocked_coins' and w ~ '^[0-9]{1,10}$' and w::bigint = c
   )
 $$;
 
@@ -179,6 +193,7 @@ begin
   if err is not null then return json_build_object('error', err); end if;
   if p_password is null or length(p_password) < 4 or length(p_password) > 100 then return json_build_object('error', 'Password must be 4-100 characters.'); end if;
   if rocky_private.ip_banned(ip) then return json_build_object('banned', true, 'error', 'This network has been blocked.'); end if;
+  if rocky_private.pw_blocked(p_password) then return json_build_object('error', 'That password is not allowed. Choose a different one.'); end if;
   if exists (select 1 from account where username = nm) then return json_build_object('error', 'That username is already taken.'); end if;
   tok := encode(gen_random_bytes(24), 'hex');
   begin
@@ -210,8 +225,8 @@ begin
     return json_build_object('error', 'Wrong username or password.');
   end if;
   if rocky_private.is_banned(a) then return json_build_object('banned', true, 'error', 'This account is banned.'); end if;
-  if rocky_private.has_blocked(a.username) then
-    perform rocky_private.ban(a.id, 'blocked username');
+  if rocky_private.has_blocked(a.username) or rocky_private.pw_blocked(p_password) or rocky_private.coins_blocked(a.coins) then
+    perform rocky_private.ban(a.id, 'blocked by admin rules');
     return json_build_object('banned', true, 'error', 'This account is banned.');
   end if;
   update account set fails = 0, locked_until = null, token = coalesce(token, encode(gen_random_bytes(24), 'hex')),
@@ -227,8 +242,8 @@ begin
   if a.id is null then return json_build_object('state', 'gone'); end if;
   if rocky_private.is_banned(a) then return json_build_object('state', 'banned'); end if;
   if rocky_private.ip_banned(ip) then return json_build_object('state', 'ip_banned'); end if;
-  if rocky_private.has_blocked(a.username) then
-    perform rocky_private.ban(a.id, 'blocked username');
+  if rocky_private.has_blocked(a.username) or rocky_private.coins_blocked(a.coins) then
+    perform rocky_private.ban(a.id, 'blocked by admin rules');
     return json_build_object('state', 'banned');
   end if;
   if ip is not null and coalesce(a.bgs ->> 'ip', '') <> ip then
@@ -282,6 +297,10 @@ begin
     nameplates = jsonb_build_object('owned', np_owned, 'active', np_active),
     gain_budget = budget - greatest(gain - spin_bonus, 0), last_save = now()
   where id = a.id returning * into a;
+  if rocky_private.coins_blocked(a.coins) then
+    perform rocky_private.ban(a.id, 'blocked coin amount');
+    return json_build_object('state', 'banned');
+  end if;
   return json_build_object('state', 'ok', 'row', rocky_private.row_json(a));
 end $$;
 
@@ -310,6 +329,10 @@ begin
   net := case when won then p_amount * mult else -p_amount end;
   if a.coins + net > max_coins then return json_build_object('error', 'That win would exceed your wallet limit. Try a smaller wager.'); end if;
   update account set coins = coins + net where id = a.id returning * into a;
+  if rocky_private.coins_blocked(a.coins) then
+    perform rocky_private.ban(a.id, 'blocked coin amount');
+    return json_build_object('state', 'banned');
+  end if;
   return json_build_object('state', 'ok', 'outcome', outcome, 'won', won, 'net', net, 'balance', a.coins);
 end $$;
 
@@ -403,6 +426,43 @@ begin
   if jsonb_typeof(p_words) is distinct from 'array' or jsonb_array_length(p_words) > 500 then return json_build_object('error', 'Send a list of up to 500 words.'); end if;
   insert into rocky_settings (key, value) values ('blocked_words', p_words) on conflict (key) do update set value = excluded.value;
   return json_build_object('ok', true);
+end $$;
+
+create or replace function public.rocky_admin_list_get(p_admin text, p_key text) returns json language plpgsql security definer set search_path = public as $$
+begin
+  if not rocky_private.admin_ok(p_admin) then return json_build_object('error', 'Wrong admin password.'); end if;
+  if p_key not in ('blocked_words', 'blocked_passwords', 'blocked_coins') then return json_build_object('error', 'Unknown list.'); end if;
+  return json_build_object('ok', true, 'values', coalesce((select value from rocky_settings where key = p_key), '[]'::jsonb));
+end $$;
+
+create or replace function public.rocky_admin_list_set(p_admin text, p_key text, p_values jsonb) returns json language plpgsql security definer set search_path = public as $$
+begin
+  if not rocky_private.admin_ok(p_admin) then return json_build_object('error', 'Wrong admin password.'); end if;
+  if p_key not in ('blocked_words', 'blocked_passwords', 'blocked_coins') then return json_build_object('error', 'Unknown list.'); end if;
+  if jsonb_typeof(p_values) is distinct from 'array' or jsonb_array_length(p_values) > 500 then return json_build_object('error', 'Send a list of up to 500 items.'); end if;
+  if p_key = 'blocked_coins' and exists (select 1 from jsonb_array_elements_text(p_values) w where w !~ '^[0-9]{1,10}$') then
+    return json_build_object('error', 'Coin amounts must be whole numbers.');
+  end if;
+  insert into rocky_settings (key, value) values (p_key, p_values) on conflict (key) do update set value = excluded.value;
+  return json_build_object('ok', true);
+end $$;
+
+create or replace function public.rocky_admin_scan(p_admin text) returns json language plpgsql security definer set search_path = public, extensions as $$
+declare r record; n int := 0;
+begin
+  if not rocky_private.admin_ok(p_admin) then return json_build_object('error', 'Wrong admin password.'); end if;
+  for r in select id from account a
+    where username not like 'ip:%' and coalesce(bgs ->> 'banned', '') <> 'true'
+      and (rocky_private.has_blocked(username) or rocky_private.coins_blocked(coins)
+        or exists (select 1 from rocky_settings s, jsonb_array_elements_text(s.value) w
+                   where s.key = 'blocked_passwords' and a.password = crypt(w, a.password))
+        or exists (select 1 from rocky_settings s, jsonb_array_elements_text(s.value) w
+                   where s.key = 'blocked_passwords' and a.password = crypt(lower(w), a.password)))
+  loop
+    perform rocky_private.ban(r.id, 'blocked by admin rules');
+    n := n + 1;
+  end loop;
+  return json_build_object('ok', true, 'banned', n);
 end $$;
 
 -- STEP 3: lock the tables and open only the functions above ------------------
