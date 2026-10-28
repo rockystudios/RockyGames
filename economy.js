@@ -12,6 +12,8 @@
 	const DISPLAY_SETTINGS_KEY = 'rockyGamesDisplaySettings';
 	const ACCOUNT_KEY = 'rockyGamesAccount';
 	const BANNED_KEY = 'rockyGamesBanned';
+	const IP_BYPASS_KEY = 'rockyGamesIpBypass';
+	const IP_CACHE_KEY = 'rockyGamesIp';
 	const ADDONS_KEY = 'rockyGamesAddons';
 	const AUTO_CLICK_INTERVAL_MS = 100;
 	const BAN_CHECK_MS = 60000;
@@ -1107,10 +1109,48 @@
 		return response.status === 204 ? [] : response.json();
 	}
 
+	let ipPromise = null;
+
+	function getClientIp() {
+		const cached = sessionStorage.getItem(IP_CACHE_KEY);
+		if (cached) return Promise.resolve(cached);
+		if (!ipPromise) {
+			ipPromise = fetch('https://api.ipify.org?format=json')
+				.then((response) => (response.ok ? response.json() : null))
+				.then((data) => {
+					const ip = data && typeof data.ip === 'string' && data.ip.length <= 45 ? data.ip : null;
+					if (ip) sessionStorage.setItem(IP_CACHE_KEY, ip);
+					return ip;
+				})
+				.catch(() => null);
+		}
+		return ipPromise;
+	}
+
+	async function isIpBanned() {
+		if (!cloudConfigured()) return false;
+		const ip = await getClientIp();
+		if (!ip || localStorage.getItem(IP_BYPASS_KEY) === ip) return false;
+		try {
+			const rows = await cloudRequest(`?username=eq.${encodeURIComponent(`ip:${ip}`)}&select=id`);
+			return rows.length > 0;
+		} catch (error) {
+			return false;
+		}
+	}
+
+	async function checkIpBan() {
+		if (document.querySelector('#rocky-ban-screen')) return;
+		if (await isIpBanned()) {
+			document.querySelector('#rocky-auth-gate')?.remove();
+			showBanScreen(true);
+		}
+	}
+
 	function stateToRow(value) {
 		return {
 			coins: Math.min(MAX_COINS, value.coins),
-			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null },
+			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null, ip: sessionStorage.getItem(IP_CACHE_KEY) || undefined },
 			nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
 		};
 	}
@@ -1290,14 +1330,14 @@
 		});
 	}
 
-	function showBanScreen() {
+	function showBanScreen(byIp) {
 		if (document.querySelector('#rocky-ban-screen')) return;
 		const screen = document.createElement('div');
 		screen.id = 'rocky-ban-screen';
 		screen.setAttribute('role', 'alertdialog');
 		screen.setAttribute('aria-modal', 'true');
 		screen.setAttribute('aria-labelledby', 'rocky-ban-title');
-		screen.innerHTML = '<form id="rocky-ban-form"><h2 id="rocky-ban-title">This device is blocked</h2><p>This device has been blocked from Rocky Games. Enter the unblock code to continue.</p><label>Unblock code<input id="rocky-ban-code" type="password" autocomplete="off" required></label><p id="rocky-ban-error" role="alert"></p><button type="submit">Unblock</button></form>';
+		screen.innerHTML = '<form id="rocky-ban-form"><h2 id="rocky-ban-title">This device is blocked</h2><p>' + (byIp ? 'This network has been blocked from Rocky Games.' : 'This device has been blocked from Rocky Games.') + ' Enter the unblock code to continue.</p><label>Unblock code<input id="rocky-ban-code" type="password" autocomplete="off" required></label><p id="rocky-ban-error" role="alert"></p><button type="submit">Unblock</button></form>';
 		document.body.append(screen);
 		document.body.classList.add('rocky-auth-locked');
 		const input = screen.querySelector('#rocky-ban-code');
@@ -1315,10 +1355,15 @@
 				error.textContent = 'Could not check the code. Try again.';
 				return;
 			}
-			localStorage.removeItem(BANNED_KEY);
+			if (byIp) {
+				const ip = await getClientIp();
+				if (ip) localStorage.setItem(IP_BYPASS_KEY, ip);
+			} else {
+				localStorage.removeItem(BANNED_KEY);
+			}
 			screen.remove();
 			document.body.classList.remove('rocky-auth-locked');
-			showAuthGate();
+			if (!getAccount() && localStorage.getItem(BANNED_KEY) !== '1') showAuthGate();
 		});
 		input.focus();
 	}
@@ -1387,7 +1432,8 @@
 		}
 		if (!getAccount()) showAuthGate();
 		else checkAccountStatus(true);
-		window.setInterval(checkAccountStatus, BAN_CHECK_MS);
+		getClientIp().then(checkIpBan);
+		window.setInterval(() => { checkAccountStatus(); checkIpBan(); }, BAN_CHECK_MS);
 	}
 
 	const ADDON_IDS = ['auto-clicker'];

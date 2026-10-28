@@ -15,7 +15,9 @@
 		th, td { padding: 6px; border-bottom: 1px solid #202522; text-align: left; }
 		td input[type="number"] { width: 110px; }
 		#status { min-height: 1.4em; }
-		#bulk-form[hidden] { display: none; }
+		#bulk-form[hidden], #ip-form[hidden] { display: none; }
+		#ip-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
+		#ip-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
 		#bulk-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
 		#bulk-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
 		.hint { font-size: 11px; }
@@ -31,6 +33,12 @@
 			<button type="submit" data-mode="ban">Ban matching devices</button>
 			<p class="hint">Matching ignores capitals. Ban keeps the account as a banned record (so devices can be blocked) instead of removing it.</p>
 		</form>
+		<form id="ip-form" hidden>
+			<h2>Ban an IP address</h2>
+			<label>IP address <input id="ip-text" type="text" maxlength="45" autocomplete="off" required></label>
+			<button type="submit">Ban IP</button>
+			<p class="hint">Everyone on this network is blocked, including shared school or home connections. Remove it with "Remove ban record" on its ip: row below.</p>
+		</form>
 		<h1>Admin panel</h1>
 		<form id="login">
 			<label>Admin password <input id="admin-password" type="password" autocomplete="off" required></label>
@@ -40,7 +48,7 @@
 		<section id="panel" hidden>
 			<button type="button" id="refresh">Refresh</button>
 			<table>
-				<thead><tr><th scope="col">ID</th><th scope="col">Username</th><th scope="col">Coins</th><th scope="col">Actions</th></tr></thead>
+				<thead><tr><th scope="col">ID</th><th scope="col">Username</th><th scope="col">Last IP</th><th scope="col">Coins</th><th scope="col">Actions</th></tr></thead>
 				<tbody id="rows"></tbody>
 			</table>
 		</section>
@@ -79,6 +87,7 @@
 						nameInput.setAttribute('aria-label', `Username for account ${account.id}`);
 						const nameCell = cell(nameInput);
 						if (banned) nameCell.append(' (BANNED)');
+						cell((account.bgs && account.bgs.ip) || '');
 						const coins = document.createElement('input');
 						coins.type = 'number';
 						coins.min = '0';
@@ -131,6 +140,13 @@
 								load();
 							} catch (error) { status.textContent = error.message; }
 						});
+						if (account.bgs && account.bgs.ip && !banned) {
+							const banIp = document.createElement('button');
+							banIp.type = 'button';
+							banIp.textContent = 'Ban IP';
+							banIp.addEventListener('click', () => banAddress(account.bgs.ip));
+							actions.append(banIp, ' ');
+						}
 						actions.append(rename, ' ', save, ' ', del);
 						tr.append(actions);
 						rowsEl.append(tr);
@@ -148,7 +164,26 @@
 				document.querySelector('#login').hidden = true;
 				document.querySelector('#panel').hidden = false;
 				document.querySelector('#bulk-form').hidden = false;
+				document.querySelector('#ip-form').hidden = false;
 				load();
+			});
+			async function banAddress(ip) {
+				const clean = String(ip).trim();
+				if (!/^[0-9a-fA-F:.]{3,45}$/.test(clean)) { status.textContent = 'That does not look like an IP address.'; return; }
+				if (!confirm(`Ban IP ${clean}? Everyone on that network will be blocked.`)) return;
+				try {
+					const existing = await api(`?username=eq.${encodeURIComponent('ip:' + clean)}&select=id`);
+					if (existing.length) { status.textContent = `${clean} is already banned.`; return; }
+					const randomPassword = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+					await api('', { method: 'POST', body: JSON.stringify({ username: 'ip:' + clean, password: randomPassword, coins: 0, bgs: { banned: true, ipBan: true }, nameplates: {} }) });
+					status.textContent = `Banned IP ${clean}.`;
+					load();
+				} catch (error) { status.textContent = error.message; }
+			}
+
+			document.querySelector('#ip-form').addEventListener('submit', (event) => {
+				event.preventDefault();
+				banAddress(document.querySelector('#ip-text').value).then(() => { document.querySelector('#ip-text').value = ''; });
 			});
 			document.querySelector('#refresh').addEventListener('click', load);
 

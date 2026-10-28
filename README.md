@@ -73,6 +73,13 @@ again to stop. Installed add-ons are saved in this browser. Websites cannot clic
 embedded third-party games, so `extensions/rocky-auto-clicker` is a companion Chrome/Edge
 extension (zip download on the card; load it unpacked) that clicks inside every frame with F8.
 
+## Bans
+
+`admin.html` can delete accounts and ban devices or IP addresses. IP bans are stored as
+`ip:<address>` rows in the `account` table. Each page looks up the visitor's IP with
+api.ipify.org and shows a block screen if it is banned. This only blocks visitors whose
+IP lookup works, and a banned network is blocked for everyone on it.
+
 ## Keyboard shortcuts
 
 Press **Option/Alt + Shift + A** for APSVA MyAccess, **S** for Sora, **H** for
