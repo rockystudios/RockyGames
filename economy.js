@@ -248,6 +248,49 @@
 		}
 	}
 
+	const lightFixed = new Map();
+	let lightFixTimer = null;
+	let lightObserver = null;
+	const LIGHT_FIX_SKIP = /^(CANVAS|IMG|VIDEO|IFRAME|SVG|PATH|SCRIPT|STYLE|HTML|BODY)$/i;
+
+	function parseColor(value) {
+		const match = value.match(/rgba?\(([^)]+)\)/);
+		if (!match) return null;
+		const parts = match[1].split(/[,/ ]+/).filter(Boolean).map(Number);
+		return { r: parts[0], g: parts[1], b: parts[2], a: parts.length > 3 ? parts[3] : 1 };
+	}
+
+	function restoreLightFix() {
+		lightObserver?.disconnect();
+		lightObserver = null;
+		lightFixed.forEach((saved, element) => {
+			element.style.backgroundColor = saved.bg;
+			element.style.color = saved.color;
+		});
+		lightFixed.clear();
+	}
+
+	function runLightFix() {
+		const background = backgroundById.get(state.activeBackground);
+		if (!background || background.id !== 'default') return;
+		lightObserver?.disconnect();
+		document.querySelectorAll('body *').forEach((element) => {
+			if (LIGHT_FIX_SKIP.test(element.tagName) || lightFixed.has(element) || element.closest('#rocky-ban-screen, #rocky-auth-gate')) return;
+			const color = parseColor(getComputedStyle(element).backgroundColor);
+			if (!color || color.a < 0.5 || Math.min(color.r, color.g, color.b) < 200) return;
+			lightFixed.set(element, { bg: element.style.backgroundColor, color: element.style.color });
+			element.style.setProperty('background-color', background.foreground, 'important');
+			element.style.setProperty('color', background.foregroundText, 'important');
+		});
+		if (lightObserver === null) lightObserver = new MutationObserver(scheduleLightFix);
+		lightObserver.observe(document.body, { childList: true, subtree: true });
+	}
+
+	function scheduleLightFix() {
+		window.clearTimeout(lightFixTimer);
+		lightFixTimer = window.setTimeout(runLightFix, 150);
+	}
+
 	function applyBackground() {
 		const background = backgroundById.get(state.activeBackground);
 		document.body.style.setProperty('background-color', background.color, 'important');
@@ -272,6 +315,8 @@
 		document.documentElement.style.setProperty('--orange', background.accent, 'important');
 		document.documentElement.style.setProperty('--blue', background.accent, 'important');
 		document.documentElement.style.setProperty('--panel', background.foreground, 'important');
+		restoreLightFix();
+		if (background.id === 'default') scheduleLightFix();
 	}
 
 	function render() {
