@@ -64,6 +64,14 @@ any whole number up to the available virtual-coin balance. Outcomes use the
 published odds, with no near-miss effects or real-money play.
 Coins are capped at 2,000,000,000. Admins can set coins from `admin.html`.
 
+## Add-ons
+
+`addons.html` lists optional add-ons. The Auto Clicker must be installed from its
+card before it works. Once installed, press its toggle key (F8 by default, changeable
+on the card) to click about 10 times a second at the mouse pointer, and press it
+again to stop. Installed add-ons are saved in this browser. It cannot click inside
+embedded third-party games while the mouse is over them.
+
 ## Keyboard shortcuts
 
 Press **Option/Alt + Shift + A** for APSVA MyAccess, **S** for Sora, **H** for

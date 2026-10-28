@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#050b07">
+	<title>Add-ons | Rocky Games</title>
+	<link rel="stylesheet" href="economy.css?v=public-site-6">
+	<script src="economy.js?v=public-site-12" defer></script>
+	<style>
+		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; }
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: 'DM Mono', monospace; }
+		a { color: inherit; }
+		header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 12px 20px; border-bottom: 2px solid var(--ink); }
+		.brand { font: 900 23px/1 sans-serif; text-decoration: none; text-transform: uppercase; }
+		nav.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+		nav.tabs a { padding: 6px 12px; border: 2px solid var(--ink); font-size: 11px; text-decoration: none; text-transform: uppercase; }
+		nav.tabs a[aria-current="page"] { background: var(--lime); }
+		main { width: min(100% - 40px, 900px); margin: 0 auto; padding: 24px 0 80px; }
+		h1 { margin: 0 0 8px; font-size: clamp(32px, 7vw, 56px); text-transform: uppercase; }
+		.addon-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+		.addon-card { display: grid; gap: 8px; padding: 16px; border: 2px solid var(--ink); background: #fff; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+		.addon-card:hover, .addon-card:focus-visible { background: var(--lime); }
+		.addon-number { font-size: 11px; }
+		.addon-title { margin: 0; font-size: 22px; text-transform: uppercase; }
+		.addon-meta { margin: 0; font-size: 12px; }
+		.addon-state { font-size: 11px; text-transform: uppercase; }
+		dialog { width: min(92vw, 460px); padding: 22px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); font-family: 'DM Mono', monospace; }
+		dialog::backdrop { background: rgba(0, 0, 0, .6); }
+		dialog h2 { margin: 0 0 8px; text-transform: uppercase; }
+		dialog p { font-size: 13px; line-height: 1.6; }
+		.dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+		button.action { padding: 8px 14px; border: 2px solid var(--ink); background: var(--lime); color: var(--ink); font: inherit; cursor: pointer; }
+		button.secondary { background: #fff; }
+		#keybind-row[hidden] { display: none; }
+		#addon-status { min-height: 1.4em; font-size: 12px; }
+		@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+	</style>
+</head>
+<body>
+	<header>
+		<a class="brand" href="index.html">Rocky Games</a>
+		<nav class="tabs" aria-label="Sections">
+			<a href="index.html">Games</a>
+			<a href="addons.html" aria-current="page">Add-ons</a>
+			<a href="shop.html">Shop</a>
+			<a href="leaderboard.html">Leaderboard</a>
+		</nav>
+	</header>
+	<main>
+		<h1>Add-ons</h1>
+		<p>Extras that work across Rocky Games. Select an add-on to read about it, then install it.</p>
+		<div class="addon-list">
+			<button type="button" class="addon-card" data-addon="auto-clicker" aria-haspopup="dialog">
+				<span class="addon-number">01</span>
+				<h2 class="addon-title">Auto Clicker</h2>
+				<p class="addon-meta">Tool / Clicking</p>
+				<span class="addon-state" id="state-auto-clicker">Not installed</span>
+			</button>
+		</div>
+		<p id="addon-status" role="status" aria-live="polite"></p>
+	</main>
+
+	<dialog id="addon-dialog" aria-labelledby="addon-dialog-title">
+		<h2 id="addon-dialog-title">Auto Clicker</h2>
+		<p>Press a key to start clicking at your mouse pointer, and press the same key again to stop. It clicks about 10 times a second on Rocky Games pages.</p>
+		<p>It can't click inside embedded games while your mouse is over them, because the browser doesn't share mouse position with those frames. It works on the rest of the site, including our own games. Auto clicker turns off when you leave the tab or reload.</p>
+		<div id="keybind-row" hidden>
+			<p>Toggle key: <strong id="keybind-label"></strong></p>
+			<button type="button" class="action secondary" id="keybind-change">Change key</button>
+		</div>
+		<div class="dialog-actions">
+			<button type="button" class="action" id="install-button">Install</button>
+			<button type="button" class="action secondary" id="close-button">Close</button>
+		</div>
+	</dialog>
+
+	<script>
+		(function () {
+			const ID = 'auto-clicker';
+			const dialog = document.querySelector('#addon-dialog');
+			const installButton = document.querySelector('#install-button');
+			const keybindRow = document.querySelector('#keybind-row');
+			const keybindLabel = document.querySelector('#keybind-label');
+			const keybindChange = document.querySelector('#keybind-change');
+			const status = document.querySelector('#addon-status');
+			const cardState = document.querySelector('#state-auto-clicker');
+			let capturing = false;
+
+			function addons() { return window.RockyAddons; }
+			function keyName(code) { return code.replace(/^Key/, '').replace(/^Digit/, ''); }
+
+			function render() {
+				const api = addons();
+				if (!api) return;
+				const installed = api.isInstalled(ID);
+				cardState.textContent = installed ? 'Installed' : 'Not installed';
+				installButton.textContent = installed ? 'Uninstall' : 'Install';
+				keybindRow.hidden = !installed;
+				keybindLabel.textContent = keyName(api.getAutoClickerKey());
+				keybindChange.textContent = 'Change key';
+				capturing = false;
+			}
+
+			document.querySelector('.addon-card').addEventListener('click', () => {
+				render();
+				if (typeof dialog.showModal === 'function') dialog.showModal();
+				else dialog.setAttribute('open', '');
+			});
+			document.querySelector('#close-button').addEventListener('click', () => dialog.close());
+			installButton.addEventListener('click', () => {
+				const api = addons();
+				if (!api) { status.textContent = 'Add-ons are still loading. Try again.'; return; }
+				const installed = api.isInstalled(ID);
+				const ok = installed ? api.uninstall(ID) : api.install(ID);
+				status.textContent = !ok ? 'Could not save. Check browser storage.'
+					: installed ? 'Auto Clicker uninstalled.' : `Auto Clicker installed. Press ${keyName(api.getAutoClickerKey())} on any page to start or stop it.`;
+				render();
+			});
+			keybindChange.addEventListener('click', () => {
+				capturing = true;
+				keybindChange.textContent = 'Press a key…';
+			});
+			document.addEventListener('keydown', (event) => {
+				if (!capturing) return;
+				event.preventDefault();
+				event.stopPropagation();
+				if (event.code === 'Escape') { render(); return; }
+				if (['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'].includes(event.code)) return;
+				if (addons().setAutoClickerKey(event.code)) status.textContent = `Toggle key set to ${keyName(event.code)}.`;
+				render();
+			}, true);
+			window.addEventListener('load', render);
+		})();
+	</script>
+</body>
+</html>

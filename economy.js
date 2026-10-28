@@ -12,6 +12,8 @@
 	const DISPLAY_SETTINGS_KEY = 'rockyGamesDisplaySettings';
 	const ACCOUNT_KEY = 'rockyGamesAccount';
 	const BANNED_KEY = 'rockyGamesBanned';
+	const ADDONS_KEY = 'rockyGamesAddons';
+	const AUTO_CLICK_INTERVAL_MS = 100;
 	const BAN_CHECK_MS = 60000;
 	const LAST_USERNAME_KEY = 'rockyGamesLastUsername';
 	const SUPABASE_URL = 'https://elxnypvvwrumhwakczwe.supabase.co';
@@ -1336,6 +1338,110 @@
 		window.setInterval(checkAccountStatus, BAN_CHECK_MS);
 	}
 
+	const ADDON_IDS = ['auto-clicker'];
+
+	function readAddons() {
+		try {
+			const saved = JSON.parse(localStorage.getItem(ADDONS_KEY) || 'null');
+			const installed = saved && Array.isArray(saved.installed) ? saved.installed.filter((id) => ADDON_IDS.includes(id)) : [];
+			const key = saved && typeof saved.autoClickerKey === 'string' && saved.autoClickerKey.length <= 20 ? saved.autoClickerKey : 'F8';
+			return { installed, autoClickerKey: key };
+		} catch (error) {
+			return { installed: [], autoClickerKey: 'F8' };
+		}
+	}
+
+	function writeAddons(next) {
+		try {
+			localStorage.setItem(ADDONS_KEY, JSON.stringify({ version: 1, ...next }));
+			return true;
+		} catch (error) {
+			announce('Add-ons could not be saved in this browser.');
+			return false;
+		}
+	}
+
+	const addonApi = {
+		isInstalled: (id) => readAddons().installed.includes(id),
+		install(id) {
+			if (!ADDON_IDS.includes(id)) return false;
+			const addons = readAddons();
+			if (!addons.installed.includes(id)) addons.installed.push(id);
+			return writeAddons(addons);
+		},
+		uninstall(id) {
+			const addons = readAddons();
+			addons.installed = addons.installed.filter((item) => item !== id);
+			stopAutoClicker();
+			return writeAddons(addons);
+		},
+		getAutoClickerKey: () => readAddons().autoClickerKey,
+		setAutoClickerKey(code) {
+			if (typeof code !== 'string' || !code || code.length > 20) return false;
+			const addons = readAddons();
+			addons.autoClickerKey = code;
+			return writeAddons(addons);
+		}
+	};
+
+	let autoClickTimer = null;
+	let autoClickIndicator = null;
+	const pointer = { x: null, y: null };
+
+	function autoClickOnce() {
+		if (pointer.x === null || document.body.classList.contains('rocky-auth-locked')) return;
+		const target = document.elementFromPoint(pointer.x, pointer.y);
+		if (!target || target === autoClickIndicator) return;
+		const init = { bubbles: true, cancelable: true, view: window, clientX: pointer.x, clientY: pointer.y, button: 0 };
+		target.dispatchEvent(new PointerEvent('pointerdown', { ...init, buttons: 1, pointerType: 'mouse' }));
+		target.dispatchEvent(new MouseEvent('mousedown', { ...init, buttons: 1 }));
+		target.dispatchEvent(new PointerEvent('pointerup', { ...init, pointerType: 'mouse' }));
+		target.dispatchEvent(new MouseEvent('mouseup', init));
+		target.dispatchEvent(new MouseEvent('click', init));
+	}
+
+	function stopAutoClicker() {
+		if (autoClickTimer !== null) {
+			window.clearInterval(autoClickTimer);
+			autoClickTimer = null;
+		}
+		autoClickIndicator?.remove();
+		autoClickIndicator = null;
+	}
+
+	function startAutoClicker() {
+		if (autoClickTimer !== null) return;
+		autoClickIndicator = document.createElement('div');
+		autoClickIndicator.id = 'rocky-autoclicker-indicator';
+		autoClickIndicator.setAttribute('role', 'status');
+		autoClickIndicator.textContent = 'Auto clicker ON';
+		document.body.append(autoClickIndicator);
+		autoClickTimer = window.setInterval(autoClickOnce, AUTO_CLICK_INTERVAL_MS);
+	}
+
+	function initializeAddons() {
+		document.addEventListener('mousemove', (event) => {
+			pointer.x = event.clientX;
+			pointer.y = event.clientY;
+		}, { passive: true });
+		document.addEventListener('keydown', (event) => {
+			if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+			const addons = readAddons();
+			if (!addons.installed.includes('auto-clicker') || event.code !== addons.autoClickerKey) return;
+			const target = event.target;
+			if (target instanceof HTMLElement && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+			event.preventDefault();
+			if (autoClickTimer === null) startAutoClicker();
+			else stopAutoClicker();
+		});
+		document.addEventListener('visibilitychange', () => {
+			if (document.hidden) stopAutoClicker();
+		});
+		window.addEventListener('storage', (event) => {
+			if (event.key === ADDONS_KEY && !addonApi.isInstalled('auto-clicker')) stopAutoClicker();
+		});
+	}
+
 	function initialize() {
 		initializeFullscreen();
 		const toolbar = document.createElement('nav');
@@ -1377,6 +1483,7 @@
 		initializeProfile();
 		initializeWhatsNew(shortcutList, renderShortcutList);
 		initializeAccount();
+		initializeAddons();
 	}
 
 	window.addEventListener('storage', (event) => {
@@ -1394,6 +1501,7 @@
 	});
 
 	window.RockyEconomy = { playChanceGame, rewardGameCompletion };
+	window.RockyAddons = addonApi;
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
 	else initialize();
 })();

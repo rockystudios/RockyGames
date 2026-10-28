@@ -585,3 +585,4 @@ body.rocky-auth-locked{overflow:hidden}
 #rocky-ban-form input{padding:.6rem;border-radius:6px;border:1px solid #666;font:inherit}
 #rocky-ban-form button{padding:.6rem;border-radius:6px;border:0;font:inherit;cursor:pointer}
 #rocky-ban-error{color:#ff8a8a;margin:0;min-height:1.2em}
+#rocky-autoclicker-indicator{position:fixed;right:.5rem;bottom:.5rem;z-index:99999;padding:.4rem .7rem;border-radius:8px;background:#1e7f3c;color:#fff;font:600 13px sans-serif;pointer-events:none}
