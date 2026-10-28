@@ -7,7 +7,7 @@
 	<meta name="theme-color" content="#050b07">
 	<title>Chance Arcade | Rocky Games</title>
 	<link rel="stylesheet" href="economy.css?v=public-site-7">
-	<script src="economy.js?v=public-site-21" defer></script>
+	<script src="economy.js?v=public-site-22" defer></script>
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
 
@@ -117,12 +117,12 @@
 			const wheel = document.querySelector('#chance-wheel');
 			let wheelRotation = 0;
 			document.querySelectorAll('.game-form').forEach((form) => {
-				form.addEventListener('submit', async (event) => {
+				form.addEventListener('submit', (event) => {
 					event.preventDefault();
 					const amount = form.elements.amount.valueAsNumber;
 					if (!form.reportValidity()) return;
 					const gameId = form.dataset.game;
-					const result = await window.RockyEconomy.playChanceGame(gameId, amount, form.elements.choice?.value);
+					const result = window.RockyEconomy.playChanceGame(gameId, amount, form.elements.choice?.value);
 					if (!result) return;
 					const output = form.parentElement.querySelector('.result');
 					if (gameId === 'wheel') {

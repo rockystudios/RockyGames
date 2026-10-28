@@ -6,7 +6,7 @@
 	<meta name="theme-color" content="#050b07">
 	<title>Coins Leaderboard | Rocky Games</title>
 	<link rel="stylesheet" href="economy.css?v=public-site-7">
-	<script src="economy.js?v=public-site-21" defer></script>
+	<script src="economy.js?v=public-site-22" defer></script>
 	<style>
 		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; }
 		* { box-sizing: border-box; }
@@ -54,10 +54,8 @@
 			let me = '';
 			try { me = (JSON.parse(localStorage.getItem('rockyGamesAccount') || 'null') || {}).username || ''; } catch (e) {}
 			const loaded = new Promise((resolve) => window.addEventListener('load', resolve));
-			fetch(URL_BASE + '/rest/v1/rpc/rocky_leaderboard', {
-				method: 'POST',
-				headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' },
-				body: '{}'
+			fetch(URL_BASE + '/rest/v1/account?select=username,coins,nameplates&bgs->>banned=is.null&order=coins.desc&limit=100', {
+				headers: { apikey: KEY, Authorization: 'Bearer ' + KEY }
 			}).then((response) => {
 				if (!response.ok) throw new Error('Server error ' + response.status);
 				return response.json();
@@ -70,7 +68,7 @@
 					[index + 1, row.username, Number(row.coins).toLocaleString()].forEach((value, column) => {
 						const td = document.createElement('td');
 						if (column === 1) {
-							const plate = plates.find((item) => item.id === row.plate);
+							const plate = plates.find((item) => item.id === (row.nameplates || {}).active);
 							const tag = document.createElement('span');
 							tag.textContent = value;
 							if (plate) Object.assign(tag.style, { border: plate.border, backgroundColor: plate.background, color: plate.color, fontFamily: plate.font, padding: '2px 8px', display: 'inline-block' });

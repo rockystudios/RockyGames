@@ -73,22 +73,16 @@ again to stop. Installed add-ons are saved in this browser. Websites cannot clic
 embedded third-party games, so `extensions/rocky-auto-clicker` is a companion Chrome/Edge
 extension (zip download on the card; load it unpacked) that clicks inside every frame with F8.
 
-## Accounts and security
+## Bans
 
-Accounts live in the Supabase `account` table, which has Row Level Security on. Browsers never
-touch the table directly: they call the database functions in `supabase-secure.sql` (sign in,
-create, save, play chance games, rename, leaderboard). The functions check hashed passwords and
-a per-device session token, limit how fast coins can grow, price-check shop purchases, and roll
-chance games on the server. Run `supabase-secure.sql` once in the Supabase SQL Editor after
-putting your own admin password on its first statement.
+`admin.html` can delete accounts and ban devices or IP addresses. IP bans are stored as
+`ip:<address>` rows in the `account` table. Each page looks up the visitor's IP with
+api.ipify.org and shows a block screen if it is banned. This only blocks visitors whose
+IP lookup works, and a banned network is blocked for everyone on it.
 
-`admin.html` asks for that admin password on every request; the old access code no longer opens it.
-It can delete accounts, ban devices, ban IP addresses, and manage a blocked-word list. IP bans are
-stored as `ip:<address>` rows and use the real address Supabase sees, so they cannot be bypassed
-from the browser, though a banned network is blocked for everyone on it and VPNs get around it.
-An account whose username contains a blocked word (ignoring capitals, symbols and look-alikes
-such as 0 for o) is banned, along with the device, when it is created, renamed, signed into or checked.
-The admin page can also block passwords (they can't be used to create an account, and an account signing in with one is banned) and exact coin amounts (an account whose coins equal one is banned). Existing installs run `supabase-update-blocks.sql` once to add this.
+Admin can also set a list of blocked words. An account whose username contains one (ignoring
+capitals, symbols and look-alikes such as 0 for o) is banned, along with the device, when it
+is created, renamed, signed into or checked. The list is stored in a `config:blocked-words` row.
 
 ## Keyboard shortcuts
 
