@@ -1,0 +1,17 @@
+{
+	"manifest_version": 3,
+	"name": "Rocky Auto Clicker",
+	"version": "1.0.0",
+	"description": "Press F8 to auto click at your mouse pointer, including inside embedded games. Press F8 again to stop.",
+	"permissions": ["storage"],
+	"background": { "service_worker": "background.js" },
+	"content_scripts": [
+		{
+			"matches": ["http://*/*", "https://*/*"],
+			"js": ["content.js"],
+			"all_frames": true,
+			"match_about_blank": true,
+			"run_at": "document_start"
+		}
+	]
+}

@@ -29,7 +29,9 @@
 		dialog { width: min(92vw, 460px); padding: 22px; border: 3px solid var(--ink); background: var(--paper); color: var(--ink); font-family: 'DM Mono', monospace; }
 		dialog::backdrop { background: rgba(0, 0, 0, .6); }
 		dialog h2 { margin: 0 0 8px; text-transform: uppercase; }
-		dialog p { font-size: 13px; line-height: 1.6; }
+		dialog p, dialog li { font-size: 13px; line-height: 1.6; }
+		dialog h3 { margin: 12px 0 4px; font-size: 14px; text-transform: uppercase; }
+		dialog { max-height: 90vh; overflow: auto; }
 		.dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
 		button.action { padding: 8px 14px; border: 2px solid var(--ink); background: var(--lime); color: var(--ink); font: inherit; cursor: pointer; }
 		button.secondary { background: #fff; }
@@ -65,7 +67,17 @@
 	<dialog id="addon-dialog" aria-labelledby="addon-dialog-title">
 		<h2 id="addon-dialog-title">Auto Clicker</h2>
 		<p>Press Option + Shift + F8 (Alt + Shift + F8 on Windows) to start clicking at your mouse pointer, and press it again to stop. It clicks about 10 times a second on Rocky Games pages.</p>
-		<p>It can't click inside embedded games while your mouse is over them, because the browser doesn't share mouse position with those frames. It works on the rest of the site, including our own games. Auto clicker turns off when you leave the tab or reload.</p>
+		<p>This add-on works on Rocky Games pages and our own games. Browsers don't let a website click inside other sites' embedded games, so for those you also need the free browser extension below.</p>
+		<section aria-labelledby="ext-title">
+			<h3 id="ext-title">Embedded games (Chrome, Edge, Brave)</h3>
+			<ol>
+				<li><a href="extensions/rocky-auto-clicker.zip" download>Download the extension</a> and unzip it.</li>
+				<li>Open <strong>chrome://extensions</strong> (or edge://extensions) and turn on <strong>Developer mode</strong>.</li>
+				<li>Click <strong>Load unpacked</strong> and pick the unzipped folder.</li>
+				<li>Press <strong>F8</strong> on any page, even inside an embedded game, to start clicking where your mouse is. Press F8 again to stop.</li>
+			</ol>
+			<p>The extension has its own fixed F8 key. It runs on every website, so remove it from your extensions page if you no longer want it.</p>
+		</section>
 		<div id="keybind-row" hidden>
 			<p>Shortcut: <strong id="keybind-label"></strong></p>
 			<button type="button" class="action secondary" id="keybind-change">Change key</button>

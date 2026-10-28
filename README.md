@@ -69,8 +69,9 @@ Coins are capped at 2,000,000,000. Admins can set coins from `admin.html`.
 `addons.html` lists optional add-ons. The Auto Clicker must be installed from its
 card before it works. Once installed, press Option + Shift + F8 (Alt + Shift + F8 on Windows; the last key is changeable
 on the card) to click about 10 times a second at the mouse pointer, and press it
-again to stop. Installed add-ons are saved in this browser. It cannot click inside
-embedded third-party games while the mouse is over them.
+again to stop. Installed add-ons are saved in this browser. Websites cannot click inside
+embedded third-party games, so `extensions/rocky-auto-clicker` is a companion Chrome/Edge
+extension (zip download on the card; load it unpacked) that clicks inside every frame with F8.
 
 ## Keyboard shortcuts
 
