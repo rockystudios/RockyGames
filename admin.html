@@ -54,13 +54,14 @@
 			async function load() {
 				status.textContent = 'Loading…';
 				try {
-					const accounts = await api('?select=id,username,coins&order=coins.desc');
+					const accounts = await api('?select=id,username,coins,bgs&order=coins.desc');
 					rowsEl.replaceChildren();
 					accounts.forEach((account) => {
 						const tr = document.createElement('tr');
 						const cell = (content) => { const td = document.createElement('td'); td.append(content); tr.append(td); return td; };
 						cell(String(account.id));
-						cell(account.username);
+						const banned = Boolean(account.bgs && account.bgs.banned);
+						cell(banned ? `${account.username} (BANNED)` : account.username);
 						const coins = document.createElement('input');
 						coins.type = 'number';
 						coins.min = '0';
@@ -82,12 +83,19 @@
 						});
 						const del = document.createElement('button');
 						del.type = 'button';
-						del.textContent = 'Delete';
+						del.textContent = banned ? 'Remove ban record' : 'Delete';
 						del.addEventListener('click', async () => {
 							if (!confirm(`Delete account "${account.username}"? This cannot be undone.`)) return;
+							const ban = !banned && confirm(`Also ban "${account.username}"? OK = ban every device signed in to this account. Cancel = just delete it.`);
 							try {
-								await api(`?id=eq.${account.id}`, { method: 'DELETE' });
-								status.textContent = `Deleted ${account.username}.`;
+								if (ban) {
+									const randomPassword = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
+									await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: randomPassword, bgs: { banned: true }, nameplates: {} }) });
+									status.textContent = `Banned ${account.username}. Devices are blocked the next time they check in.`;
+								} else {
+									await api(`?id=eq.${account.id}`, { method: 'DELETE' });
+									status.textContent = `Deleted ${account.username}.`;
+								}
 								load();
 							} catch (error) { status.textContent = error.message; }
 						});

@@ -579,3 +579,9 @@ a:focus-visible {
 body.rocky-auth-locked{overflow:hidden}
 #rocky-account-bar{position:fixed;left:.5rem;bottom:.5rem;z-index:9999;display:flex;gap:.5rem;align-items:center;background:rgba(0,0,0,.7);color:#fff;padding:.4rem .6rem;border-radius:8px}
 #rocky-account-bar[hidden],#rocky-account-bar [hidden]{display:none}
+#rocky-ban-screen{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#120808;padding:1rem}
+#rocky-ban-form{background:#2a1212;color:#fff;border:2px solid #c0392b;border-radius:12px;padding:1.5rem;width:min(24rem,100%);display:grid;gap:.8rem}
+#rocky-ban-form label{display:grid;gap:.3rem}
+#rocky-ban-form input{padding:.6rem;border-radius:6px;border:1px solid #666;font:inherit}
+#rocky-ban-form button{padding:.6rem;border-radius:6px;border:0;font:inherit;cursor:pointer}
+#rocky-ban-error{color:#ff8a8a;margin:0;min-height:1.2em}

@@ -1,6 +1,8 @@
 (() => {
 	'use strict';
 
+	const SELF_SCRIPT_SRC = document.currentScript ? document.currentScript.src : '';
+
 	const STORAGE_KEY = 'rockyGamesEconomy';
 	const SHORTCUT_BINDINGS_KEY = 'rockyGamesShortcutBindings';
 	const SHORTCUT_URLS_KEY = 'rockyGamesShortcutUrls';
@@ -9,6 +11,8 @@
 	const NEWS_SEEN_KEY = 'rockyGamesNewsSeen';
 	const DISPLAY_SETTINGS_KEY = 'rockyGamesDisplaySettings';
 	const ACCOUNT_KEY = 'rockyGamesAccount';
+	const BANNED_KEY = 'rockyGamesBanned';
+	const BAN_CHECK_MS = 60000;
 	const LAST_USERNAME_KEY = 'rockyGamesLastUsername';
 	const SUPABASE_URL = 'https://elxnypvvwrumhwakczwe.supabase.co';
 	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
@@ -1132,7 +1136,8 @@
 		const account = getAccount();
 		if (!account || !cloudConfigured()) return;
 		try {
-			await cloudRequest(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify(stateToRow(value)) });
+			const updated = await cloudRequest(`?id=eq.${account.id}&bgs->>banned=is.null`, { method: 'PATCH', body: JSON.stringify(stateToRow(value)) });
+			if (!updated.length) checkAccountStatus();
 		} catch (error) {
 			console.error('Rocky Games could not sync to the cloud:', error);
 			announce('Could not save to your account. Check your connection.');
@@ -1155,6 +1160,7 @@
 	async function signIn(username, password) {
 		const rows = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&select=*`);
 		if (!rows.length) throw new Error('Wrong username or password.');
+		if (rows[0].bgs && rows[0].bgs.banned) throw new Error('This account is banned.');
 		applyAccountState(rows[0]);
 	}
 
@@ -1244,6 +1250,75 @@
 		(userInput.value ? passInput : userInput).focus();
 	}
 
+	async function checkAccountStatus(applyRow) {
+		const account = getAccount();
+		if (!account || !cloudConfigured()) return;
+		try {
+			const rows = await cloudRequest(`?id=eq.${account.id}&select=*`);
+			if (!getAccount()) return;
+			if (!rows[0]) signOut();
+			else if (rows[0].bgs && rows[0].bgs.banned) banThisDevice();
+			else if (applyRow === true) applyAccountState(rows[0]);
+		} catch (error) {
+			console.error('Could not refresh account:', error);
+		}
+	}
+
+	function banThisDevice() {
+		localStorage.setItem(BANNED_KEY, '1');
+		localStorage.removeItem(ACCOUNT_KEY);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(freshState()));
+		state = freshState();
+		render();
+		document.querySelector('#rocky-auth-gate')?.remove();
+		showBanScreen();
+		renderAccountBar();
+	}
+
+	function loadAccessChecker() {
+		if (window.RockyAccess) return Promise.resolve();
+		return new Promise((resolve, reject) => {
+			const script = document.createElement('script');
+			script.src = SELF_SCRIPT_SRC ? new URL('access-code.js?v=1', SELF_SCRIPT_SRC).href : 'access-code.js?v=1';
+			script.onload = resolve;
+			script.onerror = reject;
+			document.head.append(script);
+		});
+	}
+
+	function showBanScreen() {
+		if (document.querySelector('#rocky-ban-screen')) return;
+		const screen = document.createElement('div');
+		screen.id = 'rocky-ban-screen';
+		screen.setAttribute('role', 'alertdialog');
+		screen.setAttribute('aria-modal', 'true');
+		screen.setAttribute('aria-labelledby', 'rocky-ban-title');
+		screen.innerHTML = '<form id="rocky-ban-form"><h2 id="rocky-ban-title">This device is blocked</h2><p>This device has been blocked from Rocky Games. Enter the unblock code to continue.</p><label>Unblock code<input id="rocky-ban-code" type="password" autocomplete="off" required></label><p id="rocky-ban-error" role="alert"></p><button type="submit">Unblock</button></form>';
+		document.body.append(screen);
+		document.body.classList.add('rocky-auth-locked');
+		const input = screen.querySelector('#rocky-ban-code');
+		const error = screen.querySelector('#rocky-ban-error');
+		screen.querySelector('form').addEventListener('submit', async (event) => {
+			event.preventDefault();
+			try {
+				await loadAccessChecker();
+				if (!(await window.RockyAccess.isValidAccessCode(input.value))) {
+					error.textContent = 'That code is not correct.';
+					input.select();
+					return;
+				}
+			} catch (err) {
+				error.textContent = 'Could not check the code. Try again.';
+				return;
+			}
+			localStorage.removeItem(BANNED_KEY);
+			screen.remove();
+			document.body.classList.remove('rocky-auth-locked');
+			showAuthGate();
+		});
+		input.focus();
+	}
+
 	function initializeAccount() {
 		const bar = document.createElement('div');
 		bar.id = 'rocky-account-bar';
@@ -1252,13 +1327,13 @@
 		bar.querySelector('#rocky-signin-button').addEventListener('click', showAuthGate);
 		bar.querySelector('#rocky-signout-button').addEventListener('click', signOut);
 		renderAccountBar();
-		if (!getAccount()) showAuthGate();
-		else if (cloudConfigured()) {
-			cloudRequest(`?id=eq.${getAccount().id}&select=*`).then((rows) => {
-				if (rows[0]) applyAccountState(rows[0]);
-				else signOut();
-			}).catch((error) => console.error('Could not refresh account:', error));
+		if (localStorage.getItem(BANNED_KEY) === '1') {
+			showBanScreen();
+			return;
 		}
+		if (!getAccount()) showAuthGate();
+		else checkAccountStatus(true);
+		window.setInterval(checkAccountStatus, BAN_CHECK_MS);
 	}
 
 	function initialize() {
