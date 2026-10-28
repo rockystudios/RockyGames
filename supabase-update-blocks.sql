@@ -20,6 +20,7 @@ $$;
 create or replace function public.rocky_create(p_username text, p_password text) returns json language plpgsql security definer set search_path = public, extensions as $$
 declare a account; nm text := trim(p_username); ip text := rocky_private.client_ip(); err text := rocky_private.valid_name(trim(p_username)); tok text;
 begin
+  if not exists (select 1 from rocky_settings where key = 'signups_open' and value = 'true'::jsonb) then return json_build_object('error', 'New accounts are turned off for now.'); end if;
   if err is not null then return json_build_object('error', err); end if;
   if p_password is null or length(p_password) < 4 or length(p_password) > 100 then return json_build_object('error', 'Password must be 4-100 characters.'); end if;
   if rocky_private.ip_banned(ip) then return json_build_object('banned', true, 'error', 'This network has been blocked.'); end if;

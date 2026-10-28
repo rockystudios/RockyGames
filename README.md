@@ -75,6 +75,10 @@ extension (zip download on the card; load it unpacked) that clicks inside every 
 
 ## Accounts and security
 
+New accounts are off. To turn them back on, set `ACCOUNT_CREATION_ENABLED` to `true` in `economy.js`
+and run `insert into public.rocky_settings (key, value) values ('signups_open', 'true') on conflict (key) do update set value = excluded.value;`
+in the Supabase SQL Editor. Set the value to `false` to close them again.
+
 Accounts live in the Supabase `account` table, which has Row Level Security on. Browsers never
 touch the table directly: they call the database functions in `supabase-secure.sql` (sign in,
 create, save, play chance games, rename, leaderboard). The functions check hashed passwords and

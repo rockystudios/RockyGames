@@ -1187,7 +1187,11 @@
 		finishLogin(await cloudRpc('rocky_login', { p_username: username, p_password: password }), false);
 	}
 
+	const ACCOUNT_CREATION_ENABLED = false;
+	const CREATION_OFF_MESSAGE = 'New accounts are turned off for now. Sign in with an existing account.';
+
 	async function createAccount(username, password) {
+		if (!ACCOUNT_CREATION_ENABLED) throw new Error(CREATION_OFF_MESSAGE);
 		finishLogin(await cloudRpc('rocky_create', { p_username: username, p_password: password }), true);
 	}
 
@@ -1219,7 +1223,7 @@
 	function showAuthGate() {
 		if (document.querySelector('#rocky-auth-gate')) return;
 		const remembered = localStorage.getItem(LAST_USERNAME_KEY) || '';
-		let mode = remembered ? 'signin' : 'create';
+		let mode = remembered || !ACCOUNT_CREATION_ENABLED ? 'signin' : 'create';
 		const gate = document.createElement('div');
 		gate.id = 'rocky-auth-gate';
 		gate.setAttribute('role', 'dialog');
@@ -1240,8 +1244,9 @@
 			title.textContent = signing ? 'Sign in' : 'Create account';
 			submit.textContent = signing ? 'Sign in' : 'Create account';
 			switcher.textContent = signing ? 'No account? Create one' : 'Have an account? Sign in';
+			switcher.hidden = !ACCOUNT_CREATION_ENABLED;
 			passInput.autocomplete = signing ? 'current-password' : 'new-password';
-			error.textContent = cloudConfigured() ? '' : 'Accounts are not set up yet: add the Supabase URL and key in economy.js.';
+			error.textContent = cloudConfigured() ? (ACCOUNT_CREATION_ENABLED ? '' : CREATION_OFF_MESSAGE) : 'Accounts are not set up yet: add the Supabase URL and key in economy.js.';
 		}
 		userInput.value = mode === 'signin' ? remembered : '';
 		setMode(mode);
