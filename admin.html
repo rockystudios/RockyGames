@@ -15,6 +15,7 @@
 		th, td { padding: 6px; border-bottom: 1px solid #202522; text-align: left; }
 		td input[type="number"] { width: 110px; }
 		#status { min-height: 1.4em; }
+		#bulk-form[hidden] { display: none; }
 		#bulk-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
 		#bulk-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
 		.hint { font-size: 11px; }
@@ -23,6 +24,13 @@
 </head>
 <body>
 	<main>
+		<form id="bulk-form" hidden>
+			<h2>Delete or ban by name</h2>
+			<label>Username contains <input id="bulk-text" type="text" maxlength="24" autocomplete="off" required></label>
+			<button type="submit" data-mode="delete">Delete matching</button>
+			<button type="submit" data-mode="ban">Ban matching devices</button>
+			<p class="hint">Matching ignores capitals. Ban keeps the account as a banned record (so devices can be blocked) instead of removing it.</p>
+		</form>
 		<h1>Admin panel</h1>
 		<form id="login">
 			<label>Admin password <input id="admin-password" type="password" autocomplete="off" required></label>
@@ -30,13 +38,6 @@
 		</form>
 		<p id="status" role="status" aria-live="polite"></p>
 		<section id="panel" hidden>
-			<form id="bulk-form">
-				<h2>Delete or ban by name</h2>
-				<label>Username contains <input id="bulk-text" type="text" maxlength="24" autocomplete="off" required></label>
-				<button type="submit" data-mode="delete">Delete matching</button>
-				<button type="submit" data-mode="ban">Ban matching devices</button>
-				<p class="hint">Matching ignores capitals. Ban keeps the account as a banned record (so devices can be blocked) instead of removing it.</p>
-			</form>
 			<button type="button" id="refresh">Refresh</button>
 			<table>
 				<thead><tr><th scope="col">ID</th><th scope="col">Username</th><th scope="col">Coins</th><th scope="col">Actions</th></tr></thead>
@@ -146,6 +147,7 @@
 				}
 				document.querySelector('#login').hidden = true;
 				document.querySelector('#panel').hidden = false;
+				document.querySelector('#bulk-form').hidden = false;
 				load();
 			});
 			document.querySelector('#refresh').addEventListener('click', load);
