@@ -727,9 +727,9 @@
 				gamesPlusPassword.focus();
 			});
 			document.querySelector('#gamesPlusCancel').addEventListener('click', () => gamesPlusDialog.close());
-			gamesPlusForm.addEventListener('submit', async (event) => {
+			gamesPlusForm.addEventListener('submit', (event) => {
 				event.preventDefault();
-				if (!(await window.RockyAccess.isValidAccessCode(gamesPlusPassword.value))) {
+				if (gamesPlusPassword.value !== GAMES_PLUS_PASSWORD) {
 					gamesPlusError.textContent = 'That password is not correct.';
 					gamesPlusPassword.select();
 					return;
@@ -842,7 +842,6 @@
 			});
 		})();
 	</script>
-	<script src="access-code.js?v=1"></script>
-	<script src="economy.js?v=public-site-9" defer></script>
+	<script src="economy.js?v=public-site-7" defer></script>
 </body>
 </html>
