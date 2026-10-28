@@ -61,7 +61,13 @@
 						const cell = (content) => { const td = document.createElement('td'); td.append(content); tr.append(td); return td; };
 						cell(String(account.id));
 						const banned = Boolean(account.bgs && account.bgs.banned);
-						cell(banned ? `${account.username} (BANNED)` : account.username);
+						const nameInput = document.createElement('input');
+						nameInput.type = 'text';
+						nameInput.maxLength = 24;
+						nameInput.value = account.username;
+						nameInput.setAttribute('aria-label', `Username for account ${account.id}`);
+						const nameCell = cell(nameInput);
+						if (banned) nameCell.append(' (BANNED)');
 						const coins = document.createElement('input');
 						coins.type = 'number';
 						coins.min = '0';
@@ -70,6 +76,21 @@
 						coins.setAttribute('aria-label', `Coins for ${account.username}`);
 						cell(coins);
 						const actions = document.createElement('td');
+						const rename = document.createElement('button');
+						rename.type = 'button';
+						rename.textContent = 'Set name';
+						rename.addEventListener('click', async () => {
+							const name = nameInput.value.trim();
+							if (!name || name.length > 24) { status.textContent = 'Username must be 1-24 characters.'; return; }
+							if (name === account.username) { status.textContent = 'That is already the username.'; return; }
+							try {
+								const taken = await api(`?username=eq.${encodeURIComponent(name)}&select=id`);
+								if (taken.length) { status.textContent = `"${name}" is already taken.`; return; }
+								await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ username: name }) });
+								status.textContent = `Renamed ${account.username} to ${name}.`;
+								load();
+							} catch (error) { status.textContent = error.message; }
+						});
 						const save = document.createElement('button');
 						save.type = 'button';
 						save.textContent = 'Set coins';
@@ -99,7 +120,7 @@
 								load();
 							} catch (error) { status.textContent = error.message; }
 						});
-						actions.append(save, ' ', del);
+						actions.append(rename, ' ', save, ' ', del);
 						tr.append(actions);
 						rowsEl.append(tr);
 					});
