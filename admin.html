@@ -79,10 +79,19 @@
 				return response.json();
 			}
 
+			async function apiAll(query) {
+				const all = [];
+				for (let offset = 0; ; offset += 1000) {
+					const page = await api(`${query}&limit=1000&offset=${offset}`);
+					all.push(...page);
+					if (page.length < 1000) return all;
+				}
+			}
+
 			async function load() {
 				status.textContent = 'Loading…';
 				try {
-					const accounts = await api('?select=id,username,coins,bgs&order=coins.desc');
+					const accounts = await apiAll('?select=id,username,coins,bgs&order=coins.desc,id.asc');
 					rowsEl.replaceChildren();
 					accounts.forEach((account) => {
 						const tr = document.createElement('tr');
@@ -214,7 +223,7 @@
 					const words = document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2);
 					const passwords = new Set(document.querySelector('#pw-text').value.split('\n').filter((w) => w.trim()));
 					const coins = new Set(document.querySelector('#coins-text').value.split('\n').map((w) => w.trim()).filter((w) => /^\d+$/.test(w)).map(Number));
-					const accounts = await api('?select=id,username,password,coins,bgs');
+					const accounts = await apiAll('?select=id,username,password,coins,bgs&order=id.asc');
 					const hits = accounts.filter((a) => a.username !== WORDS_ROW && !a.username.startsWith('ip:') && !(a.bgs && a.bgs.banned) && (words.some((w) => norm(a.username).includes(w)) || passwords.has(a.password) || coins.has(a.coins)));
 					if (!hits.length) { status.textContent = 'No accounts match the lists.'; return; }
 					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
@@ -250,13 +259,12 @@
 				const text = document.querySelector('#bulk-text').value.trim().toLowerCase();
 				if (!text || !mode) return;
 				try {
-					const accounts = await api('?select=id,username,bgs');
+					const accounts = await apiAll('?select=id,username,bgs&order=id.asc');
 					const matches = accounts.filter((account) => account.username.toLowerCase().includes(text) && !(mode === 'ban' && account.bgs && account.bgs.banned));
 					if (!matches.length) { status.textContent = `No accounts match "${text}".`; return; }
 					const names = matches.map((account) => account.username).join(', ');
 					const verb = mode === 'ban' ? 'BAN the devices of' : 'DELETE';
 					if (!confirm(`${verb} ${matches.length} account(s)?\n\n${names}\n\nThis cannot be undone.`)) return;
-					const ids = matches.map((account) => account.id).join(',');
 					if (mode === 'ban') {
 						const randomPassword = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
 						for (const account of matches) {
@@ -264,7 +272,8 @@
 						}
 						status.textContent = `Banned ${matches.length} account(s). Devices are blocked the next time they check in.`;
 					} else {
-						await api(`?id=in.(${ids})`, { method: 'DELETE' });
+						const idList = matches.map((account) => account.id);
+						for (let i = 0; i < idList.length; i += 100) await api(`?id=in.(${idList.slice(i, i + 100).join(',')})`, { method: 'DELETE' });
 						status.textContent = `Deleted ${matches.length} account(s).`;
 					}
 					document.querySelector('#bulk-text').value = '';
