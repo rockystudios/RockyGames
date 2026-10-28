@@ -87,7 +87,7 @@
 						nameInput.setAttribute('aria-label', `Username for account ${account.id}`);
 						const nameCell = cell(nameInput);
 						if (banned) nameCell.append(' (BANNED)');
-						cell((account.bgs && account.bgs.ip) || '');
+						cell((account.bgs && account.bgs.ip) || 'not seen yet');
 						const coins = document.createElement('input');
 						coins.type = 'number';
 						coins.min = '0';

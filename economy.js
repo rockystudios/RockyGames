@@ -1432,7 +1432,7 @@
 		}
 		if (!getAccount()) showAuthGate();
 		else checkAccountStatus(true);
-		getClientIp().then(checkIpBan);
+		getClientIp().then(() => { checkIpBan(); if (getAccount() && localStorage.getItem(BANNED_KEY) !== '1') pushToCloud(state); });
 		window.setInterval(() => { checkAccountStatus(); checkIpBan(); }, BAN_CHECK_MS);
 	}
 
