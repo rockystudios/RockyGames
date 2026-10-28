@@ -1154,14 +1154,21 @@
 	async function createAccount(username, password) {
 		const existing = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&select=id`);
 		if (existing.length) throw new Error('That username is already taken.');
-		let local;
-		try { local = readState(); } catch (error) { local = { coins: 0, ownedBackgrounds: ['default'], activeBackground: 'default', ownedNameplates: ['classic'], activeNameplate: 'classic' }; }
-		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(local) }) });
+		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(freshState()) }) });
 		applyAccountState(rows[0]);
+	}
+
+	function freshState() {
+		return { version: 1, coins: 0, lastSpin: null, ownedBackgrounds: ['default'], activeBackground: 'default', username: '', ownedNameplates: ['classic'], activeNameplate: 'classic' };
 	}
 
 	function signOut() {
 		localStorage.removeItem(ACCOUNT_KEY);
+		localStorage.setItem(STORAGE_KEY, JSON.stringify(freshState()));
+		state = freshState();
+		storageAvailable = true;
+		applyBackground();
+		render();
 		showAuthGate();
 		renderAccountBar();
 	}
@@ -1242,6 +1249,7 @@
 		else if (cloudConfigured()) {
 			cloudRequest(`?id=eq.${getAccount().id}&select=*`).then((rows) => {
 				if (rows[0]) applyAccountState(rows[0]);
+				else signOut();
 			}).catch((error) => console.error('Could not refresh account:', error));
 		}
 	}
