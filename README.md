@@ -75,7 +75,9 @@ extension (zip download on the card; load it unpacked) that clicks inside every 
 
 ## Bans
 
-New accounts are off. To turn them back on, set `ACCOUNT_CREATION_ENABLED` to `true` in `economy.js`.
+Only one new account can be made per hour for the whole site. The last creation time is kept in the
+`config:signup-gate` row; delete that row to allow another account immediately. To turn account creation off,
+set `ACCOUNT_CREATION_ENABLED` to `false` in `economy.js`.
 
 `admin.html` can delete accounts and ban devices or IP addresses. IP bans are stored as
 `ip:<address>` rows in the `account` table. Each page looks up the visitor's IP with
