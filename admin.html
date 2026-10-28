@@ -34,18 +34,13 @@
 			</table>
 		</section>
 	</main>
+	<script src="access-code.js?v=1"></script>
 	<script>
 		(function () {
 			const URL_BASE = 'https://elxnypvvwrumhwakczwe.supabase.co';
 			const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
-			const PASSWORD_HASH = '3bd3f6a02801eb13bf7ab1c1b4d9c06910e2dae43d93d619d9bfe61a790ea75e';
 			const status = document.querySelector('#status');
 			const rowsEl = document.querySelector('#rows');
-
-			async function sha256(text) {
-				const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-				return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
-			}
 
 			async function api(query, options = {}) {
 				const response = await fetch(`${URL_BASE}/rest/v1/account${query}`, {
@@ -106,7 +101,7 @@
 
 			document.querySelector('#login').addEventListener('submit', async (event) => {
 				event.preventDefault();
-				if (await sha256(document.querySelector('#admin-password').value) !== PASSWORD_HASH) {
+				if (!(await window.RockyAccess.isValidAccessCode(document.querySelector('#admin-password').value))) {
 					status.textContent = 'Wrong password.';
 					return;
 				}

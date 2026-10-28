@@ -714,7 +714,6 @@
 	</dialog>
 	<script>
 		(() => {
-			const GAMES_PLUS_PASSWORD = 'ROCKYLITC1378';
 			const GAMES_PLUS_ACCESS_KEY = 'rockyGamesPlusAccessGranted';
 			const gamesPlusDialog = document.querySelector('#gamesPlusDialog');
 			const gamesPlusForm = document.querySelector('#gamesPlusForm');
@@ -728,9 +727,9 @@
 				gamesPlusPassword.focus();
 			});
 			document.querySelector('#gamesPlusCancel').addEventListener('click', () => gamesPlusDialog.close());
-			gamesPlusForm.addEventListener('submit', (event) => {
+			gamesPlusForm.addEventListener('submit', async (event) => {
 				event.preventDefault();
-				if (gamesPlusPassword.value !== GAMES_PLUS_PASSWORD) {
+				if (!(await window.RockyAccess.isValidAccessCode(gamesPlusPassword.value))) {
 					gamesPlusError.textContent = 'That password is not correct.';
 					gamesPlusPassword.select();
 					return;
@@ -843,6 +842,7 @@
 			});
 		})();
 	</script>
+	<script src="access-code.js?v=1"></script>
 	<script src="economy.js?v=public-site-9" defer></script>
 </body>
 </html>

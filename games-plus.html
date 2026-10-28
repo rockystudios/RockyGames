@@ -105,10 +105,10 @@
 			</div>
 		</form>
 	</dialog>
+	<script src="access-code.js?v=1"></script>
 	<script>
 		(() => {
 			const ACCESS_KEY = 'rockyGamesPlusAccessGranted';
-			const ACCESS_CODE = 'ROCKYLITC1378';
 			const main = document.querySelector('main');
 			const footer = document.querySelector('footer');
 			const dialog = document.querySelector('#gamesPlusDialog');
@@ -151,9 +151,9 @@
 				browser.src = browser.dataset.src;
 				loadCatalog();
 			}
-			form.addEventListener('submit', (event) => {
+			form.addEventListener('submit', async (event) => {
 				event.preventDefault();
-				if (passwordInput.value !== ACCESS_CODE) {
+				if (!(await window.RockyAccess.isValidAccessCode(passwordInput.value))) {
 					errorMessage.textContent = 'That password is not correct.';
 					passwordInput.select();
 					return;
