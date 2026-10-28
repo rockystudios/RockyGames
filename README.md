@@ -83,6 +83,8 @@ IP lookup works, and a banned network is blocked for everyone on it.
 Admin can also set a list of blocked words. An account whose username contains one (ignoring
 capitals, symbols and look-alikes such as 0 for o) is banned, along with the device, when it
 is created, renamed, signed into or checked. The list is stored in a `config:blocked-words` row.
+The same row holds blocked passwords (rejected at account creation; an account using one is banned
+when it signs in or checks in) and blocked exact coin amounts (an account holding one is banned).
 
 ## Keyboard shortcuts
 
