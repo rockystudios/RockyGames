@@ -13,7 +13,7 @@
 	const SUPABASE_URL = 'https://elxnypvvwrumhwakczwe.supabase.co';
 	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
 	const SUPABASE_TABLE = 'account';
-	const NEWS_VERSION = 'chance-arcade-1';
+	const NEWS_VERSION = 'web-dashers-1';
 	const GAME_REWARD = 5;
 	const MAX_COINS = 2000000000;
 	const REWARD_COOLDOWN_MS = 5000;
@@ -960,7 +960,8 @@
 			<h2 id="news-reminder-title">What's new</h2>
 			<section class="news-intro">
 				<ul class="news-update-list">
-					<li><strong>Suggest a game!</strong> Have a game you want to add to Rocky Games? <a href="https://forms.gle/bnZNEvsSMgCAtDAZ8" target="_blank" rel="noopener">Fill out this form</a> or try the <a href="chance-games.html">Chance Arcade</a>.</li>
+					<li><strong>WEBDASHERSSSS!!!!</strong> We finally have added web dashers for you to play!</li>
+					<li><strong>Suggest a game!</strong> Have a game you want to add to Rocky Games? <a href="https://forms.gle/bnZNEvsSMgCAtDAZ8" target="_blank" rel="noopener">Fill out this form</a>.</li>
 				</ul>
 				<p>Use Option + Shift + a letter for a shortcut. Select “Edit shortcuts” to change shortcuts or add your own.</p>
 				<div class="news-actions">
