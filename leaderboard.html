@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="theme-color" content="#050b07">
+	<title>Coins Leaderboard | Rocky Games</title>
+	<link rel="stylesheet" href="economy.css?v=public-site-4">
+	<script src="economy.js?v=public-site-7" defer></script>
+	<style>
+		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; }
+		* { box-sizing: border-box; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: 'DM Mono', monospace; }
+		a { color: inherit; }
+		header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 12px 20px; border-bottom: 2px solid var(--ink); }
+		.brand { font: 900 23px/1 sans-serif; text-decoration: none; text-transform: uppercase; }
+		nav.tabs { display: flex; gap: 8px; }
+		nav.tabs a { padding: 6px 12px; border: 2px solid var(--ink); font-size: 11px; text-decoration: none; text-transform: uppercase; }
+		nav.tabs a[aria-current="page"] { background: var(--lime); }
+		main { width: min(100% - 40px, 720px); margin: 0 auto; padding: 24px 0 80px; }
+		h1 { margin: 0 0 8px; font-size: clamp(32px, 7vw, 56px); text-transform: uppercase; }
+		table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+		th, td { padding: 8px 10px; border-bottom: 1px solid var(--ink); text-align: left; }
+		th:last-child, td:last-child { text-align: right; }
+		tr.me { background: var(--lime); }
+		#board-status { min-height: 1.4em; font-size: 12px; }
+	</style>
+</head>
+<body>
+	<header>
+		<a class="brand" href="index.html">Rocky Games</a>
+		<nav class="tabs" aria-label="Sections">
+			<a href="index.html">Games</a>
+			<a href="shop.html">Shop</a>
+			<a href="leaderboard.html" aria-current="page">Leaderboard</a>
+		</nav>
+	</header>
+	<main>
+		<h1>Coins leaderboard</h1>
+		<p>Top 100 players by coins.</p>
+		<p id="board-status" role="status" aria-live="polite">Loading…</p>
+		<table id="board" hidden>
+			<thead><tr><th scope="col">#</th><th scope="col">Player</th><th scope="col">Coins</th></tr></thead>
+			<tbody></tbody>
+		</table>
+	</main>
+	<script>
+		(function () {
+			const URL_BASE = 'https://elxnypvvwrumhwakczwe.supabase.co';
+			const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
+			const status = document.querySelector('#board-status');
+			const table = document.querySelector('#board');
+			let me = '';
+			try { me = (JSON.parse(localStorage.getItem('rockyGamesAccount') || 'null') || {}).username || ''; } catch (e) {}
+			fetch(URL_BASE + '/rest/v1/account?select=username,coins&order=coins.desc&limit=100', {
+				headers: { apikey: KEY, Authorization: 'Bearer ' + KEY }
+			}).then((response) => {
+				if (!response.ok) throw new Error('Server error ' + response.status);
+				return response.json();
+			}).then((rows) => {
+				const body = table.querySelector('tbody');
+				rows.forEach((row, index) => {
+					const tr = document.createElement('tr');
+					if (row.username === me) tr.className = 'me';
+					[index + 1, row.username, Number(row.coins).toLocaleString()].forEach((value) => {
+						const td = document.createElement('td');
+						td.textContent = value;
+						tr.append(td);
+					});
+					body.append(tr);
+				});
+				table.hidden = rows.length === 0;
+				status.textContent = rows.length ? '' : 'No players yet.';
+			}).catch(() => { status.textContent = 'Could not load the leaderboard.'; });
+		})();
+	</script>
+</body>
+</html>
