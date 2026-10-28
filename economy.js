@@ -15,6 +15,9 @@
 	const SUPABASE_TABLE = 'account';
 	const NEWS_VERSION = 'chance-arcade-1';
 	const GAME_REWARD = 5;
+	const MAX_COINS = 2000000000;
+	const REWARD_COOLDOWN_MS = 5000;
+	let lastRewardAt = 0;
 	const DEFAULT_DISPLAY_SETTINGS = { font: 'system', lineSpacing: 'normal', letterSpacing: 'normal', reducedMotion: false };
 	const DISPLAY_FONTS = {
 		system: 'system-ui, sans-serif',
@@ -173,7 +176,7 @@
 
 	function isValidState(value) {
 		return value && value.version === 1
-			&& Number.isSafeInteger(value.coins) && value.coins >= 0
+			&& Number.isSafeInteger(value.coins) && value.coins >= 0 && value.coins <= MAX_COINS
 			&& (value.lastSpin === null || /^\d{4}-\d{2}-\d{2}$/.test(value.lastSpin))
 			&& Array.isArray(value.ownedBackgrounds)
 			&& value.ownedBackgrounds.every((id) => backgroundById.has(id))
@@ -401,7 +404,7 @@
 		const changed = update((next) => {
 			if (next.lastSpin === today()) return false;
 			next.lastSpin = today();
-			next.coins += prize;
+			next.coins = Math.min(MAX_COINS, next.coins + prize);
 			return true;
 		});
 		if (!changed) {
@@ -447,7 +450,7 @@
 				announce('You do not have enough coins for that wager.');
 				return false;
 			}
-			if (amount > Number.MAX_SAFE_INTEGER - next.coins) {
+			if (amount > MAX_COINS - next.coins) {
 				announce('That wager would exceed your wallet limit if you won. Try a smaller amount.');
 				return false;
 			}
@@ -473,7 +476,7 @@
 		}
 		let balance;
 		const changed = update((next) => {
-			if (!Number.isSafeInteger(next.coins + amount)) {
+			if (next.coins + amount > MAX_COINS) {
 				announce('That amount would exceed your wallet limit. Try a smaller amount.');
 				return false;
 			}
@@ -583,7 +586,7 @@
 				announce('You do not have enough coins for that wager.');
 				return false;
 			}
-			if (!Number.isSafeInteger(next.coins + netCoins)) {
+			if (next.coins + netCoins > MAX_COINS) {
 				announce('That win would exceed your wallet limit. Try a smaller wager.');
 				return false;
 			}
@@ -596,8 +599,10 @@
 	}
 
 	function rewardGameCompletion(game) {
+		if (Date.now() - lastRewardAt < REWARD_COOLDOWN_MS) return false;
+		lastRewardAt = Date.now();
 		const rewarded = update((next) => {
-			next.coins += GAME_REWARD;
+			next.coins = Math.min(MAX_COINS, next.coins + GAME_REWARD);
 			return true;
 		});
 		if (rewarded) announce(`+${GAME_REWARD} coins for finishing ${game}.`);
@@ -1096,8 +1101,8 @@
 
 	function stateToRow(value) {
 		return {
-			coins: value.coins,
-			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground },
+			coins: Math.min(MAX_COINS, value.coins),
+			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null },
 			nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
 		};
 	}
@@ -1105,7 +1110,8 @@
 	function rowToState(row, previous) {
 		const next = {
 			...previous,
-			coins: Number.isSafeInteger(row.coins) && row.coins >= 0 ? row.coins : 0,
+			coins: Number.isSafeInteger(row.coins) && row.coins >= 0 ? Math.min(row.coins, MAX_COINS) : 0,
+			lastSpin: /^\d{4}-\d{2}-\d{2}$/.test((row.bgs || {}).lastSpin || '') ? row.bgs.lastSpin : null,
 			username: row.username,
 			ownedBackgrounds: ['default'],
 			activeBackground: 'default',
@@ -1311,7 +1317,7 @@
 		}
 	});
 
-	window.RockyEconomy = { addCoins, playChanceGame, rewardGameCompletion };
+	window.RockyEconomy = { playChanceGame, rewardGameCompletion };
 	if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
 	else initialize();
 })();

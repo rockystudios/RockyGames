@@ -7,7 +7,7 @@
 	<meta name="theme-color" content="#050b07">
 	<title>Chance Arcade | Rocky Games</title>
 	<link rel="stylesheet" href="economy.css?v=public-site-4">
-	<script src="economy.js?v=public-site-8" defer></script>
+	<script src="economy.js?v=public-site-9" defer></script>
 	<style>
 		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
 
@@ -107,23 +107,6 @@
 				<p class="result" role="status" aria-live="polite"></p>
 			</article>
 		</div>
-		<article class="game-card code-card">
-			<h2>Coin code</h2>
-			<p class="game-description">Enter your code to unlock a coin award.</p>
-			<form class="code-form" id="coin-code-form">
-				<label for="coin-code">Code
-					<input id="coin-code" name="code" type="text" autocomplete="off" required>
-				</label>
-				<button class="play-button" type="submit">Unlock coins</button>
-			</form>
-			<form class="code-form" id="coin-award-form" hidden>
-				<label for="coin-award-amount">Amount of coins
-					<input id="coin-award-amount" name="amount" type="number" min="1" step="1" inputmode="numeric" required>
-				</label>
-				<button class="play-button" type="submit">Add coins</button>
-			</form>
-			<p class="result" id="coin-code-status" role="status" aria-live="polite"></p>
-		</article>
 		<nav class="site-links" aria-label="More Rocky Games">
 			<a href="shop.html">Daily spin and background shop</a>
 			<a href="index.html">Browse all games</a>
@@ -133,35 +116,6 @@
 		(() => {
 			const wheel = document.querySelector('#chance-wheel');
 			let wheelRotation = 0;
-			const codeForm = document.querySelector('#coin-code-form');
-			const awardForm = document.querySelector('#coin-award-form');
-			const codeStatus = document.querySelector('#coin-code-status');
-
-			codeForm.addEventListener('submit', (event) => {
-				event.preventDefault();
-				if (!codeForm.reportValidity()) return;
-				if (codeForm.elements.code.value.trim() !== 'ROCKYLITC1378') {
-					codeStatus.textContent = 'That code is not correct. Try again.';
-					return;
-				}
-				codeForm.hidden = true;
-				awardForm.hidden = false;
-				codeStatus.textContent = 'Code accepted. Enter how many coins to add.';
-				awardForm.elements.amount.focus();
-			});
-
-			awardForm.addEventListener('submit', (event) => {
-				event.preventDefault();
-				if (!awardForm.reportValidity()) return;
-				const amount = awardForm.elements.amount.valueAsNumber;
-				if (window.RockyEconomy.addCoins(amount)) {
-					codeStatus.textContent = `${amount} coins added to your wallet.`;
-					awardForm.hidden = true;
-				} else {
-					codeStatus.textContent = 'Those coins could not be added. Check your amount and wallet, then try again.';
-				}
-			});
-
 			document.querySelectorAll('.game-form').forEach((form) => {
 				form.addEventListener('submit', (event) => {
 					event.preventDefault();
