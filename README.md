@@ -67,7 +67,7 @@ Coins are capped at 2,000,000,000. Admins can set coins from `admin.html`.
 ## Add-ons
 
 `addons.html` lists optional add-ons. The Auto Clicker must be installed from its
-card before it works. Once installed, press its toggle key (F8 by default, changeable
+card before it works. Once installed, press Option + Shift + F8 (Alt + Shift + F8 on Windows; the last key is changeable
 on the card) to click about 10 times a second at the mouse pointer, and press it
 again to stop. Installed add-ons are saved in this browser. It cannot click inside
 embedded third-party games while the mouse is over them.

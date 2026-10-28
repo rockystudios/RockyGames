@@ -1425,7 +1425,7 @@
 			pointer.y = event.clientY;
 		}, { passive: true });
 		document.addEventListener('keydown', (event) => {
-			if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+			if (event.repeat || event.ctrlKey || event.metaKey || !event.altKey || !event.shiftKey) return;
 			const addons = readAddons();
 			if (!addons.installed.includes('auto-clicker') || event.code !== addons.autoClickerKey) return;
 			const target = event.target;

@@ -6,7 +6,7 @@
 	<meta name="theme-color" content="#050b07">
 	<title>Add-ons | Rocky Games</title>
 	<link rel="stylesheet" href="economy.css?v=public-site-6">
-	<script src="economy.js?v=public-site-12" defer></script>
+	<script src="economy.js?v=public-site-13" defer></script>
 	<style>
 		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; }
 		* { box-sizing: border-box; }
@@ -64,10 +64,10 @@
 
 	<dialog id="addon-dialog" aria-labelledby="addon-dialog-title">
 		<h2 id="addon-dialog-title">Auto Clicker</h2>
-		<p>Press a key to start clicking at your mouse pointer, and press the same key again to stop. It clicks about 10 times a second on Rocky Games pages.</p>
+		<p>Press Option + Shift + F8 (Alt + Shift + F8 on Windows) to start clicking at your mouse pointer, and press it again to stop. It clicks about 10 times a second on Rocky Games pages.</p>
 		<p>It can't click inside embedded games while your mouse is over them, because the browser doesn't share mouse position with those frames. It works on the rest of the site, including our own games. Auto clicker turns off when you leave the tab or reload.</p>
 		<div id="keybind-row" hidden>
-			<p>Toggle key: <strong id="keybind-label"></strong></p>
+			<p>Shortcut: <strong id="keybind-label"></strong></p>
 			<button type="button" class="action secondary" id="keybind-change">Change key</button>
 		</div>
 		<div class="dialog-actions">
@@ -98,7 +98,7 @@
 				cardState.textContent = installed ? 'Installed' : 'Not installed';
 				installButton.textContent = installed ? 'Uninstall' : 'Install';
 				keybindRow.hidden = !installed;
-				keybindLabel.textContent = keyName(api.getAutoClickerKey());
+				keybindLabel.textContent = `Option/Alt + Shift + ${keyName(api.getAutoClickerKey())}`;
 				keybindChange.textContent = 'Change key';
 				capturing = false;
 			}
@@ -115,12 +115,12 @@
 				const installed = api.isInstalled(ID);
 				const ok = installed ? api.uninstall(ID) : api.install(ID);
 				status.textContent = !ok ? 'Could not save. Check browser storage.'
-					: installed ? 'Auto Clicker uninstalled.' : `Auto Clicker installed. Press ${keyName(api.getAutoClickerKey())} on any page to start or stop it.`;
+					: installed ? 'Auto Clicker uninstalled.' : `Auto Clicker installed. Press Option/Alt + Shift + ${keyName(api.getAutoClickerKey())} on any page to start or stop it.`;
 				render();
 			});
 			keybindChange.addEventListener('click', () => {
 				capturing = true;
-				keybindChange.textContent = 'Press a key…';
+				keybindChange.textContent = 'Press a key (with Option/Alt + Shift)…';
 			});
 			document.addEventListener('keydown', (event) => {
 				if (!capturing) return;
@@ -128,7 +128,7 @@
 				event.stopPropagation();
 				if (event.code === 'Escape') { render(); return; }
 				if (['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight'].includes(event.code)) return;
-				if (addons().setAutoClickerKey(event.code)) status.textContent = `Toggle key set to ${keyName(event.code)}.`;
+				if (addons().setAutoClickerKey(event.code)) status.textContent = `Shortcut set to Option/Alt + Shift + ${keyName(event.code)}.`;
 				render();
 			}, true);
 			window.addEventListener('load', render);
