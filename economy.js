@@ -517,6 +517,7 @@
 		const error = dialog.querySelector('.rocky-profile-error');
 		const profileButton = document.querySelector('#rocky-economy-profile');
 		const openDialog = () => {
+			if (getAccount()) { showRenameDialog(); return; }
 			input.value = state.username || '';
 			error.textContent = '';
 			if (typeof dialog.showModal === 'function') dialog.showModal();
@@ -530,7 +531,7 @@
 			if (setUsername(input.value)) dialog.close();
 			else error.textContent = 'Your username could not be saved. Check browser storage and try again.';
 		});
-		if (!state.username && storageAvailable) openDialog();
+		if (!state.username && storageAvailable && !cloudConfigured()) openDialog();
 	}
 
 	function randomIndex(length) {
@@ -1194,6 +1195,7 @@
 		const account = getAccount();
 		bar.querySelector('span').textContent = account ? `Signed in as ${account.username}` : 'Not signed in';
 		bar.querySelector('#rocky-signout-button').hidden = !account;
+		bar.querySelector('#rocky-rename-button').hidden = !account;
 		bar.querySelector('#rocky-signin-button').hidden = Boolean(account);
 	}
 
@@ -1321,11 +1323,61 @@
 		input.focus();
 	}
 
+	function showRenameDialog() {
+		const account = getAccount();
+		if (!account || document.querySelector('#rocky-rename-dialog')) return;
+		const dialog = document.createElement('dialog');
+		dialog.id = 'rocky-rename-dialog';
+		dialog.setAttribute('aria-labelledby', 'rocky-rename-title');
+		dialog.innerHTML = '<form id="rocky-rename-form"><h2 id="rocky-rename-title">Change username</h2><p>Enter your password to confirm it is you.</p><label>Password<input id="rocky-rename-password" type="password" autocomplete="current-password" required></label><label>New username<input id="rocky-rename-name" maxlength="24" required autocomplete="off"></label><p id="rocky-rename-error" role="alert"></p><div class="rocky-rename-actions"><button type="submit" id="rocky-rename-submit">Change username</button><button type="button" id="rocky-rename-cancel">Cancel</button></div></form>';
+		document.body.append(dialog);
+		const form = dialog.querySelector('form');
+		const passInput = dialog.querySelector('#rocky-rename-password');
+		const nameInput = dialog.querySelector('#rocky-rename-name');
+		const error = dialog.querySelector('#rocky-rename-error');
+		const submit = dialog.querySelector('#rocky-rename-submit');
+		nameInput.value = account.username;
+		const close = () => { dialog.close(); dialog.remove(); };
+		dialog.querySelector('#rocky-rename-cancel').addEventListener('click', close);
+		dialog.addEventListener('cancel', () => dialog.remove());
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			const name = nameInput.value.trim();
+			if (!name || name.length > 24) { error.textContent = 'Username must be 1-24 characters.'; return; }
+			if (!cloudConfigured()) { error.textContent = 'Accounts are not set up.'; return; }
+			submit.disabled = true;
+			error.textContent = '';
+			try {
+				const match = await cloudRequest(`?id=eq.${account.id}&password=eq.${encodeURIComponent(passInput.value)}&select=id`);
+				if (!match.length) { error.textContent = 'Wrong password.'; return; }
+				if (name === account.username) { error.textContent = 'That is already your username.'; return; }
+				const taken = await cloudRequest(`?username=eq.${encodeURIComponent(name)}&select=id`);
+				if (taken.length) { error.textContent = 'That username is already taken.'; return; }
+				const updated = await cloudRequest(`?id=eq.${account.id}&bgs->>banned=is.null`, { method: 'PATCH', body: JSON.stringify({ username: name }) });
+				if (!updated.length) { error.textContent = 'This account can no longer be changed.'; return; }
+				localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: account.id, username: name }));
+				localStorage.setItem(LAST_USERNAME_KEY, name);
+				update((next) => { next.username = name; return true; });
+				renderAccountBar();
+				announce(`Username changed to ${name}.`);
+				close();
+			} catch (err) {
+				error.textContent = err.message === 'Failed to fetch' ? 'Could not reach the server.' : err.message;
+			} finally {
+				submit.disabled = false;
+			}
+		});
+		if (typeof dialog.showModal === 'function') dialog.showModal();
+		else dialog.setAttribute('open', '');
+		passInput.focus();
+	}
+
 	function initializeAccount() {
 		const bar = document.createElement('div');
 		bar.id = 'rocky-account-bar';
-		bar.innerHTML = '<span></span><button type="button" id="rocky-signin-button">Sign in</button><button type="button" id="rocky-signout-button">Sign out</button>';
-		document.body.append(bar);
+		bar.innerHTML = '<span></span><button type="button" id="rocky-rename-button">Change username</button><button type="button" id="rocky-signin-button">Sign in</button><button type="button" id="rocky-signout-button">Sign out</button>';
+		(document.querySelector('#rocky-economy-toolbar') || document.body).append(bar);
+		bar.querySelector('#rocky-rename-button').addEventListener('click', showRenameDialog);
 		bar.querySelector('#rocky-signin-button').addEventListener('click', showAuthGate);
 		bar.querySelector('#rocky-signout-button').addEventListener('click', signOut);
 		renderAccountBar();
