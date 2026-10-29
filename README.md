@@ -75,9 +75,9 @@ extension (zip download on the card; load it unpacked) that clicks inside every 
 
 ## Bans
 
-Accounts are temporarily disabled (`ACCOUNTS_ENABLED` is `false` in `economy.js`):
-the site opens without sign-in and coins, backgrounds and nameplates stay in this
-browser. The account backend below is kept for when accounts return.
+Accounts are enabled (`ACCOUNTS_ENABLED` is `true` in `economy.js`). Coins,
+backgrounds and nameplates are saved to the account, and `leaderboard.html`
+loads the ranking from Supabase.
 
 Creating an account needs the server-side creation password and a detectable IP
 address. To turn account creation off, set `ACCOUNT_CREATION_ENABLED` to `false`
