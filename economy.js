@@ -21,7 +21,8 @@
 	const SUPABASE_URL = 'https://elxnypvvwrumhwakczwe.supabase.co';
 	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
 	const SUPABASE_TABLE = 'account';
-	const NEWS_VERSION = 'web-dashers-1';
+	const NEWS_VERSION = 'accounts-disabled-1';
+	const ACCOUNTS_ENABLED = false;
 	const GAME_REWARD = 5;
 	const MAX_COINS = 2000000000;
 	const REWARD_COOLDOWN_MS = 5000;
@@ -969,6 +970,7 @@
 			<h2 id="news-reminder-title">What's new</h2>
 			<section class="news-intro">
 				<ul class="news-update-list">
+					<li><strong>Accounts are temporarily disabled.</strong> You can play without signing in; coins and backgrounds are saved in this browser for now.</li>
 					<li><strong>WEBDASHERSSSS!!!!</strong> We finally have added web dashers for you to play!</li>
 					<li><strong>Suggest a game!</strong> Have a game you want to add to Rocky Games? <a href="https://forms.gle/bnZNEvsSMgCAtDAZ8" target="_blank" rel="noopener">Fill out this form</a>.</li>
 				</ul>
@@ -1084,7 +1086,7 @@
 	function getAccount() {
 		try {
 			const account = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || 'null');
-			return account && Number.isInteger(account.id) && typeof account.username === 'string' ? account : null;
+			return account && Number.isInteger(account.id) && typeof account.username === 'string' && typeof account.token === 'string' ? account : null;
 		} catch (error) {
 			return null;
 		}
@@ -1095,6 +1097,15 @@
 	}
 
 	async function cloudRequest(query, options = {}) {
+		const apiResponse = await fetch(`${SUPABASE_URL}/functions/v1/rocky-api`, {
+			method: 'POST',
+			headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+			body: JSON.stringify({ action: query, ...options })
+		});
+		const result = await apiResponse.json().catch(() => ({}));
+		if (!apiResponse.ok) throw new Error(result.error || `Server error ${apiResponse.status}`);
+		return result;
+		/* Legacy direct REST request retained below for reference during rollout. */
 		const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}${query}`, {
 			...options,
 			headers: {
@@ -1130,10 +1141,9 @@
 	async function isIpBanned() {
 		if (!cloudConfigured()) return false;
 		const ip = await getClientIp();
-		if (!ip || localStorage.getItem(IP_BYPASS_KEY) === ip) return false;
+		if (ip && localStorage.getItem(IP_BYPASS_KEY) === ip) return false;
 		try {
-			const rows = await cloudRequest(`?username=eq.${encodeURIComponent(`ip:${ip}`)}&select=id`);
-			return rows.length > 0;
+			return (await cloudRequest('ip-check')).banned === true;
 		} catch (error) {
 			return false;
 		}
@@ -1150,7 +1160,7 @@
 	function stateToRow(value) {
 		return {
 			coins: Math.min(MAX_COINS, value.coins),
-			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null, ip: sessionStorage.getItem(IP_CACHE_KEY) || undefined },
+			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null },
 			nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
 		};
 	}
@@ -1177,22 +1187,22 @@
 
 	async function pushToCloud(value) {
 		const account = getAccount();
-		if (!account || !cloudConfigured()) return;
+		if (!ACCOUNTS_ENABLED || !account || !cloudConfigured()) return;
 		try {
-			const updated = await cloudRequest(`?id=eq.${account.id}&bgs->>banned=is.null`, { method: 'PATCH', body: JSON.stringify(stateToRow(value)) });
-			if (!updated.length) checkAccountStatus();
+			const result = await cloudRequest('account-sync', { token: account.token, state: stateToRow(value) });
+			if (!result.saved) checkAccountStatus();
 		} catch (error) {
 			console.error('Rocky Games could not sync to the cloud:', error);
 			announce('Could not save to your account. Check your connection.');
 		}
 	}
 
-	function applyAccountState(row) {
+	function applyAccountState(row, token) {
 		let previous;
 		try { previous = readState(); } catch (error) { previous = { version: 1, lastSpin: null }; }
 		const next = rowToState(row, previous);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-		localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: row.id, username: row.username }));
+		localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: row.id, username: row.username, token: token || getAccount()?.token }));
 		localStorage.setItem(LAST_USERNAME_KEY, row.username);
 		state = next;
 		storageAvailable = true;
@@ -1246,7 +1256,8 @@
 		banThisDevice();
 	}
 
-	async function signIn(username, password) {
+	async function legacySignIn(username, password) {
+		throw new Error('Legacy account sign-in is disabled.');
 		const rows = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&select=*`);
 		if (!rows.length) throw new Error('Wrong username or password.');
 		if (rows[0].bgs && rows[0].bgs.banned) throw new Error('This account is banned.');
@@ -1255,17 +1266,18 @@
 		applyAccountState(rows[0]);
 	}
 
+	async function signIn(username, password) {
+		const result = await cloudRequest('sign-in', { username, password });
+		applyAccountState(result.account, result.token);
+	}
+
 	const ACCOUNT_CREATION_ENABLED = true;
-	const CREATE_CODE_HASH = 'bbaf3820917a6e693ee071ac2780129d32c90e0ab8572379e4920fc4e3188698';
 	const CREATE_CODE_NOTE = 'You need the creation password to make an account. This is happening because of Lunamix spamming us.';
 
-	async function isCreateCodeValid(value) {
-		const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value).trim()));
-		return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('') === CREATE_CODE_HASH;
-	}
 	const CREATION_OFF_MESSAGE = 'New accounts are turned off for now. Sign in with an existing account.';
 
-	async function createAccount(username, password, code) {
+	async function legacyCreateAccount(username, password, code) {
+		throw new Error('Legacy account creation is disabled.');
 		if (!ACCOUNT_CREATION_ENABLED) throw new Error(CREATION_OFF_MESSAGE);
 		if (!(await isCreateCodeValid(code))) throw new Error('Wrong creation password.');
 		if (!(await getClientIp())) throw new Error('Could not detect your IP address, so an account cannot be created. Turn off any blocker or VPN and try again.');
@@ -1275,6 +1287,11 @@
 		if (await hasBlockedWord(username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
 		if (await hasBlockedValue(rows[0])) { await banForName(rows[0].id, 'blocked list'); throw new Error('This account is banned.'); }
 		applyAccountState(rows[0]);
+	}
+
+	async function createAccount(username, password, code) {
+		const result = await cloudRequest('create-account', { username, password, code });
+		applyAccountState(result.account, result.token);
 	}
 
 	function freshState() {
@@ -1303,7 +1320,7 @@
 	}
 
 	function showAuthGate() {
-		if (document.querySelector('#rocky-auth-gate')) return;
+		if (!ACCOUNTS_ENABLED || document.querySelector('#rocky-auth-gate')) return;
 		const remembered = localStorage.getItem(LAST_USERNAME_KEY) || '';
 		let mode = remembered || !ACCOUNT_CREATION_ENABLED ? 'signin' : 'create';
 		const gate = document.createElement('div');
@@ -1333,7 +1350,7 @@
 			codeLabel.hidden = signing;
 			codeInput.required = !signing;
 			note.textContent = signing ? 'Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.' : CREATE_CODE_NOTE;
-			error.textContent = cloudConfigured() ? (ACCOUNT_CREATION_ENABLED ? '' : CREATION_OFF_MESSAGE) : 'Accounts are not set up yet: add the Supabase URL and key in economy.js.';
+			error.textContent = cloudConfigured() ? (ACCOUNT_CREATION_ENABLED ? '' : CREATION_OFF_MESSAGE) : 'Accounts are not set up yet.';
 		}
 		switcher.hidden = !ACCOUNT_CREATION_ENABLED;
 		userInput.value = mode === 'signin' ? remembered : '';
@@ -1368,13 +1385,12 @@
 		const account = getAccount();
 		if (!account || !cloudConfigured()) return;
 		try {
-			const rows = await cloudRequest(`?id=eq.${account.id}&select=*`);
+			const result = await cloudRequest('account-read', { token: account.token });
 			if (!getAccount()) return;
-			if (!rows[0]) signOut();
-			else if (rows[0].bgs && rows[0].bgs.banned) banThisDevice();
-			else if (await hasBlockedWord(rows[0].username)) await banForName(rows[0].id);
-			else if (applyRow === true) applyAccountState(rows[0]);
+			if (applyRow === true) applyAccountState(result.account, account.token);
 		} catch (error) {
+			if (error.message.includes('banned')) { banThisDevice(); return; }
+			if (error.message.includes('Sign in again') || error.message.includes('no longer exists')) { signOut(); return; }
 			console.error('Could not refresh account:', error);
 		}
 	}
@@ -1464,6 +1480,14 @@
 			submit.disabled = true;
 			error.textContent = '';
 			try {
+				const result = await cloudRequest('account-rename', { token: account.token, password: passInput.value, username: name });
+				localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: account.id, username: result.account.username, token: account.token }));
+				localStorage.setItem(LAST_USERNAME_KEY, result.account.username);
+				update((next) => { next.username = result.account.username; return true; });
+				renderAccountBar();
+				announce(`Username changed to ${result.account.username}.`);
+				close();
+				return;
 				const match = await cloudRequest(`?id=eq.${account.id}&password=eq.${encodeURIComponent(passInput.value)}&select=id`);
 				if (!match.length) { error.textContent = 'Wrong password.'; return; }
 				if (name === account.username) { error.textContent = 'That is already your username.'; return; }
@@ -1498,6 +1522,10 @@
 		bar.querySelector('#rocky-signin-button').addEventListener('click', showAuthGate);
 		bar.querySelector('#rocky-signout-button').addEventListener('click', signOut);
 		renderAccountBar();
+		if (!ACCOUNTS_ENABLED) {
+			bar.hidden = true;
+			return;
+		}
 		if (localStorage.getItem(BANNED_KEY) === '1') {
 			showBanScreen();
 			return;

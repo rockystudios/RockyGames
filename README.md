@@ -75,14 +75,17 @@ extension (zip download on the card; load it unpacked) that clicks inside every 
 
 ## Bans
 
-Creating an account needs a creation password (checked in `economy.js` against a SHA-256 hash, `CREATE_CODE_HASH`)
-and a detectable IP address (api.ipify.org). To turn account creation off, set `ACCOUNT_CREATION_ENABLED` to `false`
+Accounts are temporarily disabled (`ACCOUNTS_ENABLED` is `false` in `economy.js`):
+the site opens without sign-in and coins, backgrounds and nameplates stay in this
+browser. The account backend below is kept for when accounts return.
+
+Creating an account needs the server-side creation password and a detectable IP
+address. To turn account creation off, set `ACCOUNT_CREATION_ENABLED` to `false`
 in `economy.js`.
 
-`admin.html` can delete accounts and ban devices or IP addresses. IP bans are stored as
-`ip:<address>` rows in the `account` table. Each page looks up the visitor's IP with
-api.ipify.org and shows a block screen if it is banned. This only blocks visitors whose
-IP lookup works, and a banned network is blocked for everyone on it.
+`admin.html` can delete accounts and ban devices or IP addresses. IP bans are
+stored as `ip:<address>` rows in the account table. The Edge Function checks
+the visitor's network address when creating accounts.
 
 The admin "Blocked words, passwords and coin amounts" form stores its lists in the `config:blocked-words`
 row. An account whose password or coin total exactly matches a list is banned when it signs in, and
@@ -91,6 +94,36 @@ row. An account whose password or coin total exactly matches a list is banned wh
 Admin can also set a list of blocked words. An account whose username contains one (ignoring
 capitals, symbols and look-alikes such as 0 for o) is banned, along with the device, when it
 is created, renamed, signed into or checked. The list is stored in a `config:blocked-words` row.
+
+### Secure account backend setup
+
+The account site uses the `rocky-api` Supabase Edge Function; browser pages must
+not access account rows directly. The function uses server-side secrets and
+password hashes. The `account_v2` table has RLS enabled with no browser policies,
+and only the function's service role can access it. The migration also revokes
+browser-role access to the old `account` table but keeps its data as an archive;
+existing accounts do not carry over, and users must create new accounts after
+setup.
+
+1. Install the Supabase CLI and link this folder to the correct project with
+   `supabase link --project-ref <project-ref>`.
+2. Set `ROCKY_SESSION_SECRET` and `ROCKY_PASSWORD_PEPPER` to newly generated
+   random secrets, `ROCKY_ADMIN_PASSWORD` to a new strong password of at least
+   16 characters, and
+   `ROCKY_CREATE_CODE` to the creation password you want users to enter. Set
+   these in **Project Settings → Edge Functions → Secrets** or with
+   `supabase secrets set`. Do not put them in site files or share them in chat.
+   The function reads Supabase's built-in `SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY`; never expose the service-role key.
+3. Apply the migration and deploy the function:
+   `supabase db push` and `supabase functions deploy rocky-api`.
+4. Publish the site files. Sign in to `admin.html` with the new admin password.
+
+This starts a fresh account table and leaves the prior table in place as an
+inactive archive. The leaderboard only publishes usernames, coin totals, and
+nameplates. RLS protects direct table access; the function also authenticates
+each account operation and limits it to the signed-in account. Coin balances
+are still client-reported game state, so this is not cheat-proof gameplay.
 
 ## Keyboard shortcuts
 

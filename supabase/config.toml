@@ -1,0 +1,4 @@
+project_id = "rockygames"
+
+[functions.rocky-api]
+verify_jwt = true

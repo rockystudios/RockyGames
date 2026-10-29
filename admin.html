@@ -70,15 +70,30 @@
 			</table>
 		</section>
 	</main>
-	<script src="access-code.js?v=1"></script>
 	<script>
 		(function () {
 			const URL_BASE = 'https://elxnypvvwrumhwakczwe.supabase.co';
 			const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
+			let adminToken = '';
 			const status = document.querySelector('#status');
 			const rowsEl = document.querySelector('#rows');
 
 			async function api(query, options = {}) {
+				const action = query === '@scan' ? 'admin-scan' : 'admin-proxy';
+				const apiResponse = await fetch(`${URL_BASE}/functions/v1/rocky-api`, {
+					method: 'POST',
+					headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						action, token: adminToken, query: query === '@scan' ? undefined : query,
+						method: options.method || 'GET',
+						body: options.body ? JSON.parse(options.body) : undefined,
+						...(query === '@scan' && options.body ? JSON.parse(options.body) : {})
+					})
+				});
+				const result = await apiResponse.json().catch(() => ({}));
+				if (!apiResponse.ok) throw new Error(result.error || `Server error ${apiResponse.status}`);
+				return result;
+				/* Legacy direct REST request retained below for reference during rollout. */
 				const response = await fetch(`${URL_BASE}/rest/v1/account${query}`, {
 					...options,
 					headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }
@@ -158,8 +173,7 @@
 							const ban = !banned && confirm(`Also ban "${account.username}"? OK = ban every device signed in to this account. Cancel = just delete it.`);
 							try {
 								if (ban) {
-									const randomPassword = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
-									await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: randomPassword, bgs: { banned: true }, nameplates: {} }) });
+									await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, bgs: { banned: true }, nameplates: {} }) });
 									status.textContent = `Banned ${account.username}. Devices are blocked the next time they check in.`;
 								} else {
 									await api(`?id=eq.${account.id}`, { method: 'DELETE' });
@@ -185,8 +199,18 @@
 
 			document.querySelector('#login').addEventListener('submit', async (event) => {
 				event.preventDefault();
-				if (!(await window.RockyAccess.isValidAccessCode(document.querySelector('#admin-password').value))) {
-					status.textContent = 'Wrong password.';
+				try {
+					const response = await fetch(`${URL_BASE}/functions/v1/rocky-api`, {
+						method: 'POST',
+						headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
+						body: JSON.stringify({ action: 'admin-login', password: document.querySelector('#admin-password').value })
+					});
+					const result = await response.json().catch(() => ({}));
+					if (!response.ok) throw new Error(result.error || 'Admin sign-in failed.');
+					adminToken = result.token;
+					document.querySelector('#admin-password').value = '';
+				} catch (error) {
+					status.textContent = error.message;
 					return;
 				}
 				document.querySelector('#login').hidden = true;
@@ -200,7 +224,6 @@
 			});
 			const WORDS_ROW = 'config:blocked-words';
 			const norm = (text) => String(text).toLowerCase().replace(/[013457@$!]/g, (c) => ({ '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' })[c]).replace(/[^a-z]/g, '');
-			const newPassword = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
 			let wordsRowId = null;
 
 			async function loadWords() {
@@ -221,7 +244,7 @@
 				try {
 					if (wordsRowId) await api(`?id=eq.${wordsRowId}`, { method: 'PATCH', body: JSON.stringify({ bgs }) });
 					else {
-						const created = await api('', { method: 'POST', body: JSON.stringify({ username: WORDS_ROW, password: newPassword(), coins: 0, bgs, nameplates: {} }) });
+						const created = await api('', { method: 'POST', body: JSON.stringify({ username: WORDS_ROW, coins: 0, bgs, nameplates: {} }) });
 						wordsRowId = created[0].id;
 					}
 					status.textContent = `Saved ${words.length} word(s), ${passwords.length} password(s), ${coins.length} coin amount(s).`;
@@ -234,11 +257,10 @@
 					const words = document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2);
 					const passwords = new Set(document.querySelector('#pw-text').value.split('\n').filter((w) => w.trim()));
 					const coins = new Set(document.querySelector('#coins-text').value.split('\n').map((w) => w.trim()).filter((w) => /^\d+$/.test(w)).map(Number));
-					const accounts = await apiAll('?select=id,username,password,coins,bgs&order=id.asc');
-					const hits = accounts.filter((a) => a.username !== WORDS_ROW && !a.username.startsWith('ip:') && !(a.bgs && a.bgs.banned) && (words.some((w) => norm(a.username).includes(w)) || passwords.has(a.password) || coins.has(a.coins)));
+					const hits = await api('@scan', { method: 'POST', body: JSON.stringify({ words, passwords: [...passwords], coins: [...coins] }) });
 					if (!hits.length) { status.textContent = 'No accounts match the lists.'; return; }
 					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
-					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: newPassword(), bgs: { banned: true, reason: 'blocked list' } }) });
+					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, bgs: { banned: true, reason: 'blocked list' } }) });
 					status.textContent = `Banned ${hits.length} account(s).`;
 					load();
 				} catch (error) { status.textContent = error.message; }
@@ -251,8 +273,7 @@
 				try {
 					const existing = await api(`?username=eq.${encodeURIComponent('ip:' + clean)}&select=id`);
 					if (existing.length) { status.textContent = `${clean} is already banned.`; return; }
-					const randomPassword = [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
-					await api('', { method: 'POST', body: JSON.stringify({ username: 'ip:' + clean, password: randomPassword, coins: 0, bgs: { banned: true, ipBan: true }, nameplates: {} }) });
+					await api('', { method: 'POST', body: JSON.stringify({ username: 'ip:' + clean, coins: 0, bgs: { banned: true, ipBan: true }, nameplates: {} }) });
 					status.textContent = `Banned IP ${clean}.`;
 					load();
 				} catch (error) { status.textContent = error.message; }
@@ -324,9 +345,8 @@
 					const verb = mode === 'ban' ? 'BAN the devices of' : 'DELETE';
 					if (!confirm(`${verb} ${matches.length} account(s)?\n\n${names}\n\nThis cannot be undone.`)) return;
 					if (mode === 'ban') {
-						const randomPassword = () => [...crypto.getRandomValues(new Uint8Array(24))].map((b) => b.toString(16).padStart(2, '0')).join('');
 						for (const account of matches) {
-							await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password: randomPassword(), bgs: { banned: true }, nameplates: {} }) });
+							await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, bgs: { banned: true }, nameplates: {} }) });
 						}
 						status.textContent = `Banned ${matches.length} account(s). Devices are blocked the next time they check in.`;
 					} else {
