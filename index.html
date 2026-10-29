@@ -74,20 +74,9 @@
 		.shop-link { display: inline-flex; min-height: 46px; align-items: center; justify-content: center; gap: 8px; padding: 0 16px; border: 2px solid var(--ink); background: var(--lime); box-shadow: 3px 3px 0 var(--ink); font: 800 20px/1 var(--display); text-decoration: none; text-transform: uppercase; white-space: nowrap; }
 		.shop-link:hover { background: white; }
 		.shop-link:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
-		.games-plus-button { min-height: 56px; padding: 0 24px; border: 2px solid var(--ink); background: #e5be54; color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font: 800 26px/1 var(--display); text-transform: uppercase; cursor: pointer; }
+		.games-plus-button { display: inline-flex; min-height: 56px; align-items: center; justify-content: center; padding: 0 24px; border: 2px solid var(--ink); background: #e5be54; color: var(--ink); box-shadow: 4px 4px 0 var(--ink); font: 800 26px/1 var(--display); text-decoration: none; text-transform: uppercase; cursor: pointer; }
 		.games-plus-button:hover { background: #f1d47f; }
 		.games-plus-button:focus-visible { outline: 3px solid var(--orange); outline-offset: 3px; }
-		.games-plus-dialog { width: min(420px, calc(100% - 32px)); border: 2px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 6px 6px 0 var(--ink); font-family: var(--mono); }
-		.games-plus-dialog::backdrop { background: #20252299; }
-		.games-plus-dialog h2 { margin: 0 0 12px; font: 800 32px/1 var(--display); text-transform: uppercase; }
-		.games-plus-dialog form { display: grid; gap: 12px; }
-		.games-plus-dialog label { font-size: 10px; text-transform: uppercase; }
-		.games-plus-dialog input { min-height: 42px; padding: 0 10px; border: 1px solid var(--ink); background: #fffdf6; color: var(--ink); font: 12px var(--mono); }
-		.games-plus-dialog input:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
-		.games-plus-error { min-height: 1em; margin: 0; color: #a83220; font-size: 10px; }
-		.games-plus-actions { display: flex; justify-content: end; gap: 10px; }
-		.games-plus-actions button { min-height: 38px; padding: 0 12px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); font: 10px var(--mono); cursor: pointer; }
-		.games-plus-actions button[type="submit"] { background: var(--lime); font-weight: 700; }
 
 		main {
 			width: min(100% - 48px, 1120px);
@@ -729,54 +718,11 @@
 
 	<footer>
 		<span>Rocky Games</span>
-		<button class="games-plus-button" id="gamesPlusButton" type="button">Games+</button>
+		<a class="games-plus-button" href="games-plus.html">Games+</a>
 		<span>More games on the way</span>
 	</footer>
-	<dialog class="games-plus-dialog" id="gamesPlusDialog" aria-labelledby="gamesPlusTitle">
-		<h2 id="gamesPlusTitle">Games+</h2>
-		<form id="gamesPlusForm">
-			<label for="gamesPlusPassword">Enter the Games+ password</label>
-			<input id="gamesPlusPassword" name="password" type="password" autocomplete="off" required>
-			<p class="games-plus-error" id="gamesPlusError" role="alert" aria-live="polite"></p>
-			<div class="games-plus-actions">
-				<button id="gamesPlusCancel" type="button">Cancel</button>
-				<button type="submit">Continue</button>
-			</div>
-		</form>
-	</dialog>
 	<script>
 		(() => {
-			const GAMES_PLUS_ACCESS_KEY = 'rockyGamesPlusAccessGranted';
-			const gamesPlusDialog = document.querySelector('#gamesPlusDialog');
-			const gamesPlusForm = document.querySelector('#gamesPlusForm');
-			const gamesPlusPassword = document.querySelector('#gamesPlusPassword');
-			const gamesPlusError = document.querySelector('#gamesPlusError');
-			document.querySelector('#gamesPlusButton').addEventListener('click', () => {
-				gamesPlusError.textContent = '';
-				gamesPlusPassword.value = '';
-				if (typeof gamesPlusDialog.showModal === 'function') gamesPlusDialog.showModal();
-				else gamesPlusDialog.setAttribute('open', '');
-				gamesPlusPassword.focus();
-			});
-			document.querySelector('#gamesPlusCancel').addEventListener('click', () => gamesPlusDialog.close());
-			gamesPlusForm.addEventListener('submit', async (event) => {
-				event.preventDefault();
-				if (!(await window.RockyAccess.isValidAccessCode(gamesPlusPassword.value))) {
-					gamesPlusError.textContent = 'That password is not correct.';
-					gamesPlusPassword.select();
-					return;
-				}
-				try {
-					sessionStorage.setItem(GAMES_PLUS_ACCESS_KEY, 'true');
-				} catch (error) {
-					console.error('Rocky Games could not save Games+ access:', error);
-					gamesPlusError.textContent = 'Access could not be saved in this browser. Enable session storage and try again.';
-					return;
-				}
-				window.location.href = 'games-plus.html';
-			});
-			gamesPlusPassword.addEventListener('input', () => { gamesPlusError.textContent = ''; });
-
 			const searchInput = document.querySelector('#gameSearch');
 			const catalogCount = document.querySelector('#catalogCount');
 			const emptyState = document.querySelector('#emptyState');
@@ -874,7 +820,6 @@
 			});
 		})();
 	</script>
-	<script src="access-code.js?v=1"></script>
 	<script src="economy.js?v=public-site-35" defer></script>
 </body>
 </html>

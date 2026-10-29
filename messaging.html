@@ -8,34 +8,246 @@
 	<link rel="stylesheet" href="economy.css?v=public-site-35">
 	<script src="economy.js?v=public-site-35" defer></script>
 	<style>
-		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; --orange: #f36b45; }
+		@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
+		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; --orange: #f36b45; --mono: 'DM Mono', monospace; --display: 'Barlow Condensed', Impact, sans-serif; }
 		* { box-sizing: border-box; }
-		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: 'DM Mono', monospace; }
+		body { min-height: 100vh; margin: 0; color: var(--ink); background: var(--paper); font-family: var(--mono); }
 		a { color: inherit; }
-		header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 12px 20px; border-bottom: 2px solid var(--ink); }
-		.brand { font: 900 23px/1 sans-serif; text-decoration: none; text-transform: uppercase; }
-		.home-link { font-size: 11px; text-transform: uppercase; }
-		main { display: grid; width: min(100% - 40px, 900px); min-height: calc(100vh - 70px); align-content: center; margin: 0 auto; padding: 48px 0 80px; }
-		.kicker { margin: 0 0 12px; font-size: 11px; text-transform: uppercase; }
-		h1 { margin: 0; font: 900 clamp(48px, 10vw, 88px)/0.9 'Barlow Condensed', Impact, sans-serif; text-transform: uppercase; }
-		p:last-child { margin: 18px 0 0; font-size: 14px; line-height: 1.7; }
-		@media (max-width: 540px) {
-			header { min-height: 60px; padding: 10px 14px; }
-			main { width: calc(100% - 28px); }
+		.site-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; padding: 12px 20px; border-bottom: 2px solid var(--ink); }
+		.brand { font: 900 23px/1 var(--display); text-decoration: none; text-transform: uppercase; }
+		.home-link { font-size: 10px; text-transform: uppercase; }
+		main { width: min(100% - 40px, 920px); margin: 0 auto; padding: 34px 0 64px; }
+		.page-heading { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+		.kicker { margin: 0 0 8px; font-size: 10px; text-transform: uppercase; }
+		h1 { margin: 0; font: 900 58px/0.9 var(--display); text-transform: uppercase; }
+		.connection-state { display: inline-flex; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid #20252266; background: #fffdf6; font-size: 9px; text-transform: uppercase; }
+		.connection-state::before { width: 8px; aspect-ratio: 1; border-radius: 50%; background: #e5be54; content: ''; }
+		.connection-state[data-mode="supabase"]::before { background: #65a878; }
+		.chat-panel { overflow: hidden; border: 2px solid var(--ink); background: #fffdf6; box-shadow: 5px 5px 0 var(--ink); }
+		.chat-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 66px; padding: 12px 16px; border-bottom: 2px solid var(--ink); background: #e5be54; }
+		.chat-header h2 { margin: 0; font: 800 24px/1 var(--display); text-transform: uppercase; }
+		.chat-header p { margin: 5px 0 0; font-size: 9px; }
+		.mode-label { font-size: 9px; text-align: right; text-transform: uppercase; }
+		.message-list { display: flex; min-height: 300px; max-height: min(52vh, 500px); flex-direction: column; gap: 12px; overflow-y: auto; margin: 0; padding: 18px; list-style: none; }
+		.message-row { width: fit-content; max-width: min(82%, 620px); padding: 10px 12px; border: 1px solid #20252266; background: #f3f1e8; overflow-wrap: anywhere; }
+		.message-row[data-own="true"] { align-self: end; border-color: var(--ink); background: #d9f06b; }
+		.message-meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 9px; margin-bottom: 5px; }
+		.message-sender { font-size: 10px; font-weight: 500; }
+		.message-time { color: #52645b; font-size: 8px; }
+		.message-content { margin: 0; font-size: 11px; line-height: 1.7; white-space: pre-wrap; }
+		.empty-messages { margin: auto; color: #52645b; font-size: 11px; text-align: center; }
+		.composer { display: grid; gap: 10px; padding: 14px 16px 16px; border-top: 1px solid #20252266; }
+		.composer-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+		.composer label { display: grid; gap: 5px; font-size: 9px; text-transform: uppercase; }
+		.sender-input, .message-input { width: 100%; border: 1px solid #20252288; border-radius: 0; background: white; color: var(--ink); font: 11px var(--mono); }
+		.sender-input { width: min(100%, 240px); min-height: 36px; padding: 7px 9px; }
+		.message-input { min-height: 76px; resize: vertical; padding: 10px; line-height: 1.6; }
+		.sender-input:focus-visible, .message-input:focus-visible, .send-button:focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+		.composer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+		#message-status { min-height: 1.4em; margin: 0; color: #52645b; font-size: 9px; line-height: 1.6; }
+		.send-button { min-height: 38px; padding: 7px 13px; border: 2px solid var(--ink); background: var(--lime); color: var(--ink); font: 800 18px/1 var(--display); text-transform: uppercase; cursor: pointer; }
+		.send-button:hover { background: white; }
+		.json-details { margin-top: 24px; border-top: 2px solid var(--ink); }
+		.json-details summary { padding: 12px 0; font-size: 10px; text-transform: uppercase; cursor: pointer; }
+		.json-details pre { max-height: 260px; overflow: auto; margin: 0; padding: 14px; border: 1px solid #20252266; background: #202522; color: #d9f06b; font: 10px/1.6 var(--mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+		.setup-note { margin: 10px 0 0; color: #52645b; font-size: 9px; line-height: 1.7; }
+		@media (max-width: 600px) {
+			.site-header { min-height: 60px; padding: 10px 14px; }
+			main { width: calc(100% - 28px); padding-top: 26px; }
+			.page-heading { align-items: start; flex-direction: column; }
+			h1 { font-size: 50px; }
+			.message-list { min-height: 260px; padding: 12px; }
+			.composer { padding: 12px; }
+			.message-row { max-width: 92%; }
 		}
+		@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: 0.01ms !important; } }
 	</style>
 </head>
 <body>
-	<header>
+	<header class="site-header">
 		<a class="brand" href="index.html">Rocky Games</a>
 		<a class="home-link" href="index.html">&larr; Arcade home</a>
 	</header>
 	<main>
-		<div>
-			<p class="kicker">Rocky Games / Messaging</p>
-			<h1>Coming soon.</h1>
-			<p>Messaging is not available yet. Check back soon.</p>
-		</div>
+		<section class="page-heading" aria-labelledby="page-title">
+			<div><p class="kicker">Rocky Games / Messaging test</p><h1 id="page-title">Messages</h1></div>
+			<span class="connection-state" id="connectionState" data-mode="local">Local demo</span>
+		</section>
+		<section class="chat-panel" aria-labelledby="room-title">
+			<header class="chat-header">
+				<div><h2 id="room-title">Test room</h2><p>Message records include a sender and timestamp.</p></div>
+				<span class="mode-label" id="modeLabel">Browser storage</span>
+			</header>
+			<ol class="message-list" id="messageList" role="log" aria-live="polite" aria-relevant="additions text">
+				<li class="empty-messages">Loading test messages...</li>
+			</ol>
+			<form class="composer" id="messageForm">
+				<div class="composer-top">
+					<label for="senderInput">Sending as<input class="sender-input" id="senderInput" name="sender" type="text" maxlength="32" autocomplete="nickname" value="Guest" required></label>
+					<span class="mode-label">Test chat</span>
+				</div>
+				<label for="messageInput">Message</label>
+				<textarea class="message-input" id="messageInput" name="content" maxlength="500" placeholder="Write a message..." required></textarea>
+				<div class="composer-bottom">
+					<p id="message-status" role="status" aria-live="polite">Loading messages...</p>
+					<button class="send-button" type="submit">Send</button>
+				</div>
+			</form>
+		</section>
+		<details class="json-details">
+			<summary>View messages as JSON</summary>
+			<pre id="jsonPreview" aria-label="Current messages in JSON format">[]</pre>
+		</details>
+		<p class="setup-note">Demo messages stay in this browser. Supabase is off until you add a project URL and public anon key in this page's configuration and create the matching table with read/insert policies.</p>
 	</main>
+	<script>
+		(() => {
+			const SUPABASE_CONFIG = {
+				url: 'https://YOUR_PROJECT_ID.supabase.co',
+				anonKey: 'YOUR_SUPABASE_ANON_KEY',
+				table: 'messages'
+			};
+			const DEMO_STORAGE_KEY = 'rockyMessagingDemoMessages';
+			const messageList = document.querySelector('#messageList');
+			const messageForm = document.querySelector('#messageForm');
+			const senderInput = document.querySelector('#senderInput');
+			const messageInput = document.querySelector('#messageInput');
+			const status = document.querySelector('#message-status');
+			const jsonPreview = document.querySelector('#jsonPreview');
+			const connectionState = document.querySelector('#connectionState');
+			const modeLabel = document.querySelector('#modeLabel');
+			const configured = !SUPABASE_CONFIG.url.includes('YOUR_PROJECT_ID')
+				&& !SUPABASE_CONFIG.anonKey.includes('YOUR_SUPABASE_ANON_KEY');
+			let messages = [];
+
+			function setStatus(message) {
+				status.textContent = message;
+			}
+
+			function formatTime(value) {
+				const date = new Date(value);
+				return Number.isNaN(date.getTime()) ? '' : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+			}
+
+			function render() {
+				messageList.replaceChildren();
+				if (!messages.length) {
+					const empty = document.createElement('li');
+					empty.className = 'empty-messages';
+					empty.textContent = 'No messages yet. Send the first one.';
+					messageList.append(empty);
+				}
+				messages.forEach((message) => {
+					const row = document.createElement('li');
+					row.className = 'message-row';
+					row.dataset.own = String(message.sender === senderInput.value.trim());
+					const meta = document.createElement('div');
+					meta.className = 'message-meta';
+					const sender = document.createElement('strong');
+					sender.className = 'message-sender';
+					sender.textContent = message.sender;
+					const time = document.createElement('time');
+					time.className = 'message-time';
+					time.dateTime = message.created_at;
+					time.textContent = formatTime(message.created_at);
+					meta.append(sender, time);
+					const content = document.createElement('p');
+					content.className = 'message-content';
+					content.textContent = message.content;
+					row.append(meta, content);
+					messageList.append(row);
+				});
+				jsonPreview.textContent = JSON.stringify(messages, null, 2);
+				messageList.scrollTop = messageList.scrollHeight;
+			}
+
+			function validMessages(value) {
+				return Array.isArray(value) && value.every((message) => message
+					&& typeof message.sender === 'string'
+					&& typeof message.content === 'string'
+					&& typeof message.created_at === 'string');
+			}
+
+			function saveDemoMessages() {
+				try {
+					localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(messages));
+					return true;
+				} catch {
+					return false;
+				}
+			}
+
+			async function loadMessages() {
+				if (configured) {
+					const endpoint = `${SUPABASE_CONFIG.url}/rest/v1/${encodeURIComponent(SUPABASE_CONFIG.table)}?select=id,sender,content,created_at&order=created_at.asc&limit=100`;
+					const response = await fetch(endpoint, { headers: { apikey: SUPABASE_CONFIG.anonKey, authorization: `Bearer ${SUPABASE_CONFIG.anonKey}` } });
+					if (!response.ok) throw new Error(`Supabase could not load messages (${response.status}).`);
+					const result = await response.json();
+					if (!validMessages(result)) throw new Error('Supabase returned messages in an unexpected format.');
+					messages = result;
+					connectionState.dataset.mode = 'supabase';
+					connectionState.textContent = 'Supabase';
+					modeLabel.textContent = 'Supabase table';
+					setStatus('Connected to Supabase.');
+				} else {
+					try {
+						const saved = JSON.parse(localStorage.getItem(DEMO_STORAGE_KEY) || 'null');
+						if (validMessages(saved)) messages = saved;
+					} catch {}
+					if (!messages.length) {
+						const response = await fetch('messages.json');
+						if (!response.ok) throw new Error('Could not load messages.json.');
+						messages = await response.json();
+						if (!validMessages(messages)) throw new Error('The sample messages have an unexpected format.');
+					}
+					setStatus('Demo mode. Messages are saved only in this browser.');
+				}
+				render();
+			}
+
+			messageForm.addEventListener('submit', async (event) => {
+				event.preventDefault();
+				const sender = senderInput.value.trim();
+				const content = messageInput.value.trim();
+				if (!sender || !content) return;
+				const message = { sender, content, created_at: new Date().toISOString() };
+				const button = messageForm.querySelector('button[type="submit"]');
+				button.disabled = true;
+				try {
+					if (configured) {
+						const endpoint = `${SUPABASE_CONFIG.url}/rest/v1/${encodeURIComponent(SUPABASE_CONFIG.table)}`;
+						const response = await fetch(endpoint, {
+							method: 'POST',
+							headers: {
+								apikey: SUPABASE_CONFIG.anonKey,
+								authorization: `Bearer ${SUPABASE_CONFIG.anonKey}`,
+								'content-type': 'application/json',
+								prefer: 'return=representation'
+							},
+							body: JSON.stringify(message)
+						});
+						if (!response.ok) throw new Error(`Supabase could not send the message (${response.status}).`);
+						const result = await response.json();
+						messages.push(Array.isArray(result) ? result[0] : result);
+						setStatus('Message sent to Supabase.');
+					} else {
+						message.id = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : String(Date.now());
+						messages.push(message);
+						if (!saveDemoMessages()) throw new Error('Could not save in this browser.');
+						setStatus('Message saved in this browser only.');
+					}
+					messageInput.value = '';
+					render();
+				} catch (error) {
+					setStatus(error.message || 'Could not send this message.');
+				} finally {
+					button.disabled = false;
+				}
+			});
+
+			senderInput.addEventListener('input', render);
+			loadMessages().catch((error) => setStatus(error.message || 'Could not load messages.'));
+		})();
+	</script>
 </body>
 </html>

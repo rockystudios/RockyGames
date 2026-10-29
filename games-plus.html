@@ -13,7 +13,6 @@
 		* { box-sizing: border-box; }
 		body { min-height: 100vh; margin: 0; color: var(--ink); background: radial-gradient(#30230b16 0.7px, transparent 0.7px), linear-gradient(145deg, #f8e6a5, #d5a632 58%, #f5d878); background-size: 8px 8px, cover; font-family: var(--mono); }
 		a { color: inherit; }
-		main, footer { visibility: hidden; }
 		.site-header { display: flex; align-items: center; justify-content: space-between; min-height: 76px; padding: 0 max(24px, calc((100vw - 1120px) / 2)); border-bottom: 2px solid var(--ink); background: #f8e6a5; }
 		.brand { display: flex; align-items: center; gap: 10px; font: 900 25px/1 var(--display); text-decoration: none; text-transform: uppercase; }
 		.brand-mark { display: grid; width: 32px; aspect-ratio: 1; place-items: center; border: 2px solid var(--ink); background: var(--gold); font: 500 16px var(--mono); }
@@ -35,17 +34,6 @@
 		.game-link > div:nth-child(3) img { width: 100%; height: 100%; object-fit: cover; }
 		.browser-preview { display: grid; place-items: center; color: #5a3a00; font: 900 76px/1 var(--display); }
 		.browser-preview span { display: grid; width: 92px; height: 92px; place-items: center; border: 4px solid currentColor; border-radius: 50%; background: #ffe9a3; box-shadow: inset 0 0 0 8px #d6a53c; }
-		.games-plus-dialog { width: min(420px, calc(100% - 32px)); border: 2px solid var(--ink); background: var(--paper); color: var(--ink); box-shadow: 6px 6px 0 var(--ink); font-family: var(--mono); }
-		.games-plus-dialog::backdrop { background: #30230bcc; }
-		.games-plus-dialog h2 { margin: 0 0 12px; font: 800 32px/1 var(--display); text-transform: uppercase; }
-		.games-plus-dialog form { display: grid; gap: 12px; }
-		.games-plus-dialog label { font-size: 10px; text-transform: uppercase; }
-		.games-plus-dialog input { min-height: 42px; padding: 0 10px; border: 1px solid var(--ink); background: white; color: var(--ink); font: 12px var(--mono); }
-		.games-plus-dialog input:focus-visible { outline: 3px solid #9a5410; outline-offset: 2px; }
-		.games-plus-error { min-height: 1em; margin: 0; color: #a83220; font-size: 10px; }
-		.games-plus-actions { display: flex; justify-content: end; gap: 10px; }
-		.games-plus-actions button { min-height: 38px; padding: 0 12px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); font: 10px var(--mono); cursor: pointer; }
-		.games-plus-actions button[type="submit"] { background: var(--gold); font-weight: 700; }
 		.game-title { margin: 0; font: 800 clamp(28px, 3vw, 38px)/0.95 var(--display); text-transform: uppercase; }
 		.game-meta { margin: 7px 0 0; font-size: 9px; line-height: 1.5; text-transform: uppercase; }
 		.play-label { grid-column: 2; grid-row: 1; align-self: center; padding-right: 14px; font-size: 9px; text-transform: uppercase; }
@@ -89,39 +77,18 @@
 					<div class="browser-preview" aria-hidden="true"><span>◎</span></div>
 					<div><h3 class="game-title">Browser</h3><p class="game-meta">Open the embedded Browser game</p></div>
 				</a>
+				<a class="game-link browser-card" href="https://s3.amazonaws.com/caddyprep/index.html" target="_self">
+					<span class="game-number">EXTRA</span>
+					<span class="play-label">Play →</span>
+					<div class="browser-preview" aria-hidden="true"><span>CP</span></div>
+					<div><h3 class="game-title">CaddyPrep</h3><p class="game-meta">Golf / Browser game</p></div>
+				</a>
 			</div>
 		</section>
 	</main>
 	<footer>Rocky Games+ / Gold arcade</footer>
-	<dialog class="games-plus-dialog" id="gamesPlusDialog" aria-labelledby="gamesPlusTitle">
-		<h2 id="gamesPlusTitle">Games+</h2>
-		<form id="gamesPlusForm">
-			<label for="gamesPlusPassword">Enter the Games+ password</label>
-			<input id="gamesPlusPassword" name="password" type="password" autocomplete="off" required>
-			<p class="games-plus-error" id="gamesPlusError" role="alert" aria-live="polite"></p>
-			<div class="games-plus-actions">
-				<a class="home-link" href="index.html">Back to main arcade</a>
-				<button type="submit">Continue</button>
-			</div>
-		</form>
-	</dialog>
-	<script src="access-code.js?v=1"></script>
 	<script>
 		(() => {
-			const ACCESS_KEY = 'rockyGamesPlusAccessGranted';
-			const main = document.querySelector('main');
-			const footer = document.querySelector('footer');
-			const dialog = document.querySelector('#gamesPlusDialog');
-			const form = document.querySelector('#gamesPlusForm');
-			const passwordInput = document.querySelector('#gamesPlusPassword');
-			const errorMessage = document.querySelector('#gamesPlusError');
-			let hasEntryTicket = false;
-			try {
-				hasEntryTicket = sessionStorage.getItem(ACCESS_KEY) === 'true';
-				sessionStorage.removeItem(ACCESS_KEY);
-			} catch (error) {
-				console.error('Rocky Games+ could not read access approval:', error);
-			}
 			const gameGrid = document.querySelector('#gameGrid');
 			const catalogCount = document.querySelector('#catalogCount');
 			const loadStatus = document.querySelector('#loadStatus');
@@ -144,31 +111,7 @@
 						loadStatus.textContent = 'The game list could not be loaded. Return to the main arcade and try again.';
 					});
 			}
-			function grantAccess() {
-				main.style.visibility = 'visible';
-				footer.style.visibility = 'visible';
-				const browser = document.querySelector('.browser-embed');
-				browser.src = browser.dataset.src;
-				loadCatalog();
-			}
-			form.addEventListener('submit', async (event) => {
-				event.preventDefault();
-				if (!(await window.RockyAccess.isValidAccessCode(passwordInput.value))) {
-					errorMessage.textContent = 'That password is not correct.';
-					passwordInput.select();
-					return;
-				}
-				dialog.close();
-				grantAccess();
-			});
-			passwordInput.addEventListener('input', () => { errorMessage.textContent = ''; });
-			if (hasEntryTicket) {
-				grantAccess();
-			} else {
-				if (typeof dialog.showModal === 'function') dialog.showModal();
-				else dialog.setAttribute('open', '');
-				passwordInput.focus();
-			}
+			loadCatalog();
 		})();
 	</script>
 </body>
