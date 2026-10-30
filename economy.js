@@ -23,7 +23,7 @@
 	// Public Cloudflare Turnstile site key; account creation stays off until it is set.
 	const TURNSTILE_SITE_KEY = '';
 	const NEWS_VERSION = 'accounts-enabled-1';
-	const ACCOUNTS_ENABLED = false;
+	const ACCOUNTS_ENABLED = true;
 	const GAME_REWARD = 5;
 	const MAX_COINS = 2000000000;
 	const REWARD_COOLDOWN_MS = 5000;
