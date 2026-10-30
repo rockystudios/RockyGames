@@ -5,8 +5,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta name="theme-color" content="#050b07">
 	<title>Coins Leaderboard | Rocky Games</title>
-	<link rel="stylesheet" href="economy.css?v=public-site-35">
-	<script src="economy.js?v=public-site-36" defer></script>
+	<link rel="stylesheet" href="economy.css?v=secure-auth-1">
+	<script src="economy.js?v=secure-auth-1" defer></script>
 	<style>
 		:root { color-scheme: light; --ink: #202522; --paper: #f3f1e8; --lime: #d9f06b; }
 		* { box-sizing: border-box; }
@@ -54,10 +54,10 @@
 			let me = '';
 			try { me = (JSON.parse(localStorage.getItem('rockyGamesAccount') || 'null') || {}).username || ''; } catch (e) {}
 			const loaded = new Promise((resolve) => window.addEventListener('load', resolve));
-			fetch(URL_BASE + '/functions/v1/rocky-api', {
+			fetch(URL_BASE + '/rest/v1/rpc/get_leaderboard', {
 				method: 'POST',
-				body: JSON.stringify({ action: 'leaderboard' }),
-				headers: { apikey: KEY, Authorization: 'Bearer ' + KEY }
+				body: '{}',
+				headers: { apikey: KEY, Authorization: 'Bearer ' + KEY, 'Content-Type': 'application/json' }
 			}).then((response) => {
 				if (!response.ok) throw new Error('Server error ' + response.status);
 				return response.json();

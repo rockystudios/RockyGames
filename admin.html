@@ -15,7 +15,11 @@
 		th, td { padding: 6px; border-bottom: 1px solid #202522; text-align: left; }
 		td input[type="number"] { width: 110px; }
 		#status { min-height: 1.4em; }
-		#noip-form[hidden], #bulk-form[hidden], #ip-form[hidden], #words-form[hidden] { display: none; }
+		#noip-form, #words-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
+		#noip-form h2, #words-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
+		h2 { font-size: 16px; text-transform: uppercase; }
+		textarea { display: block; margin: 4px 0 8px; }
+		label { display: block; margin: 4px 0; }
 		#ip-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
 		#ip-form h2 { margin: 0 0 8px; font-size: 16px; text-transform: uppercase; }
 		#bulk-form { margin: 0 0 16px; padding: 12px; border: 2px solid #202522; }
@@ -26,338 +30,258 @@
 </head>
 <body>
 	<main>
-		<form id="bulk-form" hidden>
-			<h2>Delete or ban by name</h2>
-			<label>Username contains <input id="bulk-text" type="text" maxlength="24" autocomplete="off" required></label>
-			<button type="submit" data-mode="delete">Delete matching</button>
-			<button type="submit" data-mode="ban">Ban matching devices</button>
-			<p class="hint">Matching ignores capitals. Ban keeps the account as a banned record (so devices can be blocked) instead of removing it.</p>
-		</form>
-		<form id="ip-form" hidden>
-			<h2>Ban an IP address</h2>
-			<label>IP address <input id="ip-text" type="text" maxlength="45" autocomplete="off" required></label>
-			<button type="submit">Ban IP</button>
-			<p class="hint">Everyone on this network is blocked, including shared school or home connections. Remove it with "Remove ban record" on its ip: row below.</p>
-		</form>
-		<form id="noip-form" hidden>
-			<h2>Remove bot accounts</h2>
-			<label>Created in the last (hours, 0 = any time) <input id="noip-hours" type="number" min="0" value="24"></label>
-			<button type="submit">Delete accounts with no IP and 0 coins</button>
-			<button type="button" id="noip-auto">Start auto-remove every 5 seconds</button>
-			<p class="hint">Real players get an IP saved when they visit. Bots that call the database directly never do. You see the list and confirm first.</p>
-		</form>
-		<form id="words-form" hidden>
-			<h2>Blocked words, passwords and coin amounts</h2>
-			<label>One word per line <textarea id="words-text" rows="5" cols="30"></textarea></label>
-			<label>Blocked passwords, one per line (exact match) <textarea id="pw-text" rows="4" cols="30"></textarea></label>
-			<label>Blocked coin amounts, one number per line (exact match) <textarea id="coins-text" rows="4" cols="30"></textarea></label>
-			<button type="submit">Save lists</button>
-			<button type="button" id="words-scan">Ban accounts that match any list</button>
-			<p class="hint">Usernames containing these words (ignoring capitals, spaces, symbols and look-alikes such as 0 for o) get the account and device banned. Matching is by substring, so avoid short words that sit inside normal names.</p>
-		</form>
 		<h1>Admin panel</h1>
 		<form id="login">
-			<label>Admin password <input id="admin-password" type="password" autocomplete="off" required></label>
-			<button type="submit">Unlock</button>
+			<label>Admin username <input id="admin-username" type="text" autocomplete="username" maxlength="24" required></label>
+			<label>Password <input id="admin-password" type="password" autocomplete="current-password" maxlength="72" required></label>
+			<button type="submit">Sign in</button>
 		</form>
 		<p id="status" role="status" aria-live="polite"></p>
 		<section id="panel" hidden>
+			<p><span id="who"></span> <button type="button" id="signout">Sign out</button></p>
+			<p id="reset-result" role="status" hidden></p>
+			<form id="bulk-form">
+				<h2>Delete or ban by name</h2>
+				<label>Username contains <input id="bulk-text" type="text" maxlength="24" autocomplete="off" required></label>
+				<button type="submit" data-mode="delete">Delete matching</button>
+				<button type="submit" data-mode="ban">Ban matching</button>
+				<p class="hint">Matching ignores capitals. You see the list and confirm first. Administrators are never matched.</p>
+			</form>
+			<form id="ip-form">
+				<h2>Ban an IP address</h2>
+				<label>IP address <input id="ip-text" type="text" maxlength="45" autocomplete="off" required></label>
+				<button type="submit">Ban IP</button>
+				<p class="hint">Everyone on this network is blocked, including shared school or home connections.</p>
+				<ul id="ip-list"></ul>
+			</form>
+			<form id="noip-form">
+				<h2>Remove bot accounts</h2>
+				<label>Created in the last (hours, 0 = any time) <input id="noip-hours" type="number" min="0" value="24"></label>
+				<button type="submit">Delete accounts with no IP and 0 coins</button>
+				<p class="hint">Real players get an IP saved when they sign in. You see the list and confirm first.</p>
+			</form>
+			<form id="words-form">
+				<h2>Blocked words, passwords and coin amounts</h2>
+				<label>One word per line <textarea id="words-text" rows="5" cols="30"></textarea></label>
+				<label>Blocked passwords for new accounts, one per line (exact match) <textarea id="pw-text" rows="4" cols="30"></textarea></label>
+				<label>Blocked coin amounts, one number per line (exact match) <textarea id="coins-text" rows="4" cols="30"></textarea></label>
+				<button type="submit">Save lists</button>
+				<button type="button" id="words-scan">Ban accounts that match the lists</button>
+				<p class="hint">Usernames containing these words (ignoring capitals, symbols and look-alikes such as 0 for o) are refused at sign-up. Passwords are stored hashed, so existing passwords cannot be scanned.</p>
+			</form>
 			<button type="button" id="refresh">Refresh</button>
-			<label><input type="checkbox" id="show-hidden"> Show banned accounts and ban records</label>
+			<label><input type="checkbox" id="show-hidden"> Show banned accounts</label>
 			<table>
-				<thead><tr><th scope="col">ID</th><th scope="col">Username</th><th scope="col">Last IP</th><th scope="col">Coins</th><th scope="col">Actions</th></tr></thead>
+				<thead><tr><th scope="col">Username</th><th scope="col">Last IP</th><th scope="col">Coins</th><th scope="col">Actions</th></tr></thead>
 				<tbody id="rows"></tbody>
 			</table>
+			<h2>Abuse monitoring</h2>
+			<table><thead><tr><th scope="col">Event</th><th scope="col">Last hour</th><th scope="col">Last 24h</th></tr></thead><tbody id="counts"></tbody></table>
+			<h2>Recent events</h2>
+			<table><thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">User</th><th scope="col">IP</th></tr></thead><tbody id="events"></tbody></table>
+			<h2>Admin audit log</h2>
+			<table><thead><tr><th scope="col">Time</th><th scope="col">Admin</th><th scope="col">Action</th><th scope="col">Target</th></tr></thead><tbody id="audit"></tbody></table>
 		</section>
 	</main>
 	<script>
 		(function () {
-			const URL_BASE = 'https://elxnypvvwrumhwakczwe.supabase.co';
+			const BASE = 'https://elxnypvvwrumhwakczwe.supabase.co';
 			const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
-			let adminToken = '';
+			const SESSION_KEY = 'rockyAdminSession';
 			const status = document.querySelector('#status');
-			const rowsEl = document.querySelector('#rows');
+			const login = document.querySelector('#login');
+			const panel = document.querySelector('#panel');
+			const rows = document.querySelector('#rows');
+			let session = null;
+			let accounts = [];
 
-			async function api(query, options = {}) {
-				const action = query === '@scan' ? 'admin-scan' : 'admin-proxy';
-				const apiResponse = await fetch(`${URL_BASE}/functions/v1/rocky-api`, {
-					method: 'POST',
-					headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-					body: JSON.stringify({
-						action, token: adminToken, query: query === '@scan' ? undefined : query,
-						method: options.method || 'GET',
-						body: options.body ? JSON.parse(options.body) : undefined,
-						...(query === '@scan' && options.body ? JSON.parse(options.body) : {})
-					})
-				});
-				const result = await apiResponse.json().catch(() => ({}));
-				if (!apiResponse.ok) throw new Error(result.error || `Server error ${apiResponse.status}`);
+			function loadSession() {
+				try { session = JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { session = null; }
+			}
+			function saveSession(next) {
+				session = next;
+				if (next) sessionStorage.setItem(SESSION_KEY, JSON.stringify(next)); else sessionStorage.removeItem(SESSION_KEY);
+			}
+			function headers(token) {
+				return { apikey: KEY, Authorization: 'Bearer ' + (token || KEY), 'Content-Type': 'application/json' };
+			}
+			async function call(fn, body, token) {
+				const response = await fetch(BASE + '/functions/v1/' + fn, { method: 'POST', headers: headers(token), body: JSON.stringify(body) });
+				const result = await response.json().catch(() => ({}));
+				if (!response.ok) { const error = new Error(result.error || 'Server error ' + response.status); error.status = response.status; throw error; }
 				return result;
-				/* Legacy direct REST request retained below for reference during rollout. */
-				const response = await fetch(`${URL_BASE}/rest/v1/account${query}`, {
-					...options,
-					headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json', Prefer: 'return=representation' }
-				});
-				if (!response.ok) throw new Error(`Server error ${response.status}`);
-				return response.json();
+			}
+			async function token() {
+				if (!session) throw new Error('Sign in first.');
+				if (session.expires_at - 60 > Date.now() / 1000) return session.access_token;
+				const response = await fetch(BASE + '/auth/v1/token?grant_type=refresh_token', { method: 'POST', headers: headers(), body: JSON.stringify({ refresh_token: session.refresh_token }) });
+				if (!response.ok) { lock('Session expired. Sign in again.'); throw new Error('Session expired.'); }
+				const next = await response.json();
+				saveSession({ ...session, access_token: next.access_token, refresh_token: next.refresh_token, expires_at: next.expires_at || Math.floor(Date.now() / 1000) + next.expires_in });
+				return session.access_token;
+			}
+			async function api(action, body = {}) {
+				try {
+					return await call('rocky-admin', { action, ...body }, await token());
+				} catch (error) {
+					if (error.status === 401) lock('Session expired. Sign in again.');
+					throw error;
+				}
+			}
+			function lock(message) {
+				saveSession(null);
+				panel.hidden = true;
+				login.hidden = false;
+				status.textContent = message || '';
+			}
+			const say = (message) => { status.textContent = message; };
+			const fail = (error) => say(error.message === 'Failed to fetch' ? 'Could not reach the server.' : error.message);
+
+			function button(label, handler) {
+				const b = document.createElement('button');
+				b.type = 'button';
+				b.textContent = label;
+				b.addEventListener('click', handler);
+				return b;
+			}
+			function cell(content) {
+				const td = document.createElement('td');
+				if (content instanceof Node) td.append(content); else td.textContent = content;
+				return td;
+			}
+			function fill(body, list, columns) {
+				body.replaceChildren(...list.map((item) => {
+					const tr = document.createElement('tr');
+					columns.forEach((column) => tr.append(cell(column(item))));
+					return tr;
+				}));
+			}
+			const when = (value) => new Date(value).toLocaleString();
+
+			async function run(task, done) {
+				try { await task(); if (done) say(done); await load(); } catch (error) { fail(error); }
 			}
 
-			async function apiAll(query) {
-				const all = [];
-				for (let offset = 0; ; offset += 1000) {
-					const page = await api(`${query}&limit=1000&offset=${offset}`);
-					all.push(...page);
-					if (page.length < 1000) return all;
-				}
+			function renderAccounts() {
+				const showHidden = document.querySelector('#show-hidden').checked;
+				const list = accounts.filter((row) => showHidden || !row.banned);
+				rows.replaceChildren(...list.map((row) => {
+					const tr = document.createElement('tr');
+					tr.append(cell(row.username + (row.is_admin ? ' (admin)' : '') + (row.banned ? ' (banned)' : '') + (row.must_change_password ? ' (must change password)' : '')));
+					tr.append(cell(row.last_ip || '-'));
+					const coins = document.createElement('input');
+					coins.type = 'number'; coins.min = '0'; coins.max = '2000000000'; coins.value = row.coins;
+					coins.setAttribute('aria-label', 'Coins for ' + row.username);
+					tr.append(cell(coins));
+					const actions = document.createElement('div');
+					actions.append(
+						button('Set coins', () => run(() => api('set-coins', { id: row.id, coins: Number(coins.value) }), 'Coins saved.')),
+						button('Rename', () => {
+							const name = prompt('New username for ' + row.username + ':', row.username);
+							if (name && name !== row.username) run(() => api('rename', { id: row.id, username: name.trim() }), 'Renamed.');
+						})
+					);
+					if (!row.is_admin) {
+						actions.append(
+							button('Reset password', () => {
+								if (!confirm('Reset the password for ' + row.username + '? They must choose a new one the next time they sign in.')) return;
+								run(async () => {
+									const result = await api('reset-password', { id: row.id });
+									const out = document.querySelector('#reset-result');
+									out.hidden = false;
+									out.textContent = 'Temporary password for ' + result.username + ': ' + result.temporary_password + ' (shown once; give it to the player privately)';
+								}, 'Password reset and recorded in the audit log.');
+							}),
+							button(row.banned ? 'Unban' : 'Ban', () => run(() => api(row.banned ? 'unban' : 'ban', { id: row.id }), row.banned ? 'Unbanned.' : 'Banned.')),
+							button('Delete', () => {
+								if (confirm('Permanently delete ' + row.username + '?')) run(() => api('delete', { id: row.id }), 'Deleted.');
+							})
+						);
+					}
+					tr.append(cell(actions));
+					return tr;
+				}));
 			}
 
 			async function load() {
-				status.textContent = 'Loading…';
-				try {
-					const accounts = await apiAll('?select=id,username,coins,bgs&order=coins.desc,id.asc');
-					rowsEl.replaceChildren();
-					const showHidden = document.querySelector('#show-hidden').checked;
-					const visible = showHidden ? accounts : accounts.filter((account) => !(account.bgs && account.bgs.banned) && !account.username.startsWith('ip:') && !account.username.startsWith('config:'));
-					visible.forEach((account) => {
-						const tr = document.createElement('tr');
-						const cell = (content) => { const td = document.createElement('td'); td.append(content); tr.append(td); return td; };
-						cell(String(account.id));
-						const banned = Boolean(account.bgs && account.bgs.banned);
-						const nameInput = document.createElement('input');
-						nameInput.type = 'text';
-						nameInput.maxLength = 24;
-						nameInput.value = account.username;
-						nameInput.setAttribute('aria-label', `Username for account ${account.id}`);
-						const nameCell = cell(nameInput);
-						if (banned) nameCell.append(' (BANNED)');
-						cell((account.bgs && account.bgs.ip) || 'not seen yet');
-						const coins = document.createElement('input');
-						coins.type = 'number';
-						coins.min = '0';
-						coins.step = '1';
-						coins.value = account.coins;
-						coins.setAttribute('aria-label', `Coins for ${account.username}`);
-						cell(coins);
-						const actions = document.createElement('td');
-						const rename = document.createElement('button');
-						rename.type = 'button';
-						rename.textContent = 'Set name';
-						rename.addEventListener('click', async () => {
-							const name = nameInput.value.trim();
-							if (!name || name.length > 24) { status.textContent = 'Username must be 1-24 characters.'; return; }
-							if (name === account.username) { status.textContent = 'That is already the username.'; return; }
-							try {
-								const taken = await api(`?username=eq.${encodeURIComponent(name)}&select=id`);
-								if (taken.length) { status.textContent = `"${name}" is already taken.`; return; }
-								await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ username: name }) });
-								status.textContent = `Renamed ${account.username} to ${name}.`;
-								load();
-							} catch (error) { status.textContent = error.message; }
-						});
-						const save = document.createElement('button');
-						save.type = 'button';
-						save.textContent = 'Set coins';
-						save.addEventListener('click', async () => {
-							const value = Number(coins.value);
-							if (!Number.isSafeInteger(value) || value < 0 || value > 2000000000) { status.textContent = 'Coins must be a whole number from 0 to 2,000,000,000.'; return; }
-							try {
-								await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: value }) });
-								status.textContent = `${account.username} now has ${value} coins.`;
-							} catch (error) { status.textContent = error.message; }
-						});
-						const del = document.createElement('button');
-						del.type = 'button';
-						del.textContent = banned ? 'Remove ban record' : 'Delete';
-						del.addEventListener('click', async () => {
-							if (!confirm(`Delete account "${account.username}"? This cannot be undone.`)) return;
-							const ban = !banned && confirm(`Also ban "${account.username}"? OK = ban every device signed in to this account. Cancel = just delete it.`);
-							try {
-								if (ban) {
-									await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, bgs: { banned: true }, nameplates: {} }) });
-									status.textContent = `Banned ${account.username}. Devices are blocked the next time they check in.`;
-								} else {
-									await api(`?id=eq.${account.id}`, { method: 'DELETE' });
-									status.textContent = `Deleted ${account.username}.`;
-								}
-								load();
-							} catch (error) { status.textContent = error.message; }
-						});
-						if (account.bgs && account.bgs.ip && !banned) {
-							const banIp = document.createElement('button');
-							banIp.type = 'button';
-							banIp.textContent = 'Ban IP';
-							banIp.addEventListener('click', () => banAddress(account.bgs.ip));
-							actions.append(banIp, ' ');
-						}
-						actions.append(rename, ' ', save, ' ', del);
-						tr.append(actions);
-						rowsEl.append(tr);
-					});
-					status.textContent = `${visible.length} accounts shown (${accounts.length - visible.length} hidden).`;
-				} catch (error) { status.textContent = error.message; }
-			}
-
-			document.querySelector('#login').addEventListener('submit', async (event) => {
-				event.preventDefault();
-				try {
-					const response = await fetch(`${URL_BASE}/functions/v1/rocky-api`, {
-						method: 'POST',
-						headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' },
-						body: JSON.stringify({ action: 'admin-login', password: document.querySelector('#admin-password').value })
-					});
-					const result = await response.json().catch(() => ({}));
-					if (!response.ok) throw new Error(result.error || 'Admin sign-in failed.');
-					adminToken = result.token;
-					document.querySelector('#admin-password').value = '';
-				} catch (error) {
-					status.textContent = error.message;
-					return;
+				accounts = (await api('list')).accounts;
+				renderAccounts();
+				const [bans, events, audit] = await Promise.all([api('list-ip-bans'), api('events'), api('audit')]);
+				const ipList = document.querySelector('#ip-list');
+				ipList.replaceChildren(...bans.bans.map((ban) => {
+					const li = document.createElement('li');
+					li.append(ban.ip + ' ', button('Remove ban', () => run(() => api('unban-ip', { ip: ban.ip }), 'IP ban removed.')));
+					return li;
+				}));
+				fill(document.querySelector('#counts'), Object.entries(events.counts), [([name]) => name, ([, c]) => c.hour, ([, c]) => c.day]);
+				fill(document.querySelector('#events'), events.events.slice(0, 50), [(e) => when(e.created_at), (e) => e.event, (e) => e.username || '-', (e) => e.ip || '-']);
+				fill(document.querySelector('#audit'), audit.entries.slice(0, 50), [(e) => when(e.created_at), (e) => e.actor_name, (e) => e.action, (e) => e.target_name || '-']);
+				const config = (await api('get-config')).config;
+				const words = document.querySelector('#words-text');
+				if (document.activeElement !== words) {
+					words.value = (config.words || []).join('\n');
+					document.querySelector('#pw-text').value = (config.passwords || []).join('\n');
+					document.querySelector('#coins-text').value = (config.coins || []).join('\n');
 				}
-				document.querySelector('#login').hidden = true;
-				document.querySelector('#panel').hidden = false;
-				document.querySelector('#bulk-form').hidden = false;
-				document.querySelector('#ip-form').hidden = false;
-				document.querySelector('#words-form').hidden = false;
-				document.querySelector('#noip-form').hidden = false;
-				loadWords();
-				load();
-			});
-			const WORDS_ROW = 'config:blocked-words';
-			const norm = (text) => String(text).toLowerCase().replace(/[013457@$!]/g, (c) => ({ '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' })[c]).replace(/[^a-z]/g, '');
-			let wordsRowId = null;
-
-			async function loadWords() {
-				const rows = await api(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=id,bgs`);
-				wordsRowId = rows[0] ? rows[0].id : null;
-				const saved = (rows[0] && rows[0].bgs) || {};
-				document.querySelector('#words-text').value = (saved.words || []).join('\n');
-				document.querySelector('#pw-text').value = (saved.passwords || []).join('\n');
-				document.querySelector('#coins-text').value = (saved.coins || []).join('\n');
 			}
 
-			document.querySelector('#words-form').addEventListener('submit', async (event) => {
+			async function previewThenApply(action, body, label) {
+				const preview = await api(action, { ...body, dry_run: true });
+				if (!preview.matches.length) { say('Nothing matches.'); return; }
+				const names = preview.matches.slice(0, 30).map((row) => row.username).join(', ');
+				if (!confirm(label + ' ' + preview.matches.length + ' account(s)?\n\n' + names)) return;
+				const result = await api(action, { ...body, dry_run: false });
+				say(result.affected + ' account(s) changed.');
+				await load();
+			}
+			const lines = (id) => document.querySelector(id).value.split('\n').map((line) => line.trim()).filter(Boolean);
+
+			login.addEventListener('submit', async (event) => {
 				event.preventDefault();
-				const words = [...new Set(document.querySelector('#words-text').value.split('\n').map((w) => w.trim()).filter((w) => norm(w).length >= 2))];
-				const passwords = [...new Set(document.querySelector('#pw-text').value.split('\n').filter((w) => w.trim()))];
-				const coins = [...new Set(document.querySelector('#coins-text').value.split('\n').map((w) => w.trim()).filter((w) => /^\d+$/.test(w)).map(Number))];
-				const bgs = { banned: true, config: true, words, passwords, coins };
+				say('Signing in…');
 				try {
-					if (wordsRowId) await api(`?id=eq.${wordsRowId}`, { method: 'PATCH', body: JSON.stringify({ bgs }) });
-					else {
-						const created = await api('', { method: 'POST', body: JSON.stringify({ username: WORDS_ROW, coins: 0, bgs, nameplates: {} }) });
-						wordsRowId = created[0].id;
-					}
-					status.textContent = `Saved ${words.length} word(s), ${passwords.length} password(s), ${coins.length} coin amount(s).`;
-					load();
-				} catch (error) { status.textContent = error.message; }
+					const result = await call('rocky-auth', { action: 'login', username: document.querySelector('#admin-username').value.trim(), password: document.querySelector('#admin-password').value });
+					document.querySelector('#admin-password').value = '';
+					if (result.profile.is_admin !== true) throw new Error('This account is not an administrator.');
+					if (result.profile.must_change_password) throw new Error('Change your password on the main site first.');
+					saveSession({ ...result.session, username: result.profile.username });
+					start();
+				} catch (error) { fail(error); }
 			});
-
-			document.querySelector('#words-scan').addEventListener('click', async () => {
-				try {
-					const words = document.querySelector('#words-text').value.split('\n').map(norm).filter((w) => w.length >= 2);
-					const passwords = new Set(document.querySelector('#pw-text').value.split('\n').filter((w) => w.trim()));
-					const coins = new Set(document.querySelector('#coins-text').value.split('\n').map((w) => w.trim()).filter((w) => /^\d+$/.test(w)).map(Number));
-					const hits = await api('@scan', { method: 'POST', body: JSON.stringify({ words, passwords: [...passwords], coins: [...coins] }) });
-					if (!hits.length) { status.textContent = 'No accounts match the lists.'; return; }
-					if (!confirm(`Ban ${hits.length} account(s): ${hits.map((a) => a.username).join(', ')}?`)) return;
-					for (const a of hits) await api(`?id=eq.${a.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, bgs: { banned: true, reason: 'blocked list' } }) });
-					status.textContent = `Banned ${hits.length} account(s).`;
-					load();
-				} catch (error) { status.textContent = error.message; }
+			document.querySelector('#signout').addEventListener('click', () => {
+				if (session) fetch(BASE + '/auth/v1/logout?scope=local', { method: 'POST', headers: headers(session.access_token) }).catch(() => {});
+				lock('Signed out.');
 			});
-
-			async function banAddress(ip) {
-				const clean = String(ip).trim();
-				if (!/^[0-9a-fA-F:.]{3,45}$/.test(clean)) { status.textContent = 'That does not look like an IP address.'; return; }
-				if (!confirm(`Ban IP ${clean}? Everyone on that network will be blocked.`)) return;
-				try {
-					const existing = await api(`?username=eq.${encodeURIComponent('ip:' + clean)}&select=id`);
-					if (existing.length) { status.textContent = `${clean} is already banned.`; return; }
-					await api('', { method: 'POST', body: JSON.stringify({ username: 'ip:' + clean, coins: 0, bgs: { banned: true, ipBan: true }, nameplates: {} }) });
-					status.textContent = `Banned IP ${clean}.`;
-					load();
-				} catch (error) { status.textContent = error.message; }
-			}
-
+			document.querySelector('#refresh').addEventListener('click', () => run(async () => {}));
+			document.querySelector('#show-hidden').addEventListener('change', renderAccounts);
+			document.querySelector('#bulk-form').addEventListener('submit', (event) => {
+				event.preventDefault();
+				const mode = event.submitter && event.submitter.dataset.mode === 'ban' ? 'ban' : 'delete';
+				previewThenApply('bulk-by-name', { contains: document.querySelector('#bulk-text').value, mode }, mode === 'ban' ? 'Ban' : 'Delete').catch(fail);
+			});
+			document.querySelector('#noip-form').addEventListener('submit', (event) => {
+				event.preventDefault();
+				previewThenApply('bot-cleanup', { hours: Number(document.querySelector('#noip-hours').value) || 0 }, 'Delete').catch(fail);
+			});
 			document.querySelector('#ip-form').addEventListener('submit', (event) => {
 				event.preventDefault();
-				banAddress(document.querySelector('#ip-text').value).then(() => { document.querySelector('#ip-text').value = ''; });
+				run(() => api('ban-ip', { ip: document.querySelector('#ip-text').value.trim() }), 'IP banned.');
 			});
-			document.querySelector('#noip-form').addEventListener('submit', async (event) => {
+			document.querySelector('#words-form').addEventListener('submit', (event) => {
 				event.preventDefault();
-				const hours = Number(document.querySelector('#noip-hours').value) || 0;
-				const since = hours > 0 ? Date.now() - hours * 3600000 : 0;
-				try {
-					const accounts = await apiAll('?select=id,username,coins,created_at,bgs&order=id.asc');
-					const hits = accounts.filter((a) => !a.username.startsWith('ip:') && !a.username.startsWith('config:') && !(a.bgs && (a.bgs.ip || a.bgs.banned)) && a.coins === 0 && Date.parse(a.created_at) >= since);
-					if (!hits.length) { status.textContent = 'No accounts match.'; return; }
-					if (!confirm(`DELETE ${hits.length} account(s) with no IP and 0 coins?\n\nFirst: ${hits.slice(0, 15).map((a) => a.username).join(', ')}${hits.length > 15 ? ', ...' : ''}\n\nThis cannot be undone.`)) return;
-					for (let i = 0; i < hits.length; i += 100) await api(`?id=in.(${hits.slice(i, i + 100).map((a) => a.id).join(',')})`, { method: 'DELETE' });
-					status.textContent = `Deleted ${hits.length} account(s).`;
-					load();
-				} catch (error) { status.textContent = error.message; }
+				run(() => api('save-config', { words: lines('#words-text'), passwords: lines('#pw-text'), coins: lines('#coins-text').map(Number) }), 'Lists saved.');
 			});
-			let autoTimer = null;
-			let autoBusy = false;
-			let autoTotal = 0;
-			const autoButton = document.querySelector('#noip-auto');
-			async function autoClean() {
-				if (autoBusy) return;
-				autoBusy = true;
-				try {
-					const accounts = await apiAll('?select=id,username,coins,created_at,bgs&order=id.asc');
-					const cutoff = Date.now() - 60000;
-					const hits = accounts.filter((a) => !a.username.startsWith('ip:') && !a.username.startsWith('config:') && !(a.bgs && (a.bgs.ip || a.bgs.banned)) && a.coins === 0 && Date.parse(a.created_at) < cutoff);
-					for (let i = 0; i < hits.length; i += 100) await api(`?id=in.(${hits.slice(i, i + 100).map((a) => a.id).join(',')})`, { method: 'DELETE' });
-					autoTotal += hits.length;
-					status.textContent = `Auto-remove is on. Removed ${autoTotal} bot account(s) so far.`;
-				} catch (error) { status.textContent = `Auto-remove error: ${error.message}`; }
-				autoBusy = false;
-			}
-			autoButton.addEventListener('click', () => {
-				if (autoTimer) {
-					clearInterval(autoTimer);
-					autoTimer = null;
-					autoButton.textContent = 'Start auto-remove every 5 seconds';
-					status.textContent = `Auto-remove stopped. Removed ${autoTotal} bot account(s).`;
-					load();
-					return;
-				}
-				if (!confirm('Every 5 seconds, delete accounts with no IP, 0 coins, and older than 1 minute? Keep this page open. Stop it with the same button.')) return;
-				autoTotal = 0;
-				autoButton.textContent = 'Stop auto-remove';
-				autoClean();
-				autoTimer = setInterval(autoClean, 5000);
-			});
-			document.querySelector('#refresh').addEventListener('click', load);
-			document.querySelector('#show-hidden').addEventListener('change', load);
+			document.querySelector('#words-scan').addEventListener('click', () => previewThenApply('scan-config', {}, 'Ban').catch(fail));
 
-			document.querySelector('#bulk-form').addEventListener('submit', async (event) => {
-				event.preventDefault();
-				const mode = event.submitter && event.submitter.dataset.mode;
-				const text = document.querySelector('#bulk-text').value.trim().toLowerCase();
-				if (!text || !mode) return;
-				try {
-					const accounts = await apiAll('?select=id,username,bgs&order=id.asc');
-					const matches = accounts.filter((account) => account.username.toLowerCase().includes(text) && !(mode === 'ban' && account.bgs && account.bgs.banned));
-					if (!matches.length) { status.textContent = `No accounts match "${text}".`; return; }
-					const names = matches.map((account) => account.username).join(', ');
-					const verb = mode === 'ban' ? 'BAN the devices of' : 'DELETE';
-					if (!confirm(`${verb} ${matches.length} account(s)?\n\n${names}\n\nThis cannot be undone.`)) return;
-					if (mode === 'ban') {
-						for (const account of matches) {
-							await api(`?id=eq.${account.id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, bgs: { banned: true }, nameplates: {} }) });
-						}
-						status.textContent = `Banned ${matches.length} account(s). Devices are blocked the next time they check in.`;
-					} else {
-						const idList = matches.map((account) => account.id);
-						for (let i = 0; i < idList.length; i += 100) await api(`?id=in.(${idList.slice(i, i + 100).join(',')})`, { method: 'DELETE' });
-						status.textContent = `Deleted ${matches.length} account(s).`;
-					}
-					document.querySelector('#bulk-text').value = '';
-					load();
-				} catch (error) { status.textContent = error.message; }
-			});
+			function start() {
+				login.hidden = true;
+				panel.hidden = false;
+				document.querySelector('#who').textContent = 'Signed in as ' + session.username + '.';
+				say('');
+				load().catch(fail);
+			}
+			loadSession();
+			if (session) start();
 		})();
 	</script>
 </body>

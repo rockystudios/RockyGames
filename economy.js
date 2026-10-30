@@ -20,7 +20,8 @@
 	const LAST_USERNAME_KEY = 'rockyGamesLastUsername';
 	const SUPABASE_URL = 'https://elxnypvvwrumhwakczwe.supabase.co';
 	const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVseG55cHZ2d3J1bWh3YWtjendlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNTk0OTAsImV4cCI6MjEwODczNTQ5MH0.j3jNeub4wRWFeW_FCtA2fGm310lmVNlV_UqpwnrE-Yw';
-	const SUPABASE_TABLE = 'account';
+	// Public Cloudflare Turnstile site key; account creation stays off until it is set.
+	const TURNSTILE_SITE_KEY = '';
 	const NEWS_VERSION = 'accounts-enabled-1';
 	const ACCOUNTS_ENABLED = true;
 	const GAME_REWARD = 5;
@@ -1086,38 +1087,105 @@
 	function getAccount() {
 		try {
 			const account = JSON.parse(localStorage.getItem(ACCOUNT_KEY) || 'null');
-			return account && Number.isInteger(account.id) && typeof account.username === 'string' && typeof account.token === 'string' ? account : null;
+			return account && typeof account.id === 'string' && typeof account.username === 'string'
+				&& typeof account.access_token === 'string' && typeof account.refresh_token === 'string' ? account : null;
 		} catch (error) {
 			return null;
 		}
+	}
+
+	function saveAccount(account) {
+		localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
 	}
 
 	function cloudConfigured() {
 		return !SUPABASE_URL.startsWith('PASTE_') && !SUPABASE_ANON_KEY.startsWith('PASTE_');
 	}
 
-	async function cloudRequest(query, options = {}) {
-		const apiResponse = await fetch(`${SUPABASE_URL}/functions/v1/rocky-api`, {
-			method: 'POST',
-			headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-			body: JSON.stringify({ action: query, ...options })
-		});
-		const result = await apiResponse.json().catch(() => ({}));
-		if (!apiResponse.ok) throw new Error(result.error || `Server error ${apiResponse.status}`);
+	class CloudError extends Error {
+		constructor(message, status) {
+			super(message);
+			this.status = status;
+		}
+	}
+
+	async function parseResponse(response) {
+		const result = await response.json().catch(() => ({}));
+		if (!response.ok) throw new CloudError(result.error || result.message || result.msg || `Server error ${response.status}`, response.status);
 		return result;
-		/* Legacy direct REST request retained below for reference during rollout. */
-		const response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}${query}`, {
-			...options,
-			headers: {
-				apikey: SUPABASE_ANON_KEY,
-				Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-				'Content-Type': 'application/json',
-				Prefer: 'return=representation',
-				...(options.headers || {})
-			}
+	}
+
+	function authHeaders(token) {
+		return { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + (token || SUPABASE_ANON_KEY), 'Content-Type': 'application/json' };
+	}
+
+	async function cloudRequest(action, payload = {}, token) {
+		const response = await fetch(`${SUPABASE_URL}/functions/v1/rocky-auth`, {
+			method: 'POST',
+			headers: authHeaders(token),
+			body: JSON.stringify({ action, ...payload })
 		});
-		if (!response.ok) throw new Error(`Server error ${response.status}`);
-		return response.status === 204 ? [] : response.json();
+		return parseResponse(response);
+	}
+
+	let refreshPromise = null;
+
+	function sessionToAccount(session, profile, previous) {
+		return {
+			id: profile?.id || previous.id,
+			username: profile?.username || previous.username,
+			is_admin: profile ? profile.is_admin === true : previous.is_admin === true,
+			must_change_password: profile ? profile.must_change_password === true : previous.must_change_password === true,
+			access_token: session.access_token,
+			refresh_token: session.refresh_token,
+			expires_at: session.expires_at || Math.floor(Date.now() / 1000) + (session.expires_in || 3600)
+		};
+	}
+
+	async function refreshSession() {
+		const account = getAccount();
+		if (!account) throw new CloudError('Sign in again.', 401);
+		let response;
+		try {
+			response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+				method: 'POST',
+				headers: authHeaders(),
+				body: JSON.stringify({ refresh_token: account.refresh_token })
+			});
+		} catch (error) {
+			throw new CloudError('Could not reach the server.', 0);
+		}
+		if (!response.ok) {
+			// another tab may already have rotated the refresh token
+			const latest = getAccount();
+			if (latest && latest.refresh_token !== account.refresh_token && latest.expires_at - 60 > Date.now() / 1000) return latest.access_token;
+			if (response.status >= 400 && response.status < 500) throw new CloudError('Sign in again.', 401);
+			throw new CloudError('Could not reach the server.', response.status);
+		}
+		const session = await response.json();
+		saveAccount(sessionToAccount(session, null, account));
+		return session.access_token;
+	}
+
+	async function accessToken() {
+		const account = getAccount();
+		if (!account) throw new CloudError('Sign in again.', 401);
+		if (account.expires_at - 60 > Date.now() / 1000) return account.access_token;
+		if (!refreshPromise) refreshPromise = refreshSession().finally(() => { refreshPromise = null; });
+		return refreshPromise;
+	}
+
+	async function accountRequest(action, payload) {
+		return cloudRequest(action, payload, await accessToken());
+	}
+
+	async function rpc(name, args = {}) {
+		const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${name}`, {
+			method: 'POST',
+			headers: authHeaders(await accessToken()),
+			body: JSON.stringify(args)
+		});
+		return parseResponse(response);
 	}
 
 	let ipPromise = null;
@@ -1159,9 +1227,9 @@
 
 	function stateToRow(value) {
 		return {
-			coins: Math.min(MAX_COINS, value.coins),
-			bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null },
-			nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
+			p_coins: Math.min(MAX_COINS, value.coins),
+			p_bgs: { owned: value.ownedBackgrounds, active: value.activeBackground, lastSpin: value.lastSpin || null },
+			p_nameplates: { owned: value.ownedNameplates, active: value.activeNameplate }
 		};
 	}
 
@@ -1185,24 +1253,37 @@
 		return next;
 	}
 
-	async function pushToCloud(value) {
+	let pushChain = Promise.resolve();
+
+	function pushToCloud(value) {
 		const account = getAccount();
-		if (!ACCOUNTS_ENABLED || !account || !cloudConfigured()) return;
-		try {
-			const result = await cloudRequest('account-sync', { token: account.token, state: stateToRow(value) });
-			if (!result.saved) checkAccountStatus();
-		} catch (error) {
-			console.error('Rocky Games could not sync to the cloud:', error);
-			announce('Could not save to your account. Check your connection.');
-		}
+		if (!ACCOUNTS_ENABLED || !account || !cloudConfigured() || account.must_change_password) return;
+		const args = stateToRow(value);
+		pushChain = pushChain.then(() => rpc('rocky_sync_state', args)).then(() => {}, handleSyncError);
 	}
 
-	function applyAccountState(row, token) {
+	function handleSyncError(error) {
+		const message = String(error && error.message || '');
+		if (error && error.status === 401) { signOut(); return; }
+		if (message.includes('banned')) { banThisDevice(); return; }
+		if (message.includes('password change')) { showPasswordDialog(true); return; }
+		if (!error || error.status === undefined || error.status === 0 || error.status >= 500 || message === 'Failed to fetch') {
+			console.error('Rocky Games could not sync to the cloud:', error);
+			announce('Could not save to your account. Check your connection.');
+			return;
+		}
+		console.error('Rocky Games save was rejected:', error);
+		announce('The server did not accept that save, so your saved balance was restored.');
+		checkAccountStatus(true);
+	}
+
+	function applyAccountState(row) {
 		let previous;
 		try { previous = readState(); } catch (error) { previous = { version: 1, lastSpin: null }; }
 		const next = rowToState(row, previous);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-		localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: row.id, username: row.username, token: token || getAccount()?.token }));
+		const account = getAccount();
+		if (account) saveAccount({ ...account, id: row.id, username: row.username, is_admin: row.is_admin === true, must_change_password: row.must_change_password === true });
 		localStorage.setItem(LAST_USERNAME_KEY, row.username);
 		state = next;
 		storageAvailable = true;
@@ -1210,88 +1291,17 @@
 		render();
 	}
 
-	const WORDS_ROW = 'config:blocked-words';
-	let blockedWordsPromise;
-	let blockedListsPromise;
-
-	function loadBlockedLists() {
-		if (!blockedListsPromise) {
-			blockedListsPromise = cloudRequest(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=bgs`)
-				.then((rows) => { const saved = (rows[0] && rows[0].bgs) || {}; return { passwords: saved.passwords || [], coins: saved.coins || [] }; })
-				.catch(() => ({ passwords: [], coins: [] }));
-		}
-		return blockedListsPromise;
-	}
-
-	async function hasBlockedValue(row) {
-		if (!cloudConfigured() || row.username === WORDS_ROW || String(row.username).startsWith('ip:')) return false;
-		const lists = await loadBlockedLists();
-		return lists.passwords.includes(row.password) || lists.coins.includes(row.coins);
-	}
-
-	function normalizeName(text) {
-		const map = { '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '@': 'a', '$': 's', '!': 'i' };
-		return String(text).toLowerCase().replace(/[013457@$!]/g, (c) => map[c]).replace(/[^a-z]/g, '');
-	}
-
-	function loadBlockedWords() {
-		if (!blockedWordsPromise) {
-			blockedWordsPromise = cloudRequest(`?username=eq.${encodeURIComponent(WORDS_ROW)}&select=bgs`)
-				.then((rows) => ((rows[0] && rows[0].bgs && rows[0].bgs.words) || []).map(normalizeName).filter(Boolean))
-				.catch(() => []);
-		}
-		return blockedWordsPromise;
-	}
-
-	async function hasBlockedWord(name) {
-		if (!cloudConfigured() || name === WORDS_ROW || name.startsWith('ip:')) return false;
-		const clean = normalizeName(name);
-		return (await loadBlockedWords()).some((word) => clean.includes(word));
-	}
-
-	async function banForName(id, reason = 'blocked username') {
-		const bytes = crypto.getRandomValues(new Uint8Array(12));
-		const password = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
-		try { await cloudRequest(`?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ coins: 0, password, bgs: { banned: true, reason } }) }); } catch (error) { console.error(error); }
-		banThisDevice();
-	}
-
-	async function legacySignIn(username, password) {
-		throw new Error('Legacy account sign-in is disabled.');
-		const rows = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&password=eq.${encodeURIComponent(password)}&select=*`);
-		if (!rows.length) throw new Error('Wrong username or password.');
-		if (rows[0].bgs && rows[0].bgs.banned) throw new Error('This account is banned.');
-		if (await hasBlockedWord(rows[0].username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
-		if (await hasBlockedValue(rows[0])) { await banForName(rows[0].id, 'blocked list'); throw new Error('This account is banned.'); }
-		applyAccountState(rows[0]);
+	function startSession(result) {
+		saveAccount(sessionToAccount(result.session, result.profile, {}));
+		applyAccountState(result.profile);
 	}
 
 	async function signIn(username, password) {
-		const result = await cloudRequest('sign-in', { username, password });
-		applyAccountState(result.account, result.token);
+		startSession(await cloudRequest('login', { username, password }));
 	}
 
-	const ACCOUNT_CREATION_ENABLED = true;
-	const CREATE_CODE_NOTE = 'You need the creation password to make an account. This is happening because of Lunamix spamming us.';
-
-	const CREATION_OFF_MESSAGE = 'New accounts are turned off for now. Sign in with an existing account.';
-
-	async function legacyCreateAccount(username, password, code) {
-		throw new Error('Legacy account creation is disabled.');
-		if (!ACCOUNT_CREATION_ENABLED) throw new Error(CREATION_OFF_MESSAGE);
-		if (!(await isCreateCodeValid(code))) throw new Error('Wrong creation password.');
-		if (!(await getClientIp())) throw new Error('Could not detect your IP address, so an account cannot be created. Turn off any blocker or VPN and try again.');
-		const existing = await cloudRequest(`?username=eq.${encodeURIComponent(username)}&select=id`);
-		if (existing.length) throw new Error('That username is already taken.');
-		const rows = await cloudRequest('', { method: 'POST', body: JSON.stringify({ username, password, ...stateToRow(freshState()) }) });
-		if (await hasBlockedWord(username)) { await banForName(rows[0].id); throw new Error('This account is banned.'); }
-		if (await hasBlockedValue(rows[0])) { await banForName(rows[0].id, 'blocked list'); throw new Error('This account is banned.'); }
-		applyAccountState(rows[0]);
-	}
-
-	async function createAccount(username, password, code) {
-		const result = await cloudRequest('create-account', { username, password, code });
-		applyAccountState(result.account, result.token);
+	async function createAccount(username, password, captcha, website) {
+		startSession(await cloudRequest('signup', { username, password, captcha, website }));
 	}
 
 	function freshState() {
@@ -1299,12 +1309,17 @@
 	}
 
 	function signOut() {
+		const account = getAccount();
+		if (account) {
+			fetch(`${SUPABASE_URL}/auth/v1/logout?scope=local`, { method: 'POST', headers: authHeaders(account.access_token), keepalive: true }).catch(() => {});
+		}
 		localStorage.removeItem(ACCOUNT_KEY);
 		localStorage.setItem(STORAGE_KEY, JSON.stringify(freshState()));
 		state = freshState();
 		storageAvailable = true;
 		applyBackground();
 		render();
+		document.querySelector('#rocky-password-dialog')?.remove();
 		showAuthGate();
 		renderAccountBar();
 	}
@@ -1316,19 +1331,37 @@
 		bar.querySelector('span').textContent = account ? `Signed in as ${account.username}` : 'Not signed in';
 		bar.querySelector('#rocky-signout-button').hidden = !account;
 		bar.querySelector('#rocky-rename-button').hidden = !account;
+		bar.querySelector('#rocky-password-button').hidden = !account;
 		bar.querySelector('#rocky-signin-button').hidden = Boolean(account);
+	}
+
+	let turnstileScript = null;
+
+	function loadTurnstile() {
+		if (window.turnstile) return Promise.resolve();
+		if (!turnstileScript) {
+			turnstileScript = new Promise((resolve, reject) => {
+				const script = document.createElement('script');
+				script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+				script.async = true;
+				script.onload = resolve;
+				script.onerror = () => { turnstileScript = null; reject(new Error('The CAPTCHA could not load.')); };
+				document.head.append(script);
+			});
+		}
+		return turnstileScript;
 	}
 
 	function showAuthGate() {
 		if (!ACCOUNTS_ENABLED || document.querySelector('#rocky-auth-gate')) return;
 		const remembered = localStorage.getItem(LAST_USERNAME_KEY) || '';
-		let mode = remembered || !ACCOUNT_CREATION_ENABLED ? 'signin' : 'create';
+		let mode = remembered ? 'signin' : 'create';
 		const gate = document.createElement('div');
 		gate.id = 'rocky-auth-gate';
 		gate.setAttribute('role', 'dialog');
 		gate.setAttribute('aria-modal', 'true');
 		gate.setAttribute('aria-labelledby', 'rocky-auth-title');
-		gate.innerHTML = '<form id="rocky-auth-form" autocomplete="on"><h2 id="rocky-auth-title"></h2><p id="rocky-auth-note">Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.</p><label>Username<input id="rocky-auth-username" maxlength="24" required autocomplete="username"></label><label>Password<input id="rocky-auth-password" type="password" required autocomplete="current-password"></label><label id="rocky-auth-code-label">Creation password<input id="rocky-auth-code" type="password" autocomplete="off"></label><p id="rocky-auth-error" role="alert"></p><button type="submit" id="rocky-auth-submit"></button><button type="button" id="rocky-auth-switch" class="rocky-auth-link"></button></form>';
+		gate.innerHTML = '<form id="rocky-auth-form" autocomplete="on"><h2 id="rocky-auth-title"></h2><p id="rocky-auth-note"></p><label>Username<input id="rocky-auth-username" maxlength="24" required autocomplete="username"></label><label>Password<input id="rocky-auth-password" type="password" required autocomplete="current-password" maxlength="72"></label><label class="rocky-auth-trap" aria-hidden="true">Website<input id="rocky-auth-website" tabindex="-1" autocomplete="off"></label><div id="rocky-auth-captcha"></div><p id="rocky-auth-error" role="alert"></p><button type="submit" id="rocky-auth-submit"></button><button type="button" id="rocky-auth-switch" class="rocky-auth-link"></button></form>';
 		document.body.append(gate);
 		document.body.classList.add('rocky-auth-locked');
 		const title = gate.querySelector('#rocky-auth-title');
@@ -1336,10 +1369,36 @@
 		const switcher = gate.querySelector('#rocky-auth-switch');
 		const userInput = gate.querySelector('#rocky-auth-username');
 		const passInput = gate.querySelector('#rocky-auth-password');
+		const websiteInput = gate.querySelector('#rocky-auth-website');
 		const error = gate.querySelector('#rocky-auth-error');
-		const codeLabel = gate.querySelector('#rocky-auth-code-label');
-		const codeInput = gate.querySelector('#rocky-auth-code');
+		const captchaBox = gate.querySelector('#rocky-auth-captcha');
 		const note = gate.querySelector('#rocky-auth-note');
+		let captchaToken = '';
+		let captchaWidget = null;
+
+		async function setupCaptcha() {
+			captchaToken = '';
+			captchaBox.hidden = mode === 'signin';
+			if (mode === 'signin') return;
+			if (!TURNSTILE_SITE_KEY) {
+				error.textContent = 'New accounts are unavailable until the site CAPTCHA is configured.';
+				submit.disabled = true;
+				return;
+			}
+			try {
+				await loadTurnstile();
+				if (captchaWidget !== null) { window.turnstile.reset(captchaWidget); return; }
+				captchaWidget = window.turnstile.render(captchaBox, {
+					sitekey: TURNSTILE_SITE_KEY,
+					callback: (token) => { captchaToken = token; },
+					'expired-callback': () => { captchaToken = ''; },
+					'error-callback': () => { captchaToken = ''; }
+				});
+			} catch (err) {
+				error.textContent = err.message;
+			}
+		}
+
 		function setMode(next) {
 			mode = next;
 			const signing = mode === 'signin';
@@ -1347,12 +1406,13 @@
 			submit.textContent = signing ? 'Sign in' : 'Create account';
 			switcher.textContent = signing ? 'No account? Create one' : 'Have an account? Sign in';
 			passInput.autocomplete = signing ? 'current-password' : 'new-password';
-			codeLabel.hidden = signing;
-			codeInput.required = !signing;
-			note.textContent = signing ? 'Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.' : CREATE_CODE_NOTE;
-			error.textContent = cloudConfigured() ? (ACCOUNT_CREATION_ENABLED ? '' : CREATION_OFF_MESSAGE) : 'Accounts are not set up yet.';
+			note.textContent = signing
+				? 'Sign in or create an account to play. Your coins, backgrounds and nameplates are saved to it.'
+				: 'Pick a username (3-24 letters, numbers, dots, dashes or underscores) and a password of at least 8 characters. No email needed.';
+			error.textContent = cloudConfigured() ? '' : 'Accounts are not set up yet.';
+			submit.disabled = !cloudConfigured();
+			setupCaptcha();
 		}
-		switcher.hidden = !ACCOUNT_CREATION_ENABLED;
 		userInput.value = mode === 'signin' ? remembered : '';
 		setMode(mode);
 		switcher.addEventListener('click', () => {
@@ -1363,19 +1423,22 @@
 			event.preventDefault();
 			if (!cloudConfigured()) return;
 			const username = userInput.value.trim();
-			if (!username || username.length > 24) { error.textContent = 'Username must be 1-24 characters.'; return; }
+			if (!username || username.length > 24) { error.textContent = 'Username must be 3-24 characters.'; return; }
+			if (mode === 'create' && !captchaToken) { error.textContent = 'Please complete the CAPTCHA first.'; return; }
 			submit.disabled = true;
 			error.textContent = '';
 			try {
 				if (mode === 'signin') await signIn(username, passInput.value);
-				else await createAccount(username, passInput.value, codeInput.value);
+				else await createAccount(username, passInput.value, captchaToken, websiteInput.value);
 				gate.remove();
 				document.body.classList.remove('rocky-auth-locked');
 				renderAccountBar();
+				if (getAccount()?.must_change_password) showPasswordDialog(true);
 			} catch (err) {
 				error.textContent = err.message === 'Failed to fetch' ? 'Could not reach the server.' : err.message;
+				if (mode === 'create') setupCaptcha();
 			} finally {
-				submit.disabled = false;
+				submit.disabled = mode === 'create' && !TURNSTILE_SITE_KEY;
 			}
 		});
 		(userInput.value ? passInput : userInput).focus();
@@ -1385,12 +1448,15 @@
 		const account = getAccount();
 		if (!account || !cloudConfigured()) return;
 		try {
-			const result = await cloudRequest('account-read', { token: account.token });
+			const row = await rpc('rocky_me');
 			if (!getAccount()) return;
-			if (applyRow === true) applyAccountState(result.account, account.token);
+			if (!row) { signOut(); return; }
+			if (row.banned) { banThisDevice(); return; }
+			if (applyRow === true || row.must_change_password !== account.must_change_password) applyAccountState(row);
+			renderAccountBar();
+			if (row.must_change_password) showPasswordDialog(true);
 		} catch (error) {
-			if (error.message.includes('banned')) { banThisDevice(); return; }
-			if (error.message.includes('Sign in again') || error.message.includes('no longer exists')) { signOut(); return; }
+			if (error.status === 401) { signOut(); return; }
 			console.error('Could not refresh account:', error);
 		}
 	}
@@ -1455,6 +1521,11 @@
 		input.focus();
 	}
 
+	function openModal(dialog) {
+		if (typeof dialog.showModal === 'function') dialog.showModal();
+		else dialog.setAttribute('open', '');
+	}
+
 	function showRenameDialog() {
 		const account = getAccount();
 		if (!account || document.querySelector('#rocky-rename-dialog')) return;
@@ -1475,32 +1546,17 @@
 		form.addEventListener('submit', async (event) => {
 			event.preventDefault();
 			const name = nameInput.value.trim();
-			if (!name || name.length > 24) { error.textContent = 'Username must be 1-24 characters.'; return; }
-			if (!cloudConfigured()) { error.textContent = 'Accounts are not set up.'; return; }
+			if (!name || name.length > 24) { error.textContent = 'Username must be 3-24 characters.'; return; }
 			submit.disabled = true;
 			error.textContent = '';
 			try {
-				const result = await cloudRequest('account-rename', { token: account.token, password: passInput.value, username: name });
-				localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: account.id, username: result.account.username, token: account.token }));
-				localStorage.setItem(LAST_USERNAME_KEY, result.account.username);
-				update((next) => { next.username = result.account.username; return true; });
+				const result = await accountRequest('change-username', { username: name, password: passInput.value });
+				const current = getAccount();
+				if (current) saveAccount({ ...current, username: result.profile.username });
+				localStorage.setItem(LAST_USERNAME_KEY, result.profile.username);
+				update((next) => { next.username = result.profile.username; return true; });
 				renderAccountBar();
-				announce(`Username changed to ${result.account.username}.`);
-				close();
-				return;
-				const match = await cloudRequest(`?id=eq.${account.id}&password=eq.${encodeURIComponent(passInput.value)}&select=id`);
-				if (!match.length) { error.textContent = 'Wrong password.'; return; }
-				if (name === account.username) { error.textContent = 'That is already your username.'; return; }
-				const taken = await cloudRequest(`?username=eq.${encodeURIComponent(name)}&select=id`);
-				if (taken.length) { error.textContent = 'That username is already taken.'; return; }
-				if (await hasBlockedWord(name)) { close(); await banForName(account.id); return; }
-				const updated = await cloudRequest(`?id=eq.${account.id}&bgs->>banned=is.null`, { method: 'PATCH', body: JSON.stringify({ username: name }) });
-				if (!updated.length) { error.textContent = 'This account can no longer be changed.'; return; }
-				localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ id: account.id, username: name }));
-				localStorage.setItem(LAST_USERNAME_KEY, name);
-				update((next) => { next.username = name; return true; });
-				renderAccountBar();
-				announce(`Username changed to ${name}.`);
+				announce(`Username changed to ${result.profile.username}.`);
 				close();
 			} catch (err) {
 				error.textContent = err.message === 'Failed to fetch' ? 'Could not reach the server.' : err.message;
@@ -1508,17 +1564,68 @@
 				submit.disabled = false;
 			}
 		});
-		if (typeof dialog.showModal === 'function') dialog.showModal();
-		else dialog.setAttribute('open', '');
+		openModal(dialog);
 		passInput.focus();
+	}
+
+	function showPasswordDialog(forced) {
+		const account = getAccount();
+		if (!account) return;
+		const existing = document.querySelector('#rocky-password-dialog');
+		if (existing) {
+			if (!forced) return;
+			existing.remove();
+		}
+		const dialog = document.createElement('dialog');
+		dialog.id = 'rocky-password-dialog';
+		dialog.setAttribute('aria-labelledby', 'rocky-password-title');
+		dialog.innerHTML = '<form id="rocky-password-form"><h2 id="rocky-password-title">' + (forced ? 'Choose a new password' : 'Change password') + '</h2><p>' + (forced ? 'Your password was reset, so you must choose a new one before you can keep playing.' : 'Enter your current password and a new one. Other devices will be signed out.') + '</p><label id="rocky-password-current-label">Current password<input id="rocky-password-current" type="password" autocomplete="current-password" maxlength="72"></label><label>New password<input id="rocky-password-new" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label><label>Repeat new password<input id="rocky-password-repeat" type="password" autocomplete="new-password" minlength="8" maxlength="72" required></label><p id="rocky-password-error" role="alert"></p><div class="rocky-rename-actions"><button type="submit" id="rocky-password-submit">Save password</button><button type="button" id="rocky-password-cancel">' + (forced ? 'Sign out' : 'Cancel') + '</button></div></form>';
+		document.body.append(dialog);
+		const currentInput = dialog.querySelector('#rocky-password-current');
+		const newInput = dialog.querySelector('#rocky-password-new');
+		const repeatInput = dialog.querySelector('#rocky-password-repeat');
+		const error = dialog.querySelector('#rocky-password-error');
+		const submit = dialog.querySelector('#rocky-password-submit');
+		const needsCurrent = !account.must_change_password;
+		dialog.querySelector('#rocky-password-current-label').hidden = !needsCurrent;
+		currentInput.required = needsCurrent;
+		dialog.querySelector('#rocky-password-cancel').addEventListener('click', () => {
+			dialog.close();
+			dialog.remove();
+			if (forced) signOut();
+		});
+		dialog.addEventListener('cancel', (event) => { if (forced) event.preventDefault(); else dialog.remove(); });
+		dialog.querySelector('form').addEventListener('submit', async (event) => {
+			event.preventDefault();
+			if (newInput.value !== repeatInput.value) { error.textContent = 'The new passwords do not match.'; return; }
+			submit.disabled = true;
+			error.textContent = '';
+			try {
+				const result = await accountRequest('change-password', { current_password: needsCurrent ? currentInput.value : undefined, new_password: newInput.value });
+				const current = getAccount();
+				saveAccount(sessionToAccount(result.session, result.profile, current || {}));
+				applyAccountState(result.profile);
+				renderAccountBar();
+				announce('Password changed.');
+				dialog.close();
+				dialog.remove();
+			} catch (err) {
+				error.textContent = err.message === 'Failed to fetch' ? 'Could not reach the server.' : err.message;
+			} finally {
+				submit.disabled = false;
+			}
+		});
+		openModal(dialog);
+		(needsCurrent ? currentInput : newInput).focus();
 	}
 
 	function initializeAccount() {
 		const bar = document.createElement('div');
 		bar.id = 'rocky-account-bar';
-		bar.innerHTML = '<span></span><button type="button" id="rocky-rename-button">Change username</button><button type="button" id="rocky-signin-button">Sign in</button><button type="button" id="rocky-signout-button">Sign out</button>';
+		bar.innerHTML = '<span></span><button type="button" id="rocky-rename-button">Change username</button><button type="button" id="rocky-password-button">Change password</button><button type="button" id="rocky-signin-button">Sign in</button><button type="button" id="rocky-signout-button">Sign out</button>';
 		(document.querySelector('#rocky-economy-toolbar') || document.body).append(bar);
 		bar.querySelector('#rocky-rename-button').addEventListener('click', showRenameDialog);
+		bar.querySelector('#rocky-password-button').addEventListener('click', () => showPasswordDialog(false));
 		bar.querySelector('#rocky-signin-button').addEventListener('click', showAuthGate);
 		bar.querySelector('#rocky-signout-button').addEventListener('click', signOut);
 		renderAccountBar();
@@ -1530,9 +1637,13 @@
 			showBanScreen();
 			return;
 		}
-		if (!getAccount()) showAuthGate();
-		else checkAccountStatus(true);
-		getClientIp().then(() => { checkIpBan(); if (getAccount() && localStorage.getItem(BANNED_KEY) !== '1') pushToCloud(state); });
+		if (!getAccount()) {
+			showAuthGate();
+		} else {
+			// any pre-upgrade session (numeric id, custom token) fails getAccount and lands on the sign-in form
+			checkAccountStatus(true).then(() => { if (getAccount() && localStorage.getItem(BANNED_KEY) !== '1') pushToCloud(state); });
+		}
+		getClientIp().then(() => checkIpBan());
 		window.setInterval(() => { checkAccountStatus(); checkIpBan(); }, BAN_CHECK_MS);
 	}
 

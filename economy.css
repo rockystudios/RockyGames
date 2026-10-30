@@ -575,17 +575,21 @@ a:focus-visible {
 #rocky-auth-form label[hidden]{display:none}
 #rocky-auth-form input{padding:.6rem;border-radius:6px;border:1px solid #666;font:inherit}
 #rocky-auth-form button{padding:.6rem;border-radius:6px;border:0;font:inherit;cursor:pointer}
+#rocky-auth-form .rocky-auth-trap{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+#rocky-auth-captcha[hidden]{display:none}
 #rocky-auth-error{color:#ff8a8a;margin:0;min-height:1.2em}
 .rocky-auth-link{background:none;color:#9ecbff;text-decoration:underline}
 body.rocky-auth-locked{overflow:hidden}
 #rocky-account-bar{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 #rocky-account-bar button{padding:2px 6px;border:1px solid #202522;background:#fff;color:#202522;font:inherit;cursor:pointer}
-#rocky-rename-dialog{width:min(92vw,22rem);padding:1.2rem;border:3px solid #202522;background:#f3f1e8;color:#202522;font-family:'DM Mono',monospace}
-#rocky-rename-dialog::backdrop{background:rgba(0,0,0,.6)}
-#rocky-rename-form{display:grid;gap:.7rem}
-#rocky-rename-form h2{margin:0}
-#rocky-rename-form label{display:grid;gap:.3rem}
-#rocky-rename-form input{padding:.5rem;font:inherit}
+#rocky-rename-dialog,#rocky-password-dialog{width:min(92vw,22rem);padding:1.2rem;border:3px solid #202522;background:#f3f1e8;color:#202522;font-family:'DM Mono',monospace}
+#rocky-rename-dialog::backdrop,#rocky-password-dialog::backdrop{background:rgba(0,0,0,.6)}
+#rocky-rename-form,#rocky-password-form{display:grid;gap:.7rem}
+#rocky-rename-form h2,#rocky-password-form h2{margin:0}
+#rocky-rename-form label,#rocky-password-form label{display:grid;gap:.3rem}
+#rocky-rename-form input,#rocky-password-form input{padding:.5rem;font:inherit}
+#rocky-password-form label[hidden]{display:none}
+#rocky-password-error{margin:0;min-height:1.2em;color:#b3261e}
 .rocky-rename-actions{display:flex;gap:.5rem}
 .rocky-rename-actions button{padding:.5rem .8rem;border:2px solid #202522;background:#d9f06b;color:#202522;font:inherit;cursor:pointer}
 #rocky-rename-error{margin:0;min-height:1.2em;color:#b3261e}

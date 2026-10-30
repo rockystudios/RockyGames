@@ -73,57 +73,78 @@ again to stop. Installed add-ons are saved in this browser. Websites cannot clic
 embedded third-party games, so `extensions/rocky-auto-clicker` is a companion Chrome/Edge
 extension (zip download on the card; load it unpacked) that clicks inside every frame with F8.
 
-## Bans
+## Accounts, bans and admin
 
-Accounts are enabled (`ACCOUNTS_ENABLED` is `true` in `economy.js`). Coins,
+Accounts are enabled (`ACCOUNTS_ENABLED` is `true` in `economy.js`). Players sign
+in with a username and password only; no email address is needed. Coins,
 backgrounds and nameplates are saved to the account, and `leaderboard.html`
-loads the ranking from Supabase.
+loads the ranking from the public `get_leaderboard()` function.
 
-Creating an account needs the server-side creation password and a detectable IP
-address. To turn account creation off, set `ACCOUNT_CREATION_ENABLED` to `false`
-in `economy.js`.
+`admin.html` signs in with an administrator's own account. It can list, rename,
+set coins for, ban and delete accounts, reset passwords, ban IP addresses,
+remove bot accounts, edit the blocked word/password/coin lists and shows abuse
+monitoring plus the admin audit log. Every admin action is recorded in the
+append-only `admin_audit_log` table. Admin status is granted only with SQL:
 
-`admin.html` can delete accounts and ban devices or IP addresses. IP bans are
-stored as `ip:<address>` rows in the account table. The Edge Function checks
-the visitor's network address when creating accounts.
+```sql
+update public.profiles set is_admin = true where username_key = lower('YourName');
+```
 
-The admin "Blocked words, passwords and coin amounts" form stores its lists in the `config:blocked-words`
-row. An account whose password or coin total exactly matches a list is banned when it signs in, and
-"Ban accounts that match any list" bans existing matches right away.
+**Password resets.** An administrator picks *Reset password* for a player. The
+server authorizes the request, rate-limits it (10 per hour per admin, 3 per day
+per player), writes the audit entry, sets a random temporary password, signs the
+player out everywhere and shows the temporary password once. The player must
+choose a new password before they can play again. Existing passwords can never be
+read, and administrators cannot reset other administrators.
 
-Admin can also set a list of blocked words. An account whose username contains one (ignoring
-capitals, symbols and look-alikes such as 0 for o) is banned, along with the device, when it
-is created, renamed, signed into or checked. The list is stored in a `config:blocked-words` row.
+**Anti-abuse.** Sign-up needs a Cloudflare Turnstile CAPTCHA that the server
+verifies, is limited per IP address (3 per hour, 8 per day) and globally, and
+has a hidden honeypot field. Usernames are validated server-side and are unique
+ignoring capitals. Wrong passwords lock a username for 15 minutes after 5 failures.
+Blocked words are enforced at sign-up and rename. `security_events` records
+sign-ups, failures and rate-limit hits for the admin monitoring view.
+
+**Old accounts.** A player from the previous system signs in with the old
+username and password once; the account is copied (coins, backgrounds,
+nameplates), moved to Supabase Auth and the player must choose a new password.
 
 ### Secure account backend setup
 
-The account site uses the `rocky-api` Supabase Edge Function; browser pages must
-not access account rows directly. The function uses server-side secrets and
-password hashes. The `account_v2` table has RLS enabled with no browser policies,
-and only the function's service role can access it. The migration also revokes
-browser-role access to the old `account` table but keeps its data as an archive;
-existing accounts do not carry over, and users must create new accounts after
-setup.
+Browsers never touch account tables directly. Passwords are stored and verified
+only by Supabase Auth. The `rocky-auth` and `rocky-admin` Edge Functions map
+usernames to internal identifiers on the server (players get a random internal
+address that is never shown). Players can read only their own row; every write
+goes through the functions or the validated `rocky_sync_state` function.
 
-1. Install the Supabase CLI and link this folder to the correct project with
+1. Install the Supabase CLI and link this folder with
    `supabase link --project-ref <project-ref>`.
-2. Set `ROCKY_SESSION_SECRET` and `ROCKY_PASSWORD_PEPPER` to newly generated
-   random secrets, `ROCKY_ADMIN_PASSWORD` to a new strong password of at least
-   16 characters, and
-   `ROCKY_CREATE_CODE` to the creation password you want users to enter. Set
-   these in **Project Settings → Edge Functions → Secrets** or with
-   `supabase secrets set`. Do not put them in site files or share them in chat.
-   The function reads Supabase's built-in `SUPABASE_URL` and
-   `SUPABASE_SERVICE_ROLE_KEY`; never expose the service-role key.
-3. Apply the migration and deploy the function:
-   `supabase db push` and `supabase functions deploy rocky-api`.
-4. Publish the site files. Sign in to `admin.html` with the new admin password.
+2. Dashboard → **Authentication → Providers/Sign In**: turn **off** "Allow new
+   users to sign up" and "Allow anonymous sign-ins" (otherwise `/auth/v1/signup`
+   would bypass the functions). Leave email confirmation settings alone.
+3. Create a Cloudflare Turnstile widget for `rockystudios.github.io`, put its
+   **site key** in `TURNSTILE_SITE_KEY` in `economy.js`, and set the **secret key**:
+   `supabase secrets set TURNSTILE_SECRET_KEY=...`. Optionally set
+   `ROCKY_ALLOWED_ORIGINS` (comma separated) if the site is served from another
+   origin. Account creation stays disabled until both keys are set.
+4. Apply the additive migration and deploy:
+   `supabase db push` then
+   `supabase functions deploy rocky-auth rocky-admin --no-verify-jwt`
+   (the functions verify the caller's token themselves).
+5. Grant yourself admin with the SQL above, then sign in at `admin.html`.
+6. The old `rocky-api` function and the secrets `ROCKY_SESSION_SECRET`,
+   `ROCKY_PASSWORD_PEPPER`, `ROCKY_ADMIN_PASSWORD` and `ROCKY_CREATE_CODE` are no
+   longer used; delete them. Run `supabase functions delete rocky-api`.
+7. After all players have moved over, run
+   `supabase/optional/scrub_legacy_passwords.sql` to erase the plaintext passwords
+   still stored in the old `public.account` table. Do this only after taking a backup.
 
-This starts a fresh account table and leaves the prior table in place as an
-inactive archive. The leaderboard only publishes usernames, coin totals, and
-nameplates. RLS protects direct table access; the function also authenticates
-each account operation and limits it to the signed-in account. Coin balances
-are still client-reported game state, so this is not cheat-proof gameplay.
+Coin balances are still produced by games running in the browser, so a player can
+tamper with their *own* balance; the server limits how fast coins can grow (at
+most 7 times the balance plus 100 per save, and shop items must be affordable),
+and nobody can change another player's data. This is not cheat-proof gameplay.
+
+Run the backend security tests against a local or throw-away stack with
+`node supabase/tests/security.test.mjs` (see the header of that file).
 
 ## Keyboard shortcuts
 
